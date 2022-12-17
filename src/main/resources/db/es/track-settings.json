@@ -1,0 +1,17 @@
+{
+  "analysis": {
+    "analyzer": {
+      "case_insensitive": {
+        "type": "custom",
+        "tokenizer": "whitespace",
+        "char_filter": [
+          "html_strip"
+        ],
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      }
+    }
+  }
+}
