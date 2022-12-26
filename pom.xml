@@ -34,7 +34,7 @@
 			<dependency>
 				<groupId>org.springframework.experimental</groupId>
 				<artifactId>spring-modulith-bom</artifactId>
-				<version>0.1.0</version>
+				<version>0.2.0</version>
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
