@@ -1,7 +1,13 @@
 <nav class="navbar navbar-dark bg-dark">
 	<div class="container-fluid">
 		<a class="navbar-brand" href="/">
-			<img src="tracks.png" alt="" width="30" height="24" class="d-inline-block align-text-top" />
+			<img
+				src="images/tracks.png"
+				alt=""
+				width="30"
+				height="24"
+				class="d-inline-block align-text-top"
+			/>
 			Tune Lad
 		</a>
 		<button

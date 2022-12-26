@@ -1,8 +1,6 @@
-import * as api from '$lib/api.js';
-
 /** @type {import('./$types').PageLoad} */
-export async function load({ params }) {
-	return {
-		tracks: await api.get('actuator/info')
-	};
+export async function load({ fetch }) {
+	const res = await fetch('/actuator/info');
+	const json = await res.json();
+	return { info: json };
 }

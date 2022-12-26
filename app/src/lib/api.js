@@ -1,8 +1,6 @@
-import { error } from '@sveltejs/kit';
+const base = '/api';
 
-const base = '/';
-
-async function send({ method, path, data, token }) {
+async function send(fetch, { method, path, data, token }) {
 	const opts = { method, headers: {} };
 
 	if (data) {
@@ -15,26 +13,22 @@ async function send({ method, path, data, token }) {
 	}
 
 	const res = await fetch(`${base}/${path}`, opts);
-	if (res.ok || res.status === 422) {
-		const text = await res.text();
-		return text ? JSON.parse(text) : {};
-	}
-
-	throw error(res.status);
+	const json = res.json();
+	return json;
 }
 
-export function get(path, token) {
-	return send({ method: 'GET', path, token });
+export function get(fetch, path, token) {
+	return send(fetch, { method: 'GET', path, token });
 }
 
-export function del(path, token) {
-	return send({ method: 'DELETE', path, token });
+export function del(fetch, path, token) {
+	return send(fetch, { method: 'DELETE', path, token });
 }
 
-export function post(path, data, token) {
+export function post(fetch, path, data, token) {
 	return send({ method: 'POST', path, data, token });
 }
 
-export function put(path, data, token) {
-	return send({ method: 'PUT', path, data, token });
+export function put(fetch, path, data, token) {
+	return send(fetch, { method: 'PUT', path, data, token });
 }

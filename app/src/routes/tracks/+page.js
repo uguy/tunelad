@@ -1,8 +1,8 @@
 import * as api from '$lib/api.js';
 
 /** @type {import('./$types').PageLoad} */
-export async function load({ params }) {
+export async function load({ fetch }) {
 	return {
-		tracks: await api.get('api/search/tracks?q=')
+		tracks: await api.get(fetch, 'search/tracks?q=')
 	};
 }

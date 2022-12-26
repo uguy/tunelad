@@ -22,7 +22,6 @@ import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperatio
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -36,12 +35,11 @@ class EsSearchService implements SearchService, TrackEventHandler {
 
 	private final TrackService trackService;
 
-	@Async
-//	// TransactionalEventListener do not work in reactive env (maybe due to my code) ! Flux is blocked somewhere and the app must be restarted for the events to be consumed.
+	//	// TransactionalEventListener do not work in reactive env (maybe due to my code) ! Flux is blocked somewhere and the app must be restarted for the events to be consumed.
 //	@Transactional
 //	@TransactionalEventListener
-	@EventListener
 	@Override
+	@EventListener
 	public Mono<Void> on(NewTrackSaved event) {
 		log.info("New track saved, indexing it: " + event.track());
 		return trackService.findById(event.track().id())
@@ -76,7 +74,7 @@ class EsSearchService implements SearchService, TrackEventHandler {
 				.then();
 	}
 
-	@Async
+	@Override
 	@EventListener
 	public Mono<Void> on(AllTracksDeleted event) {
 		return trackDocs.deleteAll();

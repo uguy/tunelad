@@ -2,19 +2,16 @@
 	import * as api from '$lib/api.js';
 
 	import TrackList from './component/TrackList.svelte';
+	import Player from './component/Player.svelte';
 
 	/** @type {import('./$types').PageData} */
 	export let data;
 
-	async function refreshTracks() {
-		const q = document.getElementById('search-input').value;
-        data.tracks = await api.get('search/tracks?q=' + q);
-	}
+	let playerSrc;
 
-	function playTrack(trackId) {
-        let player = document.getElementById('player');
-        player.src = `api/tracks/${trackId}/play`;
-		player.play();
+	async function refreshTracks() {
+		const q = document.querySelector('#search-input').value;
+		data.tracks = await api.get(fetch, 'search/tracks?q=' + q);
 	}
 </script>
 
@@ -45,11 +42,15 @@
 		</div>
 		<hr />
 		<div class="row">
-			<TrackList tracks={data.tracks} playFunction={playTrack} />
+			<TrackList
+				tracks={data.tracks}
+				on:trackPlayButtonClicked={(event) =>
+					(playerSrc = `api/tracks/${event.detail.trackId}/play`)}
+			/>
 		</div>
 		<hr />
 		<div class="row">
-			<audio id="player" controls preload="none" style="width: 100%"></audio>
+			<Player src={playerSrc} />
 		</div>
 	</div>
 </div>

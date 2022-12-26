@@ -1,9 +1,13 @@
 package org.tunelad.infrastructure.web.config;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.springframework.boot.actuate.info.MapInfoContributor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;

@@ -8,7 +8,8 @@ const config = {
 	},
 	server: {
 		proxy: {
-			'/api': 'http://localhost:8080'
+			'/api': 'http://localhost:8080',
+			'/actuator': 'http://localhost:8080'
 		}
 	}
 };
