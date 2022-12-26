@@ -20,6 +20,7 @@
 					<button
 						class="btn btn-secondary btn-sm"
 						on:click={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
+						on:keypress={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
 					>
 						<i class="bi bi-play-circle" />
 					</button>
@@ -33,7 +34,8 @@
 					{#each track.tags as tag}
 						<span
 							class="badge rounded-pill bg-secondary tag"
-							on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
+							on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}
+							on:keypress={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
 						>
 					{/each}
 				</div>
