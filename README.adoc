@@ -59,6 +59,8 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Upload a track with description
 * List tracks with basic search
 * Play track from browser (streaming bytes with range support)
+* OpenAPI v3 endpoint
+* Spring boot actuator features (health, info, etc.)
 
 
 == Developing
