@@ -129,7 +129,9 @@ image::./doc/kibana.png[Kibana]
 
 === H2 database
 
-For simplicity, we use a simple file based H2 database. Data file are store under `target` folder. H2 web console is available at http://localhost:8082.
+For simplicity, we use a simple file based H2 database. Data file are store under `target` folder.
+
+If you start the application using `-Dspring.profiles.active=h2-console`, H2 web console is available at http://localhost:8082.
 
 If you want to use another SGBD, add the maven dependency to the corresponding driver and update configuration in `application.yml` file
 [source, yaml]
@@ -159,6 +161,8 @@ spring:
 Application is available at http://localhost:8080
 
 image::./doc/track-list.png[Track list]
+
+You can load some sample by running import method on test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
 
 === Swagger UI
 
