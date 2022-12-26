@@ -1,12 +1,14 @@
 package org.tunelad.infrastructure.db;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 // H2 console is not available when using Spring WebFlux, default to starting the server on another port
 // Navigate to http://localhost:8082 without /h2-console
 @ConditionalOnClass(org.h2.tools.Server.class)
+@Profile("h2-console")
 @Component
 public class H2 {
 
