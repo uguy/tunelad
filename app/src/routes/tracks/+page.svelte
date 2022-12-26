@@ -46,6 +46,10 @@
 				tracks={data.tracks}
 				on:trackPlayButtonClicked={(event) =>
 					(playerSrc = `api/tracks/${event.detail.trackId}/play`)}
+				on:trackTagClicked={(event) => {
+					document.querySelector('#search-input').value = event.detail.tag;
+					refreshTracks();
+				}}
 			/>
 		</div>
 		<hr />

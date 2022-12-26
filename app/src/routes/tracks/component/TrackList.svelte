@@ -2,7 +2,10 @@
 	import { createEventDispatcher } from 'svelte';
 
 	export let tracks;
+
+	// Events dispatched externally
 	export const TRACK_PLAY_BUTTON_CLICKED = 'trackPlayButtonClicked';
+	export const TRACK_TAG_CLICKED = 'trackTagClicked';
 
 	const dispatch = createEventDispatcher();
 </script>
@@ -28,10 +31,19 @@
 				</div>
 				<div class="card-footer">
 					{#each track.tags as tag}
-						<span class="badge rounded-pill bg-secondary">{tag}</span>
+						<span
+							class="badge rounded-pill bg-secondary tag"
+							on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
+						>
 					{/each}
 				</div>
 			</details>
 		{/each}
 	{/if}
 </div>
+
+<style>
+	.tag:hover {
+		cursor: pointer;
+	}
+</style>

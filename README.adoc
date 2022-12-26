@@ -68,11 +68,14 @@ This simple app allows to store an mp3 file with some description and play it vi
 === Prerequisite
 
 - a git client
-- a java (jdk17 or higher)
+- a java (jdk17 or later)
 - maven (optional if you choose to use https://github.com/takari/maven-wrapper[maven wrapper script])
-- Docker for integration tests
+- Docker and Docker Compose
+- NodeJS v18.12.1 or later
 
 === Building
+
+==== Backend
 
 This is a standard maven project. To build the application as fat jar, simply execute:
 
@@ -86,6 +89,25 @@ mvn package
 The build should produce under the `target/` folder (and in your local maven repository) a jar archive named `{project-artifact-id}-{project-version}.jar`
 
 For more details about apache maven, please refer to the https://maven.apache.org/guides/getting-started/[documentation]
+
+==== Frontend
+
+The frontend source code lives in `<project root>/app` folder.
+
+Svelte frontend is build during maven backend build but if your want livereload for UI development this command will run the frontend app in dev mode.
+
+[source,bash,subs="attributes"]
+----
+npm run dev -- --open
+----
+
+You should format frontend resource by running the following command (todo: make this a git commit hook).
+
+[source,bash,subs="attributes"]
+----
+npm run format
+----
+
 
 == Running the application
 
