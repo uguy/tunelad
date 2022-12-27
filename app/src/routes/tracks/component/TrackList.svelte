@@ -18,6 +18,8 @@
 			<details class="card">
 				<summary class="card-header">
 					<button
+						id="play-track-{ track.id }-btn"
+                        aria-label="play track { track.title } button"
 						class="btn btn-secondary btn-sm"
 						on:click={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
 						on:keypress={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
@@ -27,7 +29,7 @@
 					<span>{track.title}</span>
 				</summary>
 				<div class="card-body">
-					<h4>Album : {track.album}</h4>
+					<b>Album : {track.album}</b>
 					<p>{track.description}</p>
 				</div>
 				<div class="card-footer">

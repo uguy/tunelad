@@ -12,7 +12,7 @@
 	<groupId>org.tunelad</groupId>
 	<artifactId>tunelad</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>tunelad</name>
+	<name>Tunelad</name>
 	<description>Tunelad is a simple application to listen to tracks.</description>
 	<properties>
 		<!-- Tools versions-->

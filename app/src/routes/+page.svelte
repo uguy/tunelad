@@ -11,6 +11,7 @@
 			class="img-fluid rounded"
 			src="images/celtic-connections.png"
 			alt="celtic connections concert"
+			width="600px"
 		/>
 	</div>
 </div>

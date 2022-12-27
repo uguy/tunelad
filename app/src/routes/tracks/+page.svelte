@@ -30,7 +30,9 @@
 			</div>
 			<div class="col-sm-2">
 				<button
-					type="button"
+					id="search-track-btn"
+                    aria-label="search-track-btn"
+                    type="button"
 					class="btn btn-outline-primary"
 					on:click|preventDefault={() => {
 						refreshTracks();
