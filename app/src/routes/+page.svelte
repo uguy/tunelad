@@ -2,15 +2,18 @@
 	<title>Tune Lad</title>
 </svelte:head>
 
-<div class="row">
-	<div class="col-md-3" />
-	<div class="col-md-9">
-		<h1 class="display-4">Welcome to Tune Lad !</h1>
-		<p class="lead">Start listening to some <a href="tracks">tracks</a> ...</p>
-		<img
-			class="img-fluid rounded"
-			src="images/celtic-connections.png"
-			alt="celtic connections concert"
-		/>
-	</div>
+<div class="flex flex-col w-full">
+	<h1 class="ml-auto mr-auto text-3xl font-bold">Welcome to Tune Lad !</h1>
+	<p class="font-medium my-5 ml-auto mr-auto">
+		Start listening to some <a
+			class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+			href="tracks">tracks</a
+		> ...
+	</p>
+	<img
+		class="ml-auto mr-auto rounded-md"
+		src="images/celtic-connections.png"
+		alt="celtic connections concert"
+		width="600px"
+	/>
 </div>

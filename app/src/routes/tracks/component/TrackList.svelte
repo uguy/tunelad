@@ -10,30 +10,44 @@
 	const dispatch = createEventDispatcher();
 </script>
 
-<div id="trackList">
+<div id="trackList flex w-full">
 	{#if tracks.length === 0}
 		<div>No tracks found.</div>
 	{:else}
 		{#each tracks as track}
-			<details class="card">
-				<summary class="card-header">
+			<details class="w-full py-4 border-b border-grey-lighter">
+				<summary class="flex items-center w-full  hover:underline">
 					<button
-						class="btn btn-secondary btn-sm"
+						id="play-track-{track.id}-btn"
+						aria-label="play track {track.title} button"
+						class=""
 						on:click={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
 						on:keypress={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
 					>
-						<i class="bi bi-play-circle" />
+						<i class="fa-solid fa-circle-play text-3xl text-blue-400" />
 					</button>
-					<span>{track.title}</span>
+					<span class="px-2">{track.title}</span>
+
+					<button class="ml-auto" aria-label="show track {track.title} detail button">
+						<svg
+							class="fill-current opacity-75 w-4 h-4 -mr-1"
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 20 20"
+						>
+							<path
+								d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"
+							/>
+						</svg>
+					</button>
 				</summary>
-				<div class="card-body">
-					<h4>Album : {track.album}</h4>
-					<p>{track.description}</p>
+				<div class="mt-4 leading-normal text-md ">
+					<b>Album : {track.album}</b>
+					<p class="my-2 text-sm">{track.description}</p>
 				</div>
 				<div class="card-footer">
 					{#each track.tags as tag}
 						<span
-							class="badge rounded-pill bg-secondary tag"
+							class="text-sm font-medium bg-gray-300 rounded-lg mr-2 my-1 px-2 py-1 hover:cursor-pointer"
 							on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}
 							on:keypress={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
 						>
@@ -45,7 +59,32 @@
 </div>
 
 <style>
-	.tag:hover {
+	details {
+		user-select: none;
+	}
+
+	details > summary > button > svg {
+		transform: rotate(90deg);
+	}
+
+	details[open] > summary > button > svg {
+		transform: rotate(-90deg);
+	}
+
+	details[open] > summary ~ * {
+		animation: ease-opacity-t-b 0.5s ease;
+	}
+
+	summary {
 		cursor: pointer;
+	}
+
+	svg {
+		transition: all 0.3s;
+	}
+
+	/* TO JE TO - TO JE TAJ */
+	summary::-webkit-details-marker {
+		display: none;
 	}
 </style>
