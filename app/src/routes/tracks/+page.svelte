@@ -19,44 +19,43 @@
 	<title>Tune Lad - Tracks</title>
 </svelte:head>
 
-<div class="row">
-	<div class="col-md-3" />
-	<div class="col-md-6">
-		<h1>Tracks</h1>
-		<br />
-		<div class="row">
-			<div class="col-sm-10">
-				<input id="search-input" class="form-control" type="text" placeholder="search for tracks" />
-			</div>
-			<div class="col-sm-2">
-				<button
-					id="search-track-btn"
-                    aria-label="search-track-btn"
-                    type="button"
-					class="btn btn-outline-primary"
-					on:click|preventDefault={() => {
-						refreshTracks();
-					}}
-				>
-					<i class="bi bi-search" />
-				</button>
-			</div>
-		</div>
-		<hr />
-		<div class="row">
-			<TrackList
-				tracks={data.tracks}
-				on:trackPlayButtonClicked={(event) =>
-					(playerSrc = `api/tracks/${event.detail.trackId}/play`)}
-				on:trackTagClicked={(event) => {
-					document.querySelector('#search-input').value = event.detail.tag;
-					refreshTracks();
-				}}
+<div class="flex flex-col w-full space-y-5">
+	<h1 class="text-3xl leading-2">Tracks</h1>
+	<br />
+	<div class="flex flex-row pY-10">
+		<div class="basis-5/6 w-full">
+			<input
+				id="search-input"
+				class="block w-full rounded-md border-gray-300"
+				type="text"
+				placeholder="search for tracks"
 			/>
 		</div>
-		<hr />
-		<div class="row">
-			<Player src={playerSrc} />
+		<div class="flex-none basis-1/6">
+			<button
+				id="search-track-btn"
+				aria-label="search-track-btn"
+				type="button"
+				class="block w-full h-full bg-gray-300 rounded-md"
+				on:click|preventDefault={() => {
+					refreshTracks();
+				}}
+			>
+				<i class="fa-solid fa-search text-1xl" />
+			</button>
 		</div>
+	</div>
+	<hr />
+
+	<TrackList
+		tracks={data.tracks}
+		on:trackPlayButtonClicked={(event) => (playerSrc = `api/tracks/${event.detail.trackId}/play`)}
+		on:trackTagClicked={(event) => {
+			document.querySelector('#search-input').value = event.detail.tag;
+			refreshTracks();
+		}}
+	/>
+	<div class="flex flex-row pY-10">
+		<Player src={playerSrc} />
 	</div>
 </div>
