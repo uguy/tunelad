@@ -12,7 +12,7 @@
 	</p>
 	<img
 		class="ml-auto mr-auto rounded-md"
-		src="images/celtic-connections.png"
+		src="images/celtic-connections.webp"
 		alt="celtic connections concert"
 		width="600px"
 	/>

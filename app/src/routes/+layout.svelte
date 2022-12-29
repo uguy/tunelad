@@ -70,17 +70,17 @@
 			<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
 				<div class="flex flex-shrink-0 items-center">
 					<img
-						src="images/tracks.png"
+						src="images/tracks.webp"
 						alt="Tune Lad"
-						width="30px"
-						height="30px"
+						width="40px"
+						height="40px"
 						class="block h-8 w-auto lg:hidden"
 					/>
 					<img
-						src="images/tracks.png"
+						src="images/tracks.webp"
 						alt="Tune Lad"
-						width="30px"
-						height="30px"
+						width="40px"
+						height="40px"
 						class="hidden h-8 w-auto lg:block"
 					/>
 				</div>
