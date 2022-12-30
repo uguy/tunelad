@@ -15,5 +15,6 @@
 		src="images/celtic-connections.webp"
 		alt="celtic connections concert"
 		width="600px"
+        height="364px"
 	/>
 </div>

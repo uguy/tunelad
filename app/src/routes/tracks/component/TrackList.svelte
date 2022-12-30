@@ -39,7 +39,7 @@
 					</button>
 					<span class="px-2">{track.title}</span>
 
-					<button class="ml-auto" aria-label="show track {track.title} detail button">
+					<button class="btn-detail ml-auto" aria-label="show track {track.title} detail button">
 						<svg
 							class="fill-current opacity-75 w-4 h-4 -mr-1"
 							xmlns="http://www.w3.org/2000/svg"
@@ -74,11 +74,11 @@
 		user-select: none;
 	}
 
-	details > summary > button > svg {
+	details > summary > button.btn-detail > svg {
 		transform: rotate(90deg);
 	}
 
-	details[open] > summary > button > svg {
+	details[open] > summary > button.btn-detail > svg {
 		transform: rotate(-90deg);
 	}
 
