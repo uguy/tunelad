@@ -1,7 +1,36 @@
 <script>
 	import '../app.css';
-
 	import { page } from '$app/stores';
+
+	import { onMount } from 'svelte';
+	import { pwaInfo } from 'virtual:pwa-info';
+
+	onMount(async () => {
+		if (pwaInfo) {
+			const { registerSW } = await import('virtual:pwa-register');
+			registerSW({
+				immediate: true,
+				onRegistered(r) {
+					// uncomment following code if you want check for updates
+					// r && setInterval(() => {
+					//    console.log('Checking for sw update')
+					//    r.update()
+					// }, 20000 /* 20s for testing purposes */)
+					console.log(`SW Registered: ${r}`);
+				},
+				onRegisterError(error) {
+					console.log('SW registration error', error);
+				}
+			});
+		}
+	});
+
+	let ReloadPrompt;
+	onMount(async () => {
+		pwaInfo && (ReloadPrompt = (await import('$lib/ReloadPrompt.svelte')).default);
+	});
+
+	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
 	let currentPage;
 	$: $page.url.pathname, (currentPage = $page.url.pathname);
@@ -11,6 +40,10 @@
 		mobileMenuVisible = !mobileMenuVisible;
 	}
 </script>
+
+<svelte:head>
+	{@html webManifest}
+</svelte:head>
 
 <nav class="bg-gray-800">
 	<div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -70,18 +103,18 @@
 			<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
 				<div class="flex flex-shrink-0 items-center">
 					<img
-						src="images/tracks.webp"
+						src="images/tracks-64.webp"
 						alt="Tune Lad"
-						width="40px"
-						height="40px"
 						class="block h-8 w-auto lg:hidden"
+                        width="64px"
+                        height="64px"
 					/>
 					<img
-						src="images/tracks.webp"
+						src="images/tracks-64.webp"
 						alt="Tune Lad"
-						width="40px"
-						height="40px"
 						class="hidden h-8 w-auto lg:block"
+                        width="64px"
+                        height="64px"
 					/>
 				</div>
 				<div class="hidden sm:ml-6 sm:block">
@@ -178,10 +211,13 @@
 		</div>
 	</div>
 </nav>
-<div class="flex flex-row">
-	<div class="basis-1/6" />
-	<div class="basis-4/6 flex bg-white px-5 py-10 w-full">
+<main class="flex flex-row">
+	<div class="lg:basis-1/6 md:hidden sm:hidden" />
+	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
 		<slot />
 	</div>
-	<div class="basis-1/6" />
-</div>
+	<div class="lg:basis-1/6 md:hidden sm:hidden" />
+</main>
+{#if ReloadPrompt}
+	<svelte:component this={ReloadPrompt} />
+{/if}

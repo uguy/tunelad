@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "vite build && mkdir -p ../target/classes/static/ && cp -r ./build/* ../target/classes/static/",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
@@ -19,6 +19,7 @@
 		"@sveltejs/adapter-static": "^1.0.0",
 		"@sveltejs/kit": "^1.0.1",
 		"@tailwindcss/forms": "^0.5.3",
+		"@vite-pwa/sveltekit": "^0.1.0",
 		"autoprefixer": "^10.4.13",
 		"cssnano": "^5.1.14",
 		"eslint": "^8.30.0",

@@ -6,8 +6,7 @@ import { vitePreprocess } from '@sveltejs/kit/vite';
 const config = {
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html',
-			pages: '../target/classes/static'
+			fallback: 'index.html'
 		}),
 		prerender: { entries: [] }
 	},
