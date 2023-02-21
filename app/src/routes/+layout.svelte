@@ -1,216 +1,23 @@
 <script>
 	import '../app.css';
-	import { page } from '$app/stores';
+	import Header from '$lib/Header.svelte';
+	import Footer from '$lib/Footer.svelte';
 
 	import { onMount } from 'svelte';
 	import { pwaInfo } from 'virtual:pwa-info';
-
-	onMount(async () => {
-		if (pwaInfo) {
-			const { registerSW } = await import('virtual:pwa-register');
-			registerSW({
-				immediate: true,
-				onRegistered(r) {
-					// uncomment following code if you want check for updates
-					// r && setInterval(() => {
-					//    console.log('Checking for sw update')
-					//    r.update()
-					// }, 20000 /* 20s for testing purposes */)
-					console.log(`SW Registered: ${r}`);
-				},
-				onRegisterError(error) {
-					console.log('SW registration error', error);
-				}
-			});
-		}
-	});
 
 	let ReloadPrompt;
 	onMount(async () => {
 		pwaInfo && (ReloadPrompt = (await import('$lib/ReloadPrompt.svelte')).default);
 	});
-
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
-
-	let currentPage;
-	$: $page.url.pathname, (currentPage = $page.url.pathname);
-
-	let mobileMenuVisible = false;
-	function toggleMobileMenuVisible() {
-		mobileMenuVisible = !mobileMenuVisible;
-	}
 </script>
 
 <svelte:head>
 	{@html webManifest}
 </svelte:head>
 
-<nav class="bg-gray-800">
-	<div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-		<div class="relative flex h-16 items-center justify-between">
-			<div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
-				<!-- Mobile menu button-->
-				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-					aria-controls="mobile-menu"
-					aria-expanded={mobileMenuVisible}
-					on:click|preventDefault={toggleMobileMenuVisible}
-				>
-					<span class="sr-only">Open main menu</span>
-
-					{#if !mobileMenuVisible}
-						<!--
-                      Icon when menu is closed.
-                      Heroicon name: outline/bars-3
-                      Menu open: "hidden", Menu closed: "block"
-                    -->
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="{mobileMenuVisible ? 'hidden' : 'block'} w-6 h-6"
-							aria-hidden="true"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-							/>
-						</svg>
-					{:else}
-						<!--
-                      Icon when menu is open.
-                      Heroicon name: outline/x-mark
-                      Menu open: "block", Menu closed: "hidden"
-                    -->
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="{mobileMenuVisible ? 'block' : 'hidden'} w-6 h-6"
-							aria-hidden="true"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					{/if}
-				</button>
-			</div>
-			<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-				<div class="flex flex-shrink-0 items-center">
-					<img
-						src="images/tracks-64.webp"
-						alt="Tune Lad"
-						class="block h-8 w-auto lg:hidden"
-                        width="64px"
-                        height="64px"
-					/>
-					<img
-						src="images/tracks-64.webp"
-						alt="Tune Lad"
-						class="hidden h-8 w-auto lg:block"
-                        width="64px"
-                        height="64px"
-					/>
-				</div>
-				<div class="hidden sm:ml-6 sm:block">
-					<div class="flex space-x-4">
-						<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-						{#if currentPage === '/'}
-							<a
-								href="/"
-								class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-								aria-current="page">Home</a
-							>
-						{:else}
-							<a
-								href="/"
-								class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-								>Home</a
-							>
-						{/if}
-						{#if currentPage === '/tracks'}
-							<a
-								href="/tracks"
-								class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-								aria-current="page">Tracks</a
-							>
-						{:else}
-							<a
-								href="/tracks"
-								class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-								>Tracks</a
-							>
-						{/if}
-						{#if currentPage === '/about'}
-							<a
-								href="/about"
-								class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-								aria-current="page">About</a
-							>
-						{:else}
-							<a
-								href="/about"
-								class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-								>About</a
-							>
-						{/if}
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Mobile menu, show/hide based on menu state. -->
-	<div class={mobileMenuVisible ? 'sm:block block' : 'sm:hidden hidden'} id="mobile-menu">
-		<div class="space-y-1 px-2 pt-2 pb-3">
-			<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-			{#if currentPage === '/'}
-				<a
-					href="/"
-					class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-					aria-current="page">Home</a
-				>
-			{:else}
-				<a
-					href="/"
-					class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-					>Home</a
-				>
-			{/if}
-			{#if currentPage === '/tracks'}
-				<a
-					href="/tracks"
-					class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-					aria-current="page">Tracks</a
-				>
-			{:else}
-				<a
-					href="/tracks"
-					class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-					>Tracks</a
-				>
-			{/if}
-			{#if currentPage === '/about'}
-				<a
-					href="/about"
-					class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-					aria-current="page">About</a
-				>
-			{:else}
-				<a
-					href="/about"
-					class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-					>About</a
-				>
-			{/if}
-		</div>
-	</div>
-</nav>
+<Header />
 <main class="flex flex-row">
 	<div class="lg:basis-1/6 md:hidden sm:hidden" />
 	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
@@ -218,6 +25,8 @@
 	</div>
 	<div class="lg:basis-1/6 md:hidden sm:hidden" />
 </main>
+<Footer />
+
 {#if ReloadPrompt}
 	<svelte:component this={ReloadPrompt} />
 {/if}

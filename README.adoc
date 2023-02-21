@@ -48,7 +48,7 @@ image:{uri-repo}/workflows/workflow-build/badge.svg[Build,link="{uri-repo}/actio
 image:https://img.shields.io/badge/License-GPL%20v3-yellow.svg[License,link="{uri-license}"]
 endif::[]
 
-Dummy project used as a playground for things like https://docs.spring.io/spring-modulith/docs/current/reference/html/[Spring Modulith], https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html[WebFlux], https://swagger.io/specification/[OpenAPI], https://svelte.dev/docs[Svelte JS], etc.
+Dummy project used as a playground for things like https://docs.spring.io/spring-modulith/docs/current/reference/html/[Spring Modulith], https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html[WebFlux], https://swagger.io/specification/[OpenAPI], https://kit.svelte.dev/docs/introduction[SvelteKit], https://tailwindcss.com/[Tailwind CSS], etc.
 
 This simple app allows to store an mp3 file with some description and play it via the browser `<audio>` html element.
 
@@ -61,10 +61,9 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Play track from browser (streaming bytes with range support)
 * OpenAPI v3 endpoint
 * Spring boot actuator features (health, info, etc.)
-* mobile friendly
+* Mobile friendly
 * PWA support
-* lighthouse score follow up
-
+* Lighthouse score follow up
 
 == Developing
 

@@ -1,7 +1,7 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
 
-	export let tracks;
+	export let tracks = [];
 
 	// Events dispatched externally
 	export const TRACK_PLAY_BUTTON_CLICKED = 'trackPlayButtonClicked';
@@ -15,7 +15,7 @@
 		<div>No tracks found.</div>
 	{:else}
 		{#each tracks as track}
-			<details class="w-full py-4 border-b border-grey-lighter">
+			<details class="w-full p-4 border-b border-grey-lighter hover:shadow-lg">
 				<summary class="flex items-center w-full  hover:underline">
 					<button
 						id="play-track-{track.id}-btn"
@@ -55,7 +55,7 @@
 					<b>Album : {track.album}</b>
 					<p class="my-2 text-sm">{track.description}</p>
 				</div>
-				<div class="card-footer">
+				<div class="card-footer flex flex-wrap">
 					{#each track.tags as tag}
 						<span
 							class="text-sm font-medium bg-gray-300 rounded-lg mr-2 my-1 px-2 py-1 hover:cursor-pointer"

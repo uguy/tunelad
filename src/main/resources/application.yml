@@ -5,6 +5,10 @@ openapi:
   terms-of-service-url: http://swagger.io/terms/
   title: Spring Boot Reactive REST API test
   version: 1.0.0
+info:
+  app:
+    description: "@project.description@"
+    name: "@project.name@"
 spring:
   application:
     name: Tune Lad
@@ -24,10 +28,6 @@ spring:
 
   liquibase:
     change-log: classpath:config/liquibase/master.xml
-  info:
-    app:
-      description: "@project.description@"
-      name: "@project.name@"
   webflux:
     problemdetails:
       enabled: true
@@ -49,19 +49,26 @@ spring:
 management:
   info:
     build.enabled: true
-    git.enabled: true
+    git:
+      mode: full
+      enabled: true
     java.enabled: true
     defaults.enabled: true
+    os.enabled: true
+    env.enabled: true
   endpoint:
-    info:
-      enabled: true
-    health:
-      show-details: always
+    env.enabled: true
+    info.enabled: true
+    health.show-details: always
   endpoints:
     enabled-by-default: true
     web:
       exposure:
-        include: "health,info"
+        include: "health,info,applicationmodules,metrics"
+  tracing:
+#    sampling.probability: 1.0
+    enabled: true
+
 server:
   compression:
     enabled: true
@@ -69,3 +76,6 @@ server:
     min-response-size: 2KB
   http2:
     enabled: true
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'

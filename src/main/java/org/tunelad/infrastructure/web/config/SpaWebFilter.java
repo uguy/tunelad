@@ -8,7 +8,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
-// Refreshing browser while on url /tracks or about end up with 404 if we don"t redirect to root
+// Refreshing browser while on url /tracks or /about end up with 404 if we don"t redirect to root
 @Slf4j
 @Component
 public class SpaWebFilter implements WebFilter {

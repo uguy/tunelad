@@ -13,8 +13,7 @@ async function send(fetch, { method, path, data, token }) {
 	}
 
 	const res = await fetch(`${base}/${path}`, opts);
-	const json = res.json();
-	return json;
+	return res.json();
 }
 
 export function get(fetch, path, token) {

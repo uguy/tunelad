@@ -2,7 +2,7 @@
 	<title>Tune Lad</title>
 </svelte:head>
 
-<div class="flex flex-col w-full">
+<section class="flex flex-col w-full">
 	<h1 class="ml-auto mr-auto text-3xl font-bold">Welcome to Tune Lad !</h1>
 	<p class="font-medium my-5 ml-auto mr-auto">
 		Start listening to some <a
@@ -15,6 +15,6 @@
 		src="images/celtic-connections.webp"
 		alt="celtic connections concert"
 		width="600px"
-        height="364px"
+		height="364px"
 	/>
-</div>
+</section>

@@ -39,7 +39,6 @@ class EsSearchService implements SearchService, TrackEventHandler {
 //	@Transactional
 //	@TransactionalEventListener
 	@Override
-	@EventListener
 	public Mono<Void> on(NewTrackSaved event) {
 		log.info("New track saved, indexing it: " + event.track());
 		return trackService.findById(event.track().id())
@@ -71,11 +70,10 @@ class EsSearchService implements SearchService, TrackEventHandler {
 					}
 					return trackDocs.save(trackDoc);
 				})
-				.then();
+				.then().onErrorComplete();
 	}
 
 	@Override
-	@EventListener
 	public Mono<Void> on(AllTracksDeleted event) {
 		return trackDocs.deleteAll();
 	}

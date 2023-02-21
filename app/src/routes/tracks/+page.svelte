@@ -1,17 +1,18 @@
 <script>
-	import * as api from '$lib/api.js';
-
 	import TrackList from './component/TrackList.svelte';
 	import Player from './component/Player.svelte';
+
+	import TrackService from './Tracks.js';
 
 	/** @type {import('./$types').PageData} */
 	export let data;
 
-	let playerSrc;
+	const trackService = new TrackService(fetch);
+	let playerSrc = '';
 
 	async function refreshTracks() {
 		const q = document.querySelector('#search-input').value;
-		data.tracks = await api.get(fetch, 'search/tracks?q=' + q);
+		data.tracks = await trackService.findAll(q);
 	}
 </script>
 
@@ -19,7 +20,7 @@
 	<title>Tune Lad - Tracks</title>
 </svelte:head>
 
-<div class="flex flex-col w-full space-y-5">
+<section class="flex flex-col w-full space-y-5">
 	<h1 class="text-3xl leading-2">Tracks</h1>
 	<br />
 	<div class="flex flex-row pY-10">
@@ -28,7 +29,7 @@
 				id="search-input"
 				class="block w-full rounded-md border-gray-300"
 				type="text"
-				placeholder="search for tracks"
+				placeholder="search for tracks ..."
 			/>
 		</div>
 		<div class="flex-none basis-1/6">
@@ -69,4 +70,4 @@
 	<div class="flex flex-row pY-10">
 		<Player src={playerSrc} />
 	</div>
-</div>
+</section>
