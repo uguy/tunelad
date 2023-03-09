@@ -5,7 +5,6 @@ import {
 } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 
-
 // see https://vite-pwa-org.netlify.app/guide/inject-manifest.html
 
 declare let self: ServiceWorkerGlobalScope;

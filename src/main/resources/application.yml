@@ -42,7 +42,7 @@ spring:
             # Enable the content Version Strategy.
             enabled: true
             # Comma-separated list of patterns to apply to the Version Strategy.
-            paths: /**, **/*.js, **/*.css, **/*.png
+            paths: /**, **/*.js,**/*.mjs, **/*.css, **/*.png
       cache:
         cachecontrol:
           max-age: 365d
@@ -66,7 +66,7 @@ management:
       exposure:
         include: "health,info,applicationmodules,metrics"
   tracing:
-#    sampling.probability: 1.0
+    sampling.probability: 1.0
     enabled: true
 
 server:

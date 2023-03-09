@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.0.2</version>
+		<version>3.0.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.tunelad</groupId>
@@ -21,7 +21,7 @@
 		<npm.version>8.19.2</npm.version>
 
 		<!-- Dependencies versions -->
-		<spring-modulith.version>0.3.0</spring-modulith.version>
+		<spring-modulith.version>0.5.0</spring-modulith.version>
 		<springdoc-openapi.version>2.0.2</springdoc-openapi.version>
 		<spring-data-jpa.version>3.0.0</spring-data-jpa.version>
 		<mapstruct.version>1.5.3.Final</mapstruct.version>
@@ -97,8 +97,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.experimental</groupId>
+			<artifactId>spring-modulith-starter-insight</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
+			<artifactId>spring-boot-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
@@ -341,12 +346,6 @@
 					<failOnNoGitDirectory>false</failOnNoGitDirectory>
 					<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
 					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-<!--					<includeOnlyProperties>-->
-<!--						<includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>-->
-<!--						<includeOnlyProperty>^git.commit.id.describe$-->
-<!--						</includeOnlyProperty>-->
-<!--						<includeOnlyProperty>^git.branch$</includeOnlyProperty>-->
-<!--					</includeOnlyProperties>-->
 				</configuration>
 			</plugin>
 
