@@ -1,4 +1,4 @@
-package org.tunelad.track;
+package org.tunelad.track.internal;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
@@ -8,11 +8,11 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Version;
 import lombok.Data;
 import org.hibernate.envers.Audited;
-import org.tunelad.track.spi.TrackFormat;
+import org.tunelad.track.TrackFormat;
 
 @Data
 @Entity
-public class Track {
+public class Track  {
 
 	@Id
 	private String id;

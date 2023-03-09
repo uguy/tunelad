@@ -1,7 +1,7 @@
 <script>
 	import Time from 'svelte-time';
 	// replaced dynamically
-	const buildDate = __DATE__;
+	const buildDate = __DATE__; // eslint-disable-line
 </script>
 
 <footer>

@@ -8,10 +8,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.tunelad.track.spi.NewTrackCommand;
-import org.tunelad.track.spi.TrackDTO;
-import org.tunelad.track.spi.TrackFormat;
-import org.tunelad.track.spi.TrackService;
+import org.tunelad.track.TrackDTO;
+import org.tunelad.track.TrackFormat;
+import org.tunelad.track.TrackService;
+import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.DeleteAllTrackCommand;
+import org.tunelad.track.command.PlayTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -46,7 +48,7 @@ public class TrackController {
 	@DeleteMapping
 	@Operation(summary = "Delete tracks", description = "Delete all tracks")
 	public Mono<Void> clear() {
-		return service.deleteAll();
+		return service.execute(new DeleteAllTrackCommand());
 	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -63,7 +65,7 @@ public class TrackController {
 					dataBuffer.read(bytes); DataBufferUtils.release(dataBuffer);
 					return bytes;
 				}).flatMap(data -> {
-					var command = new NewTrackCommand(title, artist, album, description, data, TrackFormat.forFile(filePart.filename()));
+					var command = new AddTrackCommand(title, artist, album, description, data, TrackFormat.forFile(filePart.filename()));
 					return service.execute(command);
 				});
 	}
@@ -83,7 +85,7 @@ public class TrackController {
 
 	@GetMapping(value = "{id}/play", produces = { "audio/mpeg", MediaType.APPLICATION_OCTET_STREAM_VALUE })
 	public Mono<Resource> play(@PathVariable("id") String id, @RequestHeader("Range") String range) {
-		return service.play(id)
+		return service.execute(new PlayTrackCommand(id))
 				.map(ByteArrayResource::new);
 	}
 

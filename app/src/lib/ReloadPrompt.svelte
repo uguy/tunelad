@@ -2,8 +2,8 @@
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 
 	// replaced dynamically
-	let buildDate = __DATE__;
-	let reloadSW = __RELOAD_SW__;
+	let buildDate = __DATE__; // eslint-disable-line
+	let reloadSW = __RELOAD_SW__; // eslint-disable-line
 
 	const { needRefresh, updateServiceWorker, offlineReady } = useRegisterSW({
 		onRegistered(r) {

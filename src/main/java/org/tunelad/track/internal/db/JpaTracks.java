@@ -3,8 +3,8 @@ package org.tunelad.track.internal.db;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
-import org.tunelad.track.Track;
-import org.tunelad.track.Tracks;
+import org.tunelad.track.internal.Track;
+import org.tunelad.track.internal.Tracks;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

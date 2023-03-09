@@ -60,14 +60,18 @@ management:
     env.enabled: true
     info.enabled: true
     health.show-details: always
+    prometheus.enabled: true
   endpoints:
     enabled-by-default: true
     web:
       exposure:
-        include: "health,info,applicationmodules,metrics"
+        include: "health,info,applicationmodules,metrics,prometheus"
   tracing:
     sampling.probability: 1.0
     enabled: true
+  metrics:
+    tags:
+      application: "@project.artifactId@"
 
 server:
   compression:
@@ -79,3 +83,5 @@ server:
 logging:
   pattern:
     level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
+  level:
+    org.springframework.modulith.observability.ModuleEntryInterceptor: TRACE

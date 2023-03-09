@@ -4,13 +4,13 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.tunelad.infrastructure.NotFoundException;
-import org.tunelad.track.Track;
-import org.tunelad.track.Tracks;
-import org.tunelad.track.spi.AllTracksDeleted;
-import org.tunelad.track.spi.NewTrackCommand;
-import org.tunelad.track.spi.NewTrackSaved;
-import org.tunelad.track.spi.TrackDTO;
-import org.tunelad.track.spi.TrackService;
+import org.tunelad.track.TrackDTO;
+import org.tunelad.track.TrackService;
+import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.DeleteAllTrackCommand;
+import org.tunelad.track.command.PlayTrackCommand;
+import org.tunelad.track.event.AllTracksDeleted;
+import org.tunelad.track.event.NewTrackSaved;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Transactional()
+@Transactional
 @RequiredArgsConstructor
 class DefaultTrackService implements TrackService {
 
@@ -30,7 +30,7 @@ class DefaultTrackService implements TrackService {
 	private final ApplicationEventPublisher events;
 
 	@Override
-	public Mono<Void> execute(NewTrackCommand command) {
+	public Mono<Void> execute(AddTrackCommand command) {
 		var track = new Track();
 		track.setTitle(command.title());
 		track.setArtist(command.artist());
@@ -58,14 +58,14 @@ class DefaultTrackService implements TrackService {
 	}
 
 	@Override
-	public Mono<byte[]> play(String id) {
-		return tracks.findById(id)
-				.switchIfEmpty(Mono.error(new NotFoundException("Not tracks found for id: " + id)))
+	public Mono<byte[]> execute(PlayTrackCommand command) {
+		return tracks.findById(command.trackId())
+				.switchIfEmpty(Mono.error(new NotFoundException("Not tracks found for id: " + command.trackId())))
 				.map(Track::getData);
 	}
 
 	@Override
-	public Mono<Void> deleteAll() {
+	public Mono<Void> execute(DeleteAllTrackCommand command) {
 		return tracks.deleteAll()
 				.and(Mono.fromSupplier(() -> {
 					events.publishEvent(new AllTracksDeleted());

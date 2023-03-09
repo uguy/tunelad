@@ -2,7 +2,7 @@
 	import Time from 'svelte-time';
 
 	// replaced dynamically
-	const frontendBuildDate = __DATE__;
+	const frontendBuildDate = __DATE__; // eslint-disable-line
 
 	/** @type {import('./$types').PageData} */
 	export let data;

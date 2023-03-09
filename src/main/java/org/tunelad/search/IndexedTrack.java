@@ -3,8 +3,9 @@ package org.tunelad.search;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.tunelad.track.spi.TrackFormat;
+import org.tunelad.track.TrackFormat;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -15,8 +16,8 @@ import org.springframework.data.elasticsearch.annotations.MultiField;
 
 @Data
 @Document(indexName = "tracks")
-//@Setting(settingPath = "es/track-settings.json")
-public class TrackDoc {
+@Schema(title = "IndexedTrack", description = "Track searchable info")
+public class IndexedTrack {
 	@Id
 	private String id;
 

@@ -6,26 +6,38 @@ services:
     environment:
       - xpack.security.enabled=false
       - "discovery.type=single-node"
-    networks:
-      - es-net
     ports:
       - 9200:9200
-  kibana:
-    container_name: kb-container
-    image: docker.elastic.co/kibana/kibana:8.1.2
-    environment:
-      - ELASTICSEARCH_HOSTS=http://es-container:9200
-    networks:
-      - es-net
-    depends_on:
-      - elasticsearch
-    ports:
-      - 5601:5601
+    network_mode: 'host' # to test locally running service
 
   zipkin:
      image: openzipkin/zipkin
      ports:
        - 9411:9411
-networks:
-  es-net:
-    driver: bridge
+     network_mode: 'host' # to test locally running service
+
+  prometheus:
+    image: prom/prometheus:v2.42.0
+    volumes:
+      - ./docker/prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
+    # grafana/provisioning/datasources/datasource.yml
+    network_mode: 'host' # to test locally running service
+
+  grafana:
+    image: grafana/grafana:9.4.3
+    volumes:
+      - ./docker/grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - 3000:3000
+    # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
+    # grafana/provisioning/datasources/datasource.yml
+    network_mode: 'host' # to test locally running service

@@ -1,21 +1,15 @@
-package org.tunelad.track.spi;
+package org.tunelad.track.command;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-
-@Schema(title = "Track", description = "Track details")
-public record TrackDTO(
-
-		String id,
-
+import org.tunelad.track.TrackFormat;
+public record AddTrackCommand(
 		@NotBlank(message = "A track needs a title.")
 		@Size(min = 1, max = 80)
 		String title,
 		String artist,
 		String album,
 		String description,
-		TrackFormat format
-) {
+		byte[] data,
+		TrackFormat format) implements TrackCommand {
 }
-

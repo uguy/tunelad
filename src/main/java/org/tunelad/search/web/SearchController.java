@@ -3,7 +3,7 @@ package org.tunelad.search.web;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.tunelad.search.SearchService;
-import org.tunelad.search.TrackDoc;
+import org.tunelad.search.IndexedTrack;
 import reactor.core.publisher.Flux;
 
 import org.springframework.http.MediaType;
@@ -21,7 +21,7 @@ public class SearchController {
 	private final SearchService searchService;
 
 	@GetMapping("/tracks")
-	public Flux<TrackDoc> searchTracks(@RequestParam("q") String q) {
+	public Flux<IndexedTrack> searchTracks(@RequestParam("q") String q) {
 		return searchService.searchTracks(q);
 	}
 }
