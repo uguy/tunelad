@@ -9,6 +9,7 @@ info:
   app:
     description: "@project.description@"
     name: "@project.name@"
+springdoc.enable-kotlin: false
 spring:
   application:
     name: Tune Lad
