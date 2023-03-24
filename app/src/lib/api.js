@@ -13,7 +13,10 @@ async function send(fetch, { method, path, data, token }) {
 	}
 
 	const res = await fetch(`${base}/${path}`, opts);
-	return res.json();
+	if (res.ok) {
+		return res.json();
+	}
+	return [];
 }
 
 export function get(fetch, path, token) {

@@ -2,8 +2,8 @@ package org.tunelad.search.web;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.tunelad.search.SearchService;
 import org.tunelad.search.IndexedTrack;
+import org.tunelad.search.SearchService;
 import reactor.core.publisher.Flux;
 
 import org.springframework.http.MediaType;

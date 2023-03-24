@@ -35,7 +35,7 @@ public class Track  {
 	private String artUrl;
 
 	@Lob
-	@Basic(fetch = FetchType.LAZY)
+//	@Basic(fetch = FetchType.LAZY)
 	private byte[] data;
 
 	private TrackFormat format;

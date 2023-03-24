@@ -1,6 +1,6 @@
 <script>
 	import TrackList from './component/TrackList.svelte';
-	import Player from './component/Player.svelte';
+	import playerSource from '$lib/store/media-source.js';
 
 	import TrackService from './Tracks.js';
 
@@ -8,7 +8,6 @@
 	export let data;
 
 	const trackService = new TrackService(fetch);
-	let playerSrc = '';
 
 	async function refreshTracks() {
 		const q = document.querySelector('#search-input').value;
@@ -22,6 +21,23 @@
 
 <section class="flex flex-col w-full space-y-5">
 	<h1 class="text-3xl leading-2">Tracks</h1>
+
+	<div class="flex flex-row pY-10">
+		<div class="w-full">
+			<a
+				href="/tracks/favourites"
+				class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Favourites</a
+			>
+			<a
+				href="/tracks/playlists"
+				class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Playlists</a
+			>
+			<a
+				href="/tracks/albums"
+				class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Albums</a
+			>
+		</div>
+	</div>
 	<br />
 	<div class="flex flex-row pY-10">
 		<div class="basis-5/6 w-full">
@@ -61,13 +77,11 @@
 
 	<TrackList
 		tracks={data.tracks}
-		on:trackPlayButtonClicked={(event) => (playerSrc = `api/tracks/${event.detail.trackId}/play`)}
+		on:trackPlayButtonClicked={(event) =>
+			($playerSource = `api/tracks/${event.detail.trackId}/play`)}
 		on:trackTagClicked={(event) => {
 			document.querySelector('#search-input').value = event.detail.tag;
 			refreshTracks();
 		}}
 	/>
-	<div class="flex flex-row pY-10">
-		<Player src={playerSrc} />
-	</div>
 </section>

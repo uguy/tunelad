@@ -66,14 +66,14 @@
 				<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
 					<div class="flex flex-shrink-0 items-center">
 						<img
-							src="images/icon-72x72.png"
+							src="/images/icon-72x72.png"
 							alt="Tune Lad"
 							class="block h-8 w-auto lg:hidden"
 							width="64px"
 							height="64px"
 						/>
 						<img
-							src="images/icon-72x72.png"
+							src="/images/icon-72x72.png"
 							alt="Tune Lad"
 							class="hidden h-8 w-auto lg:block"
 							width="64px"

@@ -41,7 +41,7 @@ endif::[]
 :uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
 :uri-license: {uri-rel-file-base}LICENSE
 
-image::./app/static/images/tracks-144.webp[Tune Lad,link="{uri-repo}",width=200px,role=related thumb right]
+image::./app/static/images/icon-144x144.png[Tune Lad,link="{uri-repo}",width=200px,role=related thumb right]
 
 ifdef::status[]
 image:{uri-repo}/workflows/workflow-build/badge.svg[Build,link="{uri-repo}/actions?query=workflow%3Aworkflow-build"]
@@ -145,11 +145,6 @@ ES should be available at http://localhost:9200
     "tagline" : "You Know, for Search"
 }
 ----
-
-
-Kibana UI should also be available at http://localhost:5601/
-
-image::./doc/kibana.png[Kibana]
 
 == Configuration
 
