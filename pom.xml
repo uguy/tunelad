@@ -25,7 +25,7 @@
 
 		<!-- Dependencies versions -->
 		<spring-boot.version>3.0.5</spring-boot.version>
-		<spring-modulith.version>0.5.0</spring-modulith.version>
+		<spring-modulith.version>0.5.1</spring-modulith.version>
 		<springdoc-openapi.version>2.1.0</springdoc-openapi.version>
 		<spring-data-jpa.version>3.0.4</spring-data-jpa.version>
 		<mapstruct.version>1.5.3.Final</mapstruct.version>
