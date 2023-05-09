@@ -16,7 +16,7 @@
 	{:else}
 		{#each tracks as track}
 			<details class="w-full p-4 border-b border-grey-lighter hover:shadow-lg">
-				<summary class="flex items-center w-full  hover:underline">
+				<summary class="flex items-center w-full hover:underline">
 					<button
 						id="play-track-{track.id}-btn"
 						aria-label="play track {track.title} button"
@@ -51,7 +51,7 @@
 						</svg>
 					</button>
 				</summary>
-				<div class="mt-4 leading-normal text-md ">
+				<div class="mt-4 leading-normal text-md">
 					<b>Album : {track.album}</b>
 					<p class="my-2 text-sm">{track.description}</p>
 				</div>

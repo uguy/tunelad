@@ -12,8 +12,8 @@
 	<title>Tune Lad - About</title>
 </svelte:head>
 
-<section class="flex flex-col ">
-	<h1 class="text-3xl font-medium leading-normal ">
+<section class="flex flex-col">
+	<h1 class="text-3xl font-medium leading-normal">
 		{data.info.app.name}
 	</h1>
 	<p>
@@ -54,7 +54,7 @@
 				</h2>
 			</div>
 			<div class="p-6">
-				<h2 class="text-2xl font-medium leading-6 ">
+				<h2 class="text-2xl font-medium leading-6">
 					Database
 					{#if data.health.components.db.status === 'UP'}
 						<svg
@@ -98,7 +98,7 @@
 						{/if}
 					</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6 ">
+				<h2 class="text-2xl font-medium leading-6">
 					Elasticsearch
 					{#if data.health.components.elasticsearch.status === 'UP'}
 						<svg
@@ -142,7 +142,7 @@
 						{/if}
 					</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6 ">
+				<h2 class="text-2xl font-medium leading-6">
 					Disk usage
 					{#if data.health.components.diskSpace.status === 'UP'}
 						<svg
@@ -199,13 +199,13 @@
 				<h2 class="text-3xl font-medium">Runtime</h2>
 			</div>
 			<div class="p-6">
-				<h2 class="text-2xl font-medium leading-6 ">Java</h2>
+				<h2 class="text-2xl font-medium leading-6">Java</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>JVM version : {data.info.java.version}</li>
 					<li>JVM name : {data.info.java.runtime.name}</li>
 					<li>JVM vendor : {data.info.java.vendor.version}</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6 ">OS</h2>
+				<h2 class="text-2xl font-medium leading-6">OS</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>OS name : {data.info.os.name}</li>
 					<li>OS arch : {data.info.os.arch}</li>
@@ -221,7 +221,7 @@
 				<h2 class="text-3xl font-medium">Build</h2>
 			</div>
 			<div class="p-6">
-				<h2 class="text-2xl font-medium leading-6 ">Last update</h2>
+				<h2 class="text-2xl font-medium leading-6">Last update</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>
 						Backend : <Time timestamp={data.info.build.time} format="dddd D MMMM YYYY @ h:mm A " />
@@ -230,13 +230,13 @@
 						Frontend : <Time timestamp={frontendBuildDate} format="dddd D MMMM YYYY @ h:mm A " />
 					</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6 ">Maven coordinates</h2>
+				<h2 class="text-2xl font-medium leading-6">Maven coordinates</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>group : {data.info.build.group}</li>
 					<li>artifact : {data.info.build.artifact}</li>
 					<li>version : {data.info.build.version}</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6 ">Git</h2>
+				<h2 class="text-2xl font-medium leading-6">Git</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>Git repository : {data.info.git.remote.origin.url}</li>
 					<li>Git branch : {data.info.git.branch}</li>
