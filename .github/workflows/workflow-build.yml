@@ -8,15 +8,21 @@ on:
 
 jobs:
 
-  build:    
-    runs-on: ubuntu-latest
+  build:
+    name: Tunelad on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: graalvm/setup-graalvm@v1
         with:
           java-version: 17
-          distribution: temurin
+          distribution: graalvm-community
+          native-image-job-reports: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
 
       - name: Compile and test project
