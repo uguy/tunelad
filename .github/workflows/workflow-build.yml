@@ -8,15 +8,25 @@ on:
 
 jobs:
 
-  build:    
-    runs-on: ubuntu-latest
+  build:
+    name: Tunelad on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
+      - name: Setup docker (missing on MacOS)
+        if: runner.os == 'macos'
+        run: |
+          brew install docker
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: graalvm/setup-graalvm@v1
         with:
           java-version: 17
-          distribution: temurin
+          distribution: graalvm-community
+          native-image-job-reports: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
 
       - name: Compile and test project
