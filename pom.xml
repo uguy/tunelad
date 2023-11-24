@@ -24,7 +24,7 @@
 		<npm.version>8.19.2</npm.version>
 
 		<!-- Dependencies versions -->
-		<spring-boot.version>3.1.5</spring-boot.version>
+		<spring-boot.version>3.2.0</spring-boot.version>
 		<spring-modulith.version>0.6.0</spring-modulith.version>
 		<springdoc-openapi.version>2.2.0</springdoc-openapi.version>
 		<spring-data-jpa.version>3.2.0</spring-data-jpa.version>
