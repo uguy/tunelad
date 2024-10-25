@@ -19,9 +19,9 @@
 		<docker-registry>docker.io</docker-registry>
 
 		<!-- Tools versions-->
-		<java.version>17</java.version>
-		<node.version>v18.12.1</node.version>
-		<npm.version>8.19.2</npm.version>
+		<java.version>21</java.version>
+		<node.version>v20.17.0</node.version>
+		<npm.version>10.8.2</npm.version>
 
 		<!-- Dependencies versions -->
 		<spring-boot.version>3.3.5</spring-boot.version>
@@ -42,9 +42,9 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.springframework.experimental</groupId>
+				<groupId>org.springframework.modulith</groupId>
 				<artifactId>spring-modulith-bom</artifactId>
-				<version>${spring-modulith.version}</version>
+				<version>1.2.4</version>
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
@@ -69,16 +69,16 @@
 
 
 		<dependency>
-			<groupId>org.springframework.experimental</groupId>
+			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-core</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental</groupId>
+			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-jpa</artifactId>
 			<exclusions>
 				<exclusion>
-					<groupId>org.springframework.experimental</groupId>
+					<groupId>org.springframework.modulith</groupId>
 					<artifactId>spring-modulith-moments</artifactId>
 				</exclusion>
 			</exclusions>
@@ -107,7 +107,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.experimental</groupId>
+			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-insight</artifactId>
 			<scope>runtime</scope>
 		</dependency>
@@ -169,7 +169,7 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.experimental</groupId>
+			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -286,7 +286,7 @@
 						${project.basedir}/src/main/resources/config/liquibase/changelog/${maven.build.timestamp}_changelog.xml
 					</diffChangeLogFile>
 					<driver></driver>
-					<!--					<url></url> jdbc:h2:file:./target/tunelad;DB_CLOSE_ON_EXIT=FALSE-->
+					<!-- <url></url> jdbc:h2:file:./target/tunelad;DB_CLOSE_ON_EXIT=FALSE-->
 					<defaultSchemaName></defaultSchemaName>
 					<username>sa</username>
 					<password></password>
