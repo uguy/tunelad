@@ -14,7 +14,7 @@
 		"format": "prettier --plugin=prettier-plugin-svelte --write ."
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.48.0",
+		"@playwright/test": "^1.49.0",
 		"@sveltejs/adapter-auto": "^2.1.1",
 		"@sveltejs/adapter-static": "^2.0.3",
 		"@sveltejs/kit": "^1.30.4",
