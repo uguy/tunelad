@@ -22,7 +22,7 @@
 		"@vite-pwa/sveltekit": "^0.6.6",
 		"autoprefixer": "^10.4.20",
 		"cssnano": "^7.0.6",
-		"eslint": "^9.13.0",
+		"eslint": "^9.27.0",
 		"eslint-config-prettier": "^10.0.2",
 		"eslint-plugin-svelte3": "^4.0.0",
 		"postcss": "^8.4.35",
