@@ -73,7 +73,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 - a java (jdk25 or later)
 - maven (optional if you choose to use https://github.com/takari/maven-wrapper[maven wrapper script])
 - Docker and Docker Compose
-- NodeJS v18.12.1 or later
+- NodeJS v24.11.1 (npm v11.6.2) or later
 
 === Building
 
