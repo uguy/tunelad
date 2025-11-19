@@ -44,7 +44,7 @@ endif::[]
 image::./app/static/images/icon-144x144.png[Tune Lad,link="{uri-repo}",width=200px,role=related thumb right]
 
 ifdef::status[]
-image:{uri-repo}/workflows/workflow-build/badge.svg[Build,link="{uri-repo}/actions?query=workflow%3Aworkflow-build"]
+image:{uri-repo}/workflows/workflow-build/badge.svg[Build,link="{uri-repo}/actions?query=workflow%3Aworkflow-build+branch%3Amain"]
 image:https://img.shields.io/badge/License-GPL%20v3-yellow.svg[License,link="{uri-license}"]
 endif::[]
 
