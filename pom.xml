@@ -20,8 +20,8 @@
 
 		<!-- Tools versions-->
 		<java.version>25</java.version>
-		<node.version>v20.17.0</node.version>
-		<npm.version>10.8.2</npm.version>
+		<node.version>v24.11.1</node.version>
+		<npm.version>11.6.2</npm.version>
 
 		<!-- Dependencies versions -->
 		<spring-boot.version>3.5.7</spring-boot.version>
