@@ -21,7 +21,7 @@
 </svelte:head>
 
 <Header />
-<main class="flex flex-row">
+<main class="relative flex flex-row">
 	<div class="lg:basis-1/6 md:hidden sm:hidden" />
 	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
 		<div class="flex flex-col w-full">
