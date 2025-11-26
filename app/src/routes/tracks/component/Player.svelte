@@ -4,4 +4,4 @@
 	export let autoplay = true;
 </script>
 
-<audio {id} {src} controls preload="none" class="w-full" {autoplay} />
+<audio {id} {src} controls preload="none" class="w-full" {autoplay}></audio>

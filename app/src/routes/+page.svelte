@@ -18,3 +18,7 @@
 		height="364px"
 	/>
 </section>
+
+<style lang="postcss">
+	@reference "tailwindcss";
+</style>

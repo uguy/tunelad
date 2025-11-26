@@ -56,8 +56,11 @@
 					<p class="my-2 text-sm">{track.description}</p>
 				</div>
 				<div class="card-footer flex flex-wrap">
-					{#each track.tags as tag}
+					{#each track.tags as tag, i}
 						<span
+							role="button"
+							aria-pressed="false"
+							tabindex={i}
 							class="text-sm font-medium bg-gray-300 rounded-lg mr-2 my-1 px-2 py-1 hover:cursor-pointer"
 							on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}
 							on:keypress={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
@@ -69,7 +72,9 @@
 	{/if}
 </div>
 
-<style>
+<style lang="postcss">
+	@reference "tailwindcss";
+
 	details {
 		user-select: none;
 	}

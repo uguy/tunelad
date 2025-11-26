@@ -1,18 +1,18 @@
+import devtoolsJson from 'vite-plugin-devtools-json';
+import { defineConfig } from 'vitest/config';
+import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
-/** @type {import('vite').UserConfig} */
-const config = {
+export default defineConfig({
 	define: {
 		__DATE__: `'${new Date()}'`,
 		__RELOAD_SW__: true
 	},
 	plugins: [
-		sveltekit({
-			ssr: false,
-			trailingSlash: 'never',
-			adapterFallback: 'index.html'
-		}),
+		tailwindcss(),
+		sveltekit(),
 		SvelteKitPWA({
 			srcDir: './src',
 			scope: '/',
@@ -84,21 +84,38 @@ const config = {
 				globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
 			},
 			// if you have shared info in svelte config file put in a separate module and use it also here
-			kit: {
-				trailingSlash: 'never',
-				adapterFallback: '/'
-			}
-		})
+			kit: { trailingSlash: 'never', adapterFallback: '/', spa: true }
+		}),
+		devtoolsJson()
 	],
 	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}']
+		expect: { requireAssertions: true },
+		projects: [
+			{
+				extends: './vite.config.ts',
+				test: {
+					name: 'client',
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						instances: [{ browser: 'chromium', headless: true }]
+					},
+					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					exclude: ['src/lib/server/**']
+				}
+			},
+			{
+				extends: './vite.config.ts',
+				test: {
+					name: 'server',
+					environment: 'node',
+					include: ['src/**/*.{test,spec}.{js,ts}'],
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+				}
+			}
+		]
 	},
 	server: {
-		proxy: {
-			'/api': 'http://localhost:8080',
-			'/actuator': 'http://localhost:8080'
-		}
+		proxy: { '/api': 'http://localhost:8080', '/actuator': 'http://localhost:8080' }
 	}
-};
-
-export default config;
+});

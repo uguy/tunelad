@@ -1,7 +1,10 @@
 <script>
-	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
-	let mobileMenuVisible = false;
+	let currentPathName = $derived(page.url.pathname);
+
+	let mobileMenuVisible = $state(false);
 	function toggleMobileMenuVisible() {
 		mobileMenuVisible = !mobileMenuVisible;
 	}
@@ -18,7 +21,7 @@
 						class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
 						aria-controls="mobile-menu"
 						aria-expanded={mobileMenuVisible}
-						on:click|preventDefault={toggleMobileMenuVisible}
+						onclick={toggleMobileMenuVisible}
 					>
 						<span class="sr-only">Open main menu</span>
 
@@ -83,41 +86,41 @@
 					<div class="hidden sm:ml-6 sm:block">
 						<div class="flex space-x-4">
 							<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-							{#if $page.url.pathname === '/'}
+							{#if currentPathName === '/'}
 								<a
-									href="/"
+									href="{resolve('/')}"
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">Home</a
 								>
 							{:else}
 								<a
-									href="/"
+									href="{resolve('/')}"
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>Home</a
 								>
 							{/if}
-							{#if $page.url.pathname === '/tracks'}
+							{#if currentPathName === '/tracks'}
 								<a
-									href="/tracks"
+									href="{resolve('/tracks')}"
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">Tracks</a
 								>
 							{:else}
 								<a
-									href="/tracks"
+									href="{resolve('/tracks')}"
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>Tracks</a
 								>
 							{/if}
-							{#if $page.url.pathname === '/about'}
+							{#if currentPathName === '/about'}
 								<a
-									href="/about"
+									href="{resolve('/about')}"
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">About</a
 								>
 							{:else}
 								<a
-									href="/about"
+									href="{resolve('/about')}"
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>About</a
 								>
@@ -132,41 +135,41 @@
 		<div class={mobileMenuVisible ? 'sm:block block' : 'sm:hidden hidden'} id="mobile-menu">
 			<div class="space-y-1 px-2 pt-2 pb-3">
 				<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-				{#if $page.url.pathname === '/'}
+				{#if currentPathName === '/'}
 					<a
-						href="/"
+						href="{resolve('/')}"
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">Home</a
 					>
 				{:else}
 					<a
-						href="/"
+						href="{resolve('/')}"
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>Home</a
 					>
 				{/if}
-				{#if $page.url.pathname === '/tracks'}
+				{#if currentPathName === '/tracks'}
 					<a
-						href="/tracks"
+						href="{resolve('/tracks')}"
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">Tracks</a
 					>
 				{:else}
 					<a
-						href="/tracks"
+						href="{resolve('/tracks')}"
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>Tracks</a
 					>
 				{/if}
-				{#if $page.url.pathname === '/about'}
+				{#if currentPathName === '/about'}
 					<a
-						href="/about"
+						href="{resolve('/about')}"
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">About</a
 					>
 				{:else}
 					<a
-						href="/about"
+						href="{resolve('/about')}"
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>About</a
 					>
