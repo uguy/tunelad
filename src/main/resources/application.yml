@@ -14,22 +14,9 @@ springdoc.enable-kotlin: false
 spring:
   application:
     name: Tune Lad
-  datasource:
-    driver-class-name: org.h2.Driver
-    password: ''
-    url: jdbc:h2:file:./target/tunelad;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-  jpa:
-    properties:
-      jakarta.persistence.sharedCache.mode: UNSPECIFIED
-    hibernate:
-      ddl-auto: none
-      naming:
-        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-
-  liquibase:
-    change-log: classpath:config/liquibase/master.xml
+  data:
+    mongodb:
+      auto-index-creation: true
   webflux:
     problemdetails:
       enabled: true
@@ -48,6 +35,13 @@ spring:
       cache:
         cachecontrol:
           max-age: 365d
+  mongodb:
+    database: 'tunelad'
+    password: 'tunelad'
+    username: 'tunelad'
+    authentication-database: 'admin'
+    host: 'localhost'
+    port: 27017
 management:
   info:
     build.enabled: true
@@ -59,15 +53,19 @@ management:
     os.enabled: true
     env.enabled: true
   endpoint:
-    env.enabled: true
-    info.enabled: true
     health.show-details: always
-    prometheus.enabled: true
+    env:
+      access: read_only
+    info:
+      access: read_only
+    prometheus:
+      access: read_only
   endpoints:
-    enabled-by-default: true
     web:
       exposure:
         include: "health,info,applicationmodules,metrics,prometheus"
+    access:
+      default: read_only
   tracing:
     sampling.probability: 1.0
     enabled: true

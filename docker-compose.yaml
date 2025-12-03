@@ -1,19 +1,30 @@
 services:
-  elasticsearch:
-    container_name: es-container
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.1
+  mongo:
+    container_name: mongo
+    image: mongo
     environment:
-      - xpack.security.enabled=false
-      - "discovery.type=single-node"
+      MONGO_INITDB_ROOT_USERNAME: 'tunelad'
+      MONGO_INITDB_ROOT_PASSWORD: 'tunelad'
+      MONGO_INITDB_DATABASE: 'tunelad'
     ports:
-      - 9200:9200
-    network_mode: 'host' # to test locally running service
+      - '27017:27017'
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express
+    depends_on:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_URL: "mongodb://mongo:27017"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "tunelad"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "tunelad"
+    ports:
+      - '8081:8081'
 
   zipkin:
      image: openzipkin/zipkin
      ports:
        - 9411:9411
-     network_mode: 'host' # to test locally running service
 
   prometheus:
     image: prom/prometheus:v2.42.0
@@ -25,7 +36,6 @@ services:
       - 9090:9090
     # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
     # grafana/provisioning/datasources/datasource.yml
-    network_mode: 'host' # to test locally running service
 
   grafana:
     image: grafana/grafana:9.4.3
@@ -39,4 +49,3 @@ services:
       - 3000:3000
     # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
     # grafana/provisioning/datasources/datasource.yml
-    network_mode: 'host' # to test locally running service

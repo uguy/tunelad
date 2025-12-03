@@ -1,5 +1,5 @@
 
-package org.tunelad.search.internal;
+package org.tunelad.track.internal;
 
 
 import org.tunelad.track.event.AllTracksDeleted;

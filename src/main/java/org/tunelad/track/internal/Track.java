@@ -1,42 +1,44 @@
 package org.tunelad.track.internal;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Version;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
-import org.hibernate.envers.Audited;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.reactivestreams.Publisher;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.TextIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.tunelad.track.TrackFormat;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
-@Entity
-public class Track  {
+@Document(collection = "tracks")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Track {
 
-	@Id
-	private String id;
+    @Id
+    private String id;
 
-	@Version
-	private int version;
+    @Version
+    private int version;
 
-	@Audited
-	private String title;
+    @TextIndexed
+    private String title;
+    @TextIndexed
+    private String description;
 
-	@Audited
-	private String artist;
+    private Artist artist;
+    private String album;
+    private String artUrl;
 
-	@Audited
-	private String album;
+    @BsonIgnore
+    private Publisher<DataBuffer> data;
 
-	@Audited
-	private String description;
-
-	private String artUrl;
-
-	@Lob
-//	@Basic(fetch = FetchType.LAZY)
-	private byte[] data;
-
-	private TrackFormat format;
+    private TrackFormat format;
+    @Indexed
+    private List<String> tags = new ArrayList<>();
 }
