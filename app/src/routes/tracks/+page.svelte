@@ -66,7 +66,6 @@
 				<input
 					id="search-input"
 					class="block w-full p-3 ps-9 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base shadow-xs placeholder:text-body"
-					required
 					type="search"
 					placeholder="search for tracks ..."
 					on:keydown={(e) => {
