@@ -1,11 +1,11 @@
-<script>
+<script lang="ts">
 	import '../app.css';
 
 	import Header from '$lib/Header.svelte';
 	import Footer from '$lib/Footer.svelte';
 
 	import Player from './tracks/component/Player.svelte';
-	import playerSource from '$lib/store/media-source.js';
+	import playerSource from '$lib/store/media-source.ts';
 
 	import { pwaInfo } from 'virtual:pwa-info';
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';

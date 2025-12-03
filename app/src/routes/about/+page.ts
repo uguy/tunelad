@@ -1,5 +1,6 @@
-/** @type {import('./$types').PageLoad} */
-export async function load({ fetch }) {
+import type { PageLoad } from './$types';
+
+export const load: PageLoad = async ({ fetch }) => {
 	const infoRes = await fetch('/actuator/info');
 	const infoJson = await infoRes.json();
 
@@ -10,4 +11,4 @@ export async function load({ fetch }) {
 		info: infoJson,
 		health: healthJson
 	};
-}
+};

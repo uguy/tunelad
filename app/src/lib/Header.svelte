@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
@@ -88,39 +88,39 @@
 							<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
 							{#if currentPathName === '/'}
 								<a
-									href="{resolve('/')}"
+									href={resolve('/')}
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">Home</a
 								>
 							{:else}
 								<a
-									href="{resolve('/')}"
+									href={resolve('/')}
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>Home</a
 								>
 							{/if}
 							{#if currentPathName === '/tracks'}
 								<a
-									href="{resolve('/tracks')}"
+									href={resolve('/tracks')}
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">Tracks</a
 								>
 							{:else}
 								<a
-									href="{resolve('/tracks')}"
+									href={resolve('/tracks')}
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>Tracks</a
 								>
 							{/if}
 							{#if currentPathName === '/about'}
 								<a
-									href="{resolve('/about')}"
+									href={resolve('/about')}
 									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
 									aria-current="page">About</a
 								>
 							{:else}
 								<a
-									href="{resolve('/about')}"
+									href={resolve('/about')}
 									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
 									>About</a
 								>
@@ -137,39 +137,39 @@
 				<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
 				{#if currentPathName === '/'}
 					<a
-						href="{resolve('/')}"
+						href={resolve('/')}
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">Home</a
 					>
 				{:else}
 					<a
-						href="{resolve('/')}"
+						href={resolve('/')}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>Home</a
 					>
 				{/if}
 				{#if currentPathName === '/tracks'}
 					<a
-						href="{resolve('/tracks')}"
+						href={resolve('/tracks')}
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">Tracks</a
 					>
 				{:else}
 					<a
-						href="{resolve('/tracks')}"
+						href={resolve('/tracks')}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>Tracks</a
 					>
 				{/if}
 				{#if currentPathName === '/about'}
 					<a
-						href="{resolve('/about')}"
+						href={resolve('/about')}
 						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
 						aria-current="page">About</a
 					>
 				{:else}
 					<a
-						href="{resolve('/about')}"
+						href={resolve('/about')}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
 						>About</a
 					>
