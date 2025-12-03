@@ -182,7 +182,10 @@
 				<h2 class="text-2xl font-medium leading-6">Last update</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>
-						Backend : <Time timestamp={data.info.build.time} format="dddd D MMMM YYYY @ h:mm A " />
+						Backend : <Time
+							timestamp={data.info.build.time || ''}
+							format="dddd D MMMM YYYY @ h:mm A "
+						/>
 					</li>
 					<li>
 						Frontend : <Time timestamp={frontendBuildDate} format="dddd D MMMM YYYY @ h:mm A " />

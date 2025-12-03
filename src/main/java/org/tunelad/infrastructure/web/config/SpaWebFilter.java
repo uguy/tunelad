@@ -8,35 +8,23 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import java.util.List;
+
 // Refreshing browser while on url /tracks or /about end up with 404 if we don"t redirect to root
 @Slf4j
 @Component
 public class SpaWebFilter implements WebFilter {
-	@Override
+
+    private static final List<String> UI_PATH_PREFIXES =  List.of("/tracks", "/about");
+
+    @Override
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		var path = exchange.getRequest().getURI().getPath();
-		if (shouldRedirectToRoot(path)) {
-			log.info("Redirect to root from path: {}", path);
-			return chain.filter(exchange.mutate().request(exchange.getRequest().mutate().path("/").build()).build());
-		}
+        // Redirect requests of SPA internal navication to root
+        if (UI_PATH_PREFIXES.stream().anyMatch(path::equalsIgnoreCase)) {
+            log.debug("Redirect to root from path: {}", path);
+            return chain.filter(exchange.mutate().request(exchange.getRequest().mutate().path("/").build()).build());
+        }
 		return chain.filter(exchange);
-	}
-
-	boolean shouldRedirectToRoot(String path) {
-		return isNotRoot(path) && isNotStaticResourceCall(path) && isNotApiCall(path);
-	}
-
-	private boolean isNotRoot(String path) {
-		return !path.equals("/");
-	}
-
-	boolean isNotStaticResourceCall(String path) {
-		return !path.contains("_app") && !path.contains("images")
-				&& !path.contains(".json") && !path.contains(".js") && !path.contains(".css") && !path.contains("html") && !path.contains(".txt")
-				&& !path.contains(".png") && !path.contains(".webp") && !path.contains(".webmanifest");
-	}
-
-	boolean isNotApiCall(String path) {
-		return !path.contains("/api") && !path.contains("/actuator");
 	}
 }
