@@ -85,7 +85,7 @@ This is a standard maven project. To build the application as fat jar, simply ex
 ----
 git clone {uri-repo}.git
 cd {project-artifact-id}/
-mvn package
+./mvnw package
 ----
 
 The build should produce under the `target/` folder (and in your local maven repository) a jar archive named `{project-artifact-id}-{project-version}.jar`
@@ -115,70 +115,31 @@ npm run format
 
 === Prerequisite
 
-The application depends on Elasticsearch (ES). You can start one by running docker compose from the root folder.
+The application depends on MongoDB. You can start an instance by running docker compose from the root folder.
 
 [source,bash,subs="attributes"]
 ----
 docker compose up -d
 ----
 
-ES should be available at http://localhost:9200
-
-.GET http://localhost:9200 sample output
-[source,json,subs="attributes"]
-----
-{
-    "name" : "641f2b1d9694",
-    "cluster_name" : "docker-cluster",
-    "cluster_uuid" : "S2nCHRc7Smi4ZR-ZzOiIlA",
-    "version" : {
-        "number" : "8.5.3",
-        "build_flavor" : "default",
-        "build_type" : "docker",
-        "build_hash" : "4ed5ee9afac63de92ec98f404ccbed7d3ba9584e",
-        "build_date" : "2022-12-05T18:22:22.226119656Z",
-        "build_snapshot" : false,
-        "lucene_version" : "9.4.2",
-        "minimum_wire_compatibility_version" : "7.17.0",
-        "minimum_index_compatibility_version" : "7.0.0"
-    },
-    "tagline" : "You Know, for Search"
-}
-----
+Mongo Express (a MongoDB web UI) should be available at http://localhost:8081
 
 == Configuration
 
-=== H2 database
+=== MongoDB database
 
-For simplicity, we use a simple file based H2 database. Data file are store under `target` folder.
-
-If you start the application using `-Dspring.profiles.active=h2-console`, H2 web console is available at http://localhost:8082.
-
-If you want to use another SGBD, add the maven dependency to the corresponding driver and update configuration in `application.yml` file
+MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection names `tracks` but audio files are stored in MongoDB GridFS system. The application also uses in a simple way MongoDB fulltext search capabilities when looking for tracks.
 
 [source, yaml]
 ----
 spring:
-  datasource:
-    driver-class-name: org.h2.Driver
-    password: ''
-    url: jdbc:h2:file:./target/tunelad;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-----
-
-=== Elasticsearch
-
-ES connection use spring-boot default configuration ( localhost:9200 ). If you want to customize it, please refer to the https://docs.spring.io/spring-boot/docs/current/reference/html/data.html#data.nosql.elasticsearch.connecting-using-rest[spring-boot documentation] and update `application.yml` file
-
-.ES connection sample configuration
-[source,yaml,subs="attributes"]
-----
-spring:
-  elasticsearch:
-    uris: "localhost:9200"
-    socket-timeout: "10s"
-    username: "user"
-    password: "secret"
+    mongodb:
+    database: 'tunelad'
+    password: 'tunelad'
+    username: 'tunelad'
+    authentication-database: 'admin'
+    host: 'localhost'
+    port: 27017
 ----
 
 == UI
