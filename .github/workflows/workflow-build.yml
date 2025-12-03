@@ -4,10 +4,12 @@ on:
   push:
     branches: [ main ]
     paths:
+      - '**/*'
       - '!**/*.adoc'
   pull_request:
     branches: [ main ]
     paths:
+      - '**/*'
       - '!**/*.adoc'
 
 concurrency:
