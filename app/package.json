@@ -27,7 +27,7 @@
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/node": "^24",
 		"@vite-pwa/sveltekit": "^1.1.0",
-		"@vitest/browser-playwright": "^4.0.10",
+		"@vitest/browser-playwright": "^4.0.15",
 		"autoprefixer": "^10.4.20",
 		"cssnano": "^7.0.6",
 		"eslint": "^9.39.1",
