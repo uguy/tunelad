@@ -152,12 +152,15 @@ image::./doc/track-list.png[Track list]
 
 You can load some sample by running import method on test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
 
-=== Swagger UI
+=== Scalar UI and OpenAPI
 
-Swagger UI is available at http://localhost:8080/swagger-ui.html
+Scalar UI is available at http://localhost:8080/scalar
 
-image::./doc/swagger-ui.png[Swagger UI]
+image::./doc/scalar.png[Scalar UI]
 
+OpenAPI spec is available at http://localost:8080/v3/api-docs
+
+image::./doc/api-docs.png[OpenAPI]
 
 == Getting Help
 
