@@ -1,9 +1,3 @@
-<style>
-.stat-panel {
-	color: white;
-}
-</style>
-
 <script lang=" ts">
 	import Time from 'svelte-time';
 
@@ -159,7 +153,7 @@
 		<div
 			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
 		>
-			<div class=" w-full text-center p-4 bg-zinc-200  rounded-t-lg">
+			<div class=" w-full text-center p-4 bg-zinc-200 rounded-t-lg">
 				<h2 class="text-3xl font-medium">Runtime</h2>
 			</div>
 			<div class="stat-panel p-6">
@@ -213,3 +207,9 @@
 		</div>
 	</div>
 </section>
+
+<style>
+	.stat-panel {
+		color: white;
+	}
+</style>
