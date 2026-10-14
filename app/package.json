@@ -43,7 +43,7 @@
 		"svelte-time": "^2.0.2",
 		"tailwindcss": "^4.1.18",
 		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.49.0",
+		"typescript-eslint": "^8.71.1",
 		"vite": "^7.3.5",
 		"vite-plugin-devtools-json": "^1.0.0",
 		"vitest": "^4.1.11",
