@@ -1,4 +1,10 @@
-<script lang="ts">
+<style>
+.stat-panel {
+	color: white;
+}
+</style>
+
+<script lang=" ts">
 	import Time from 'svelte-time';
 
 	// replaced dynamically
@@ -23,7 +29,7 @@
 		<div
 			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
 		>
-			<div class=" w-full text-center p-4 bg-zinc-200">
+			<div class="w-full text-center p-4 bg-zinc-200 rounded-t-lg">
 				<h2 class="text-3xl font-medium">
 					Health
 					{#if data.health.status === 'UP'}
@@ -53,7 +59,7 @@
 					{/if}
 				</h2>
 			</div>
-			<div class="p-6">
+			<div class="stat-panel p-6">
 				<h2 class="text-2xl font-medium leading-6">
 					Database
 					{#if data.health.components.mongo.status === 'UP'}
@@ -153,10 +159,10 @@
 		<div
 			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
 		>
-			<div class=" w-full text-center p-4 bg-zinc-200">
+			<div class=" w-full text-center p-4 bg-zinc-200  rounded-t-lg">
 				<h2 class="text-3xl font-medium">Runtime</h2>
 			</div>
-			<div class="p-6">
+			<div class="stat-panel p-6">
 				<h2 class="text-2xl font-medium leading-6">Java</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>JVM version : {data.info.java.version}</li>
@@ -175,10 +181,10 @@
 		<div
 			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
 		>
-			<div class=" w-full text-center p-4 bg-zinc-200">
+			<div class=" w-full text-center p-4 bg-zinc-200 rounded-t-lg">
 				<h2 class="text-3xl font-medium">Build</h2>
 			</div>
-			<div class="p-6">
+			<div class="stat-panel p-6">
 				<h2 class="text-2xl font-medium leading-6">Last update</h2>
 				<ul class="my-2 list-disc list-inside">
 					<li>
