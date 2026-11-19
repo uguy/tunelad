@@ -1,7 +1,6 @@
 package org.tunelad.track;
 
 import org.tunelad.track.command.AddTrackCommand;
-import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,8 +14,4 @@ public interface TrackService {
 
     /** The audio of a track; errors with {@code NotFoundException} when the track or its audio is missing. */
     Mono<TrackMedia> execute(PlayTrackCommand command);
-
-    Mono<Void> execute(DeleteAllTrackCommand command);
-
-    Flux<TrackDTO> searchTracks(String q);
 }

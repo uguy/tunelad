@@ -1,7 +1,7 @@
 # track Specification
 
 ## Purpose
-Manage the track library through the REST API: upload a track with its audio file and metadata, browse and fetch tracks, play their audio (whole or by byte range), and clear the library; and let listeners in the browser player start a track at a given time from a link, and share such a link.
+Manage the track library through the REST API: upload a track with its audio file and metadata, browse and fetch tracks, and play their audio (whole or by byte range); and let listeners in the browser player start a track at a given time from a link, and share such a link.
 
 ## Requirements
 
@@ -170,13 +170,3 @@ While a track is loaded in the player, the UI SHALL offer a control that copies 
 #### Scenario: No track loaded
 - **WHEN** no track has been loaded in the player
 - **THEN** the "copy link at current time" control is not offered
-
-### Requirement: Delete all tracks
-The system SHALL delete every track and its audio on `DELETE /api/tracks` and respond with a success status.
-
-#### Scenario: Clear a populated library
-- **GIVEN** tracks have been uploaded
-- **WHEN** a client requests `DELETE /api/tracks`
-- **THEN** the response has a success status
-- **AND** listing tracks returns an empty JSON array
-- **AND** getting or playing any previously uploaded track responds 404 Not Found

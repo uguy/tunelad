@@ -8,7 +8,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.tunelad.track.TrackFormat;
 
@@ -26,9 +25,7 @@ public class Track {
     @Version
     private int version;
 
-    @TextIndexed
     private String title;
-    @TextIndexed
     private String description;
 
     private Artist artist;

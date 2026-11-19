@@ -24,7 +24,6 @@ import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
-import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,23 +39,11 @@ public class TrackController {
     private static final MediaType AUDIO_MPEG = MediaType.parseMediaType("audio/mpeg");
 
     private final TrackService service;
-    private final TrackService trackService;
 
     @GetMapping
     @Operation(summary = "Find tracks", description = "Returns a list of tracks")
     public Flux<TrackDTO> list() {
         return service.findAll();
-    }
-
-    @GetMapping("/search")
-    public Flux<TrackDTO> searchTracks(@RequestParam("q") String q) {
-        return trackService.searchTracks(q);
-    }
-
-    @DeleteMapping
-    @Operation(summary = "Delete tracks", description = "Delete all tracks")
-    public Mono<Void> clear() {
-        return service.execute(new DeleteAllTrackCommand());
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

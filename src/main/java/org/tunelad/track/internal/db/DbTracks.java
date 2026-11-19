@@ -11,8 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.TextCriteria;
-import org.springframework.data.mongodb.core.query.TextQuery;
 import org.springframework.data.mongodb.gridfs.ReactiveGridFsOperations;
 import org.springframework.stereotype.Component;
 import org.tunelad.track.TrackMedia;
@@ -69,22 +67,9 @@ class DbTracks implements Tracks {
     }
 
     @Override
-    public Mono<Void> deleteAll() {
-        return mongoTrackRepository.deleteAll()
-                .then(gridFsOperations.delete(Query.query(Criteria.where("filename").exists(true))));
-    }
-
-    @Override
     public Mono<TrackMedia> readMedia(String id) {
         return gridFsOperations.findOne(Query.query(Criteria.where("filename").is(id)))
                 .map(file -> new GridFsTrackMedia(file.getObjectId(), file.getLength(), file.getChunkSize()));
-    }
-
-    @Override
-    public Flux<Track> searchTracks(String q) {
-        if (q.isBlank()) return mongoTrackRepository.findAll();
-        TextQuery query = TextQuery.queryText(TextCriteria.forDefaultLanguage().caseSensitive(false).matching(q)).sortByScore();
-        return mongoOperations.find(query, Track.class);
     }
 
     /**

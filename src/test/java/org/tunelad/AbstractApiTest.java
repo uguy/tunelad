@@ -1,16 +1,20 @@
 package org.tunelad;
 
+import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.tunelad.track.TrackDTO;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
@@ -18,7 +22,7 @@ import java.util.Map;
 
 /**
  * Base for black-box REST API tests: the full application on a random port, backed by a
- * Testcontainers MongoDB, with the track library cleared before each test.
+ * Testcontainers MongoDB, emptied before each test.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestContainerDefinitions.class)
@@ -32,15 +36,24 @@ public abstract class AbstractApiTest {
 
     protected WebTestClient client;
 
+    @Autowired
+    ReactiveMongoTemplate mongo;
+
     @BeforeEach
-    void clearLibrary() {
+    void emptyDatabase() {
         client = WebTestClient.bindToServer()
                 .baseUrl("http://localhost:" + port)
                 .responseTimeout(Duration.ofSeconds(30))
                 // play responses carry whole mp3 fixtures (~3 MB), above the 256 KB default
                 .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
                 .build();
-        client.delete().uri("/api/tracks").exchange().expectStatus().is2xxSuccessful();
+        // Deletes the documents of every collection, whichever module owns it, but keeps the collections
+        // and their indexes: those are only created at startup, and search relies on its text index.
+        mongo.getCollectionNames()
+                .filter(name -> !name.startsWith("system."))
+                .concatMap(name -> mongo.getCollection(name).flatMap(c -> Mono.from(c.deleteMany(new Document()))))
+                .then()
+                .block(Duration.ofSeconds(30));
     }
 
     /** Uploads a track; a null value omits that part, and a null fixture omits the file part. */

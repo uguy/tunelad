@@ -297,20 +297,14 @@ class TrackApiTest extends AbstractApiTest {
         return new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray();
     }
 
-    // --- Requirement: Delete all tracks -------------------------------------------------------
+    // --- Removed requirement: Delete all tracks -----------------------------------------------
 
     @Test
-    void clear_a_populated_library() {
+    void deleting_all_tracks_is_not_allowed() {
         uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
-        uploadOk("Mossy Banks", "Two reels", MOSSY_BANKS_MP3);
-        var ids = listTracks().stream().map(TrackDTO::id).toList();
 
-        client.delete().uri("/api/tracks").exchange().expectStatus().is2xxSuccessful();
+        client.delete().uri("/api/tracks").exchange().expectStatus().isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 
-        assertThat(listTracks()).isEmpty();
-        for (var id : ids) {
-            client.get().uri("/api/tracks/{id}", id).exchange().expectStatus().isNotFound();
-            play(id).expectStatus().isNotFound();
-        }
+        assertThat(listTracks()).extracting(TrackDTO::title).containsExactly("Knees Up");
     }
 }

@@ -36,6 +36,9 @@ spring:
         cachecontrol:
           max-age: 365d
   mongodb:
+    # The Modulith Event Publication Registry stores publication ids as UUIDs
+    representation:
+      uuid: standard
     database: 'tunelad'
     password: 'tunelad'
     username: 'tunelad'

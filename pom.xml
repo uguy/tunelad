@@ -95,6 +95,11 @@
 			<artifactId>spring-modulith-starter-core</artifactId>
 		</dependency>
 		<dependency>
+			<!-- Event Publication Registry persisted in MongoDB -->
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-starter-mongodb</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.jmolecules.integrations</groupId>
 			<artifactId>jmolecules-starter-ddd</artifactId>
 		</dependency>
@@ -102,6 +107,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
+		</dependency>
+		<dependency>
+			<!-- Blocking driver: the Modulith Event Publication Registry stores publications through MongoTemplate -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
 
 		<dependency>
@@ -157,6 +167,11 @@
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
