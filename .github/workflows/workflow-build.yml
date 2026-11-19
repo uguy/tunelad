@@ -6,11 +6,10 @@ on:
     paths:
       - '**/*'
       - '!**/*.adoc'
+  # No paths filter on PRs: `build` is a required check, and a skipped
+  # workflow would leave docs-only PRs waiting for it forever.
   pull_request:
     branches: [ main ]
-    paths:
-      - '**/*'
-      - '!**/*.adoc'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
