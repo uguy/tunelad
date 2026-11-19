@@ -2,7 +2,7 @@
 	import Time from 'svelte-time';
 
 	// replaced dynamically
-	const frontendBuildDate = __DATE__; // eslint-disable-line
+	const frontendBuildDate = __DATE__;
 
 	/** @type {import('./$types').PageData} */
 	export let data;
@@ -91,7 +91,7 @@
 				{#if data.health.components.mongo.status === 'UP'}
 					DB Names :
 					<ul class="my-2 list-disc list-inside">
-						{#each data.health.components.mongo.details.databases as db}
+						{#each data.health.components.mongo.details.databases as db (db)}
 							<li>{db}</li>
 						{/each}
 					</ul>

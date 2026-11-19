@@ -15,7 +15,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 // clean old assets
 cleanupOutdatedCaches();
 
-let allowlist = [/^\/$/];
+const allowlist = [/^\/$/];
 // to allow work offline
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/'), { allowlist }));
 

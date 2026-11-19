@@ -8,10 +8,12 @@
 	import playerSource from '#lib/store/media-source.js';
 
 	import { pwaInfo } from 'virtual:pwa-info';
-	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
+	const webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 </script>
 
 <svelte:head>
+	<!-- trusted: manifest link tag generated at build time by vite-plugin-pwa -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html webManifest}
 </svelte:head>
 
