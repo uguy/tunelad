@@ -69,8 +69,11 @@ _None._
     search and delete-all.
   - `DeleteAllTrackCommand`, `AllTracksDeleted` and their handlers are deleted.
   - A new configuration bean defines a `ReactiveMongoTransactionManager`.
-- **Dependencies**: adds `spring-modulith-events-mongodb` (or the matching Modulith starter).
-  The tests may need `spring-modulith-starter-test` for the `Scenario` API.
+- **Dependencies**:
+  - adds `spring-modulith-starter-mongodb` (the Mongo Event Publication Registry);
+  - adds `spring-boot-starter-data-mongodb`, the blocking driver that the registry is built on
+    (found during the spike);
+  - adds `spring-modulith-starter-test` (test scope) for the `Scenario` API.
 - **Infrastructure**: MongoDB transactions require a replica set. Testcontainers' `MongoDBContainer`
   already runs one. The local Mongo setup must switch to a single-node replica set.
 - **Data**: a new search collection plus the registry's event publication collection. Existing

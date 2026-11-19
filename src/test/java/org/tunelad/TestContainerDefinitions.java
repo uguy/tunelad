@@ -14,7 +14,9 @@ public class TestContainerDefinitions {
     @Bean
     @ServiceConnection
     public MongoDBContainer mongoContainer() {
+        // A replica set, because the application uses MongoDB transactions
         return new MongoDBContainer("mongo:7.0")
+                .withReplicaSet()
                 .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
     }
 }

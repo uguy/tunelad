@@ -16,9 +16,10 @@ See proposal.md for the why. The current state that shapes the design:
 - No transaction manager bean exists. Spring Boot does not configure one for MongoDB, so the
   `@Transactional` on `DefaultTrackService` does nothing today. That probably explains the comment
   in `DefaultTrackEventHandler` about transactional listeners not firing.
-- MongoDB transactions need a replica set. Testcontainers' `MongoDBContainer` starts a
-  single-node replica set. The `mongo` service in `docker-compose.yaml` is a standalone server
-  with root authentication, so it does not support transactions.
+- MongoDB transactions need a replica set. The `mongo` service in `docker-compose.yaml` is a
+  standalone server with root authentication, so it does not support transactions. Testcontainers
+  2.x `MongoDBContainer` does not start a replica set by default either; it needs `withReplicaSet()`
+  (found during the spike).
 - `AbstractApiTest` deletes all tracks through `DELETE /api/tracks` before every test, then tests
   upload and query straight away.
 - The frontend calls `tracks/search?q=` with plain `fetch` and untyped JSON (no generated OpenAPI
@@ -95,6 +96,38 @@ test against Testcontainers Mongo:
 
 The answers are added to this document before the next task group starts.
 
+**Spike outcome: option 3 applies.** Each answer is asserted in `ReactiveTransactionalEventsTest`
+(infrastructure test package) and confirmed by reading the Spring Modulith 2.1 sources:
+
+1. **Yes.** An event published through `TransactionalEventPublisher` inside a
+   `ReactiveMongoTransactionManager` transaction reaches the `@ApplicationModuleListener` only after
+   the commit. On rollback the listener is never called, and the document written in the
+   transaction is gone.
+2. **Blocking, on the publishing thread.** `PersistentApplicationEventMulticaster.multicastEvent`
+   stores the publication synchronously (`MongoDbEventPublicationRepository.create` →
+   `MongoTemplate.save`) before invoking listeners. Published straight from the reactive chain,
+   this ran on `multiThreadIoEventLoopGroup-*`, an event-loop thread of the reactive Mongo driver.
+   With D4 it runs on `boundedElastic-*`, which the test asserts.
+3. **No, not atomic.** The repository is `@Transactional` with the blocking `MongoTransactionManager`,
+   in its own session. A rolled-back transaction leaves a publication in status `PUBLISHED` with no
+   completion date. See Risks.
+4. **Yes.** Modulith enables `@Async` itself. The listener ran on `task-1`, from Boot's
+   `applicationTaskExecutor`. A committed publication is marked `COMPLETED` once the listener
+   returns (completion mode `UPDATE`, the default).
+
+**What the registry needed, beyond the plan:**
+
+- **The blocking Mongo driver.** `spring-boot-starter-data-mongodb` provides the `MongoTemplate`
+  and `MongoDatabaseFactory` that the registry uses. The app now has both a reactive and a blocking
+  Mongo client, configured from the same `spring.mongodb.*` properties.
+- **A blocking `MongoTransactionManager`, as the default (`@Primary`).** The registry and the
+  `@Transactional(REQUIRES_NEW)` of `@ApplicationModuleListener` both use unqualified, blocking
+  `@Transactional`. The reactive manager is therefore a named bean, and reactive services select it
+  with `@ReactiveTransactional` (D3).
+- **`spring.mongodb.representation.uuid: standard`.** Publication ids are UUIDs, which the driver
+  refuses to encode without a UUID representation.
+- **`withReplicaSet()` on the Testcontainers `MongoDBContainer`.**
+
 **Alternative considered:** commit straight to option 3 without a spike. Rejected, because (1) has
 already failed once in this codebase (the comment in `DefaultTrackEventHandler`), and (2) could
 break the "stay reactive" rule.
@@ -106,7 +139,8 @@ break the "stay reactive" rule.
 returns a `Mono<Void>` and publishes the event with the reactive transaction attached. That is what
 `@TransactionalEventListener`, and therefore `@ApplicationModuleListener`, needs in order to wait
 until the commit. The publish becomes part of the reactive chain:
-`save → saveMedia → publish(NewTrackSaved)`.
+`save → saveMedia → publish(NewTrackSaved)`. It goes through `TransactionalEvents` in the
+`infrastructure` base package, which wraps `TransactionalEventPublisher` and applies D4.
 
 **Alternative considered:** keep `ApplicationEventPublisher` inside a `flatMap`. It cannot see the
 reactive transaction, which is held in the Reactor context rather than a thread-local, so
@@ -114,19 +148,30 @@ after-commit listeners never fire.
 
 ### D3. Transaction manager lives in `infrastructure`
 
-A `ReactiveMongoTransactionManager` bean is added to a configuration class in the `infrastructure`
-module, which `track` already depends on. With it, the existing `@Transactional` annotations on
-`DefaultTrackService` take effect. GridFS writes are not covered by it. See Risks.
+`MongoTransactionConfig` (`infrastructure.db`, internal) defines two transaction managers:
+
+- a `ReactiveMongoTransactionManager`, named `reactiveTransactionManager`;
+- a blocking `MongoTransactionManager`, marked `@Primary` (see the D1 outcome for why).
+
+Reactive services select the reactive manager with `@ReactiveTransactional`, a meta-annotation over
+`@Transactional(transactionManager = "reactiveTransactionManager")` in the `infrastructure` base
+package, which `track` already depends on. `DefaultTrackService` replaces its `@Transactional` with
+it, so its transactions now take effect.
+
+The annotation and `TransactionalEvents` both sit in the base package because Modulith exposes only
+that package of `infrastructure`. A reference to a class in `infrastructure.db` would break the
+module boundary. GridFS writes are not covered by the transaction. See Risks.
 
 ### D4. Keep registry writes off the event loop
 
-If the spike shows that the Mongo registry stores publications through the blocking
-`MongoTemplate` when the event is published, the publish step is moved to
-`Schedulers.boundedElastic()`. For example, `publishOn(boundedElastic)` goes right before the
-publish, or the publish is wrapped in `Mono.fromRunnable(...).subscribeOn(boundedElastic())`,
-whichever the spike shows keeps the transaction context. This blocking call is named here on
-purpose. It is the only blocking call in the request path, and it runs on a worker pool meant for
-blocking work, not on a Netty thread.
+The spike confirmed that the Mongo registry stores publications through the blocking
+`MongoTemplate` when the event is published. `TransactionalEvents.publish(event)` therefore returns
+`Mono.defer(() -> publisher.publishEvent(event)).subscribeOn(Schedulers.boundedElastic())`.
+`subscribeOn` keeps the reactive transaction, which lives in the Reactor context and not on the
+thread: the after-commit delivery test passes through it.
+
+This blocking call is named here on purpose. It is the only blocking call in the request path, and
+it runs on a worker pool meant for blocking work, never on an event-loop thread.
 
 ### D5. Read model: a separate collection with its own text index
 
@@ -210,11 +255,16 @@ transactional publisher, D3 and D4 are dropped. The reason is recorded in this d
   collection while an async listener from the previous test might still be running. → Each test
   awaits the projection state it checks. A late write from a previous test can only add a document
   for a track that test uploaded, and tests assert on their own titles.
-- **[Registry write may not be atomic with the track write]** The registry may store publications
-  through the blocking driver and the synchronous transaction infrastructure, outside the reactive
-  transaction (spike question 3). A rolled-back upload could then leave an incomplete publication
-  behind. Resubmitting it would index a track that does not exist. → Leave automatic resubmission
-  on restart turned off (the Modulith default) and record what the spike finds.
+- **[Registry write is not atomic with the track write]** (confirmed by the spike, D1 question 3)
+  The registry stores publications through the blocking driver, in its own blocking transaction. A
+  rolled-back upload leaves an incomplete publication behind. Resubmitting it would index a track
+  that does not exist. → Automatic resubmission on restart stays off, which is the Modulith default
+  (`spring.modulith.events.republish-outstanding-events-on-restart`). Resubmitting by hand would
+  need to check that the track exists first; that is out of scope.
+- **[Two Mongo clients]** The registry needs the blocking driver, so the app runs a blocking and a
+  reactive `MongoClient` side by side, each with its own connection pool. → Acceptable for a
+  playground. A reactive registry would remove the blocking client, but Spring Modulith does not
+  offer one.
 - **[GridFS is outside the transaction]** `ReactiveGridFsOperations` writes are not part of the
   Mongo transaction. A failure after the audio is stored can leave orphaned audio chunks. This is
   already the case today; the change does not make it worse.
@@ -233,8 +283,8 @@ transactional publisher, D3 and D4 are dropped. The reason is recorded in this d
 1. Run `docker compose down -v`, then bring the stack up again with the replica-set
    configuration. This wipes local tracks and audio, and with them the old text index on `tracks`.
    Without the wipe, Mongo would keep that index even after `@TextIndexed` is removed.
-2. Start the app. The read-model collection, its text index and the registry's collection are
-   created on first use (`auto-index-creation: true`).
+2. Start the app. The read-model collection and its text index, and the registry's
+   `event_publication` collection, are created on first use (`auto-index-creation: true`).
 3. Upload tracks again (for example with the disabled `ImporterTest`).
 
 To clear a local library later, now that `DELETE /api/tracks` is gone, wipe the data again with
@@ -245,7 +295,5 @@ publication collection are left over but harmless.
 
 ## Open Questions
 
-- The exact collection name the Modulith Mongo registry uses for publications, and whether it can
-  be renamed. It is cosmetic and gets settled during the spike.
 - Whether the Modulith actuator endpoint shows incomplete publications usefully, or whether a log
   line is enough. Cosmetic.
