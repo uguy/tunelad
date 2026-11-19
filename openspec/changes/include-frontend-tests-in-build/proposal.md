@@ -22,7 +22,7 @@ needs to gate merges.
   building again. `npm run test:e2e` run on its own still builds first.
 - The usual Maven flags skip frontend tests: `-DskipTests` skips both suites and
   `-DskipITs` skips e2e only. A failing frontend test fails the build.
-- Fix the stale index-page e2e test so the suite passes.
+- Fix the stale index-page e2e test (renamed to `index.test.js`: the old name never matched Playwright's `testMatch`) so it runs and passes.
 - Playwright uses CI-friendly settings when `CI` is set: `forbidOnly`, one retry, and an HTML
   report kept in `app/playwright-report` that the CI workflow uploads when the build fails.
 

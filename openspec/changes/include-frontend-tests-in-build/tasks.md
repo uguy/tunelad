@@ -6,10 +6,10 @@
 
 ## 2. Make the e2e suite pass and CI-ready (commit: `test(ui): fix stale index e2e test and add ci playwright settings`)
 
-- [ ] 2.1 Update `app/e2e/test.js` to assert the h1 "Welcome to Tune Lad !" with a web-first `toHaveText` assertion, and check `cd app && npm run test:e2e` passes all tests in `test.js` and `player.test.js`
-- [ ] 2.2 In `app/playwright.config.js`, make `webServer.command` skip `npm run build` when `E2E_PREBUILT` is set, and add the CI settings from design decision 4 (`forbidOnly`, `retries: 1`, `reuseExistingServer: !process.env.CI`, `list` + `html` reporters with `open: 'never'`). Check `npm run test:e2e` still builds and passes, and `npm run build && E2E_PREBUILT=true CI=true npx playwright test` passes without rebuilding
-- [ ] 2.3 Check `cd app && npm ls playwright` resolves to a single version shared by `@playwright/test` and `@vitest/browser-playwright`. If it doesn't, align them in `package.json` and check `npm run test:unit -- --run` passes
-- [ ] 2.4 Run `cd app && npm run format`, then commit
+- [x] 2.1 Rename `app/e2e/test.js` to `app/e2e/index.test.js` (the old name never matched Playwright's default `testMatch`, so it never ran) and make it assert the h1 "Welcome to Tune Lad !" with a web-first `toHaveText` assertion, and check `cd app && npm run test:e2e` passes all tests in `test.js` and `player.test.js`
+- [x] 2.2 In `app/playwright.config.js`, make `webServer.command` skip `npm run build` when `E2E_PREBUILT` is set, and add the CI settings from design decision 4 (`forbidOnly`, `retries: 1`, `reuseExistingServer: !process.env.CI`, `list` + `html` reporters with `open: 'never'`). Check `npm run test:e2e` still builds and passes, and `npm run build && E2E_PREBUILT=true CI=true npx playwright test` passes without rebuilding
+- [x] 2.3 Check `cd app && npm ls playwright` resolves to a single version shared by `@playwright/test` and `@vitest/browser-playwright`. If it doesn't, align them in `package.json` and check `npm run test:unit -- --run` passes
+- [x] 2.4 Run `cd app && npm run format`, then commit
 
 ## 3. Run frontend tests in the Maven build (commit: `build(ui): run frontend unit and e2e tests in the maven build`)
 
