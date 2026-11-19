@@ -1,6 +1,5 @@
 package org.tunelad.track.internal;
 
-import org.tunelad.track.TrackMedia;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -10,7 +9,4 @@ public interface Tracks {
 	Mono<Track> save(Track track);
 
 	Mono<Track> findById(String id);
-
-    /** The stored audio of the track with that id, or empty when it has none. */
-    Mono<TrackMedia> readMedia(String id);
 }
