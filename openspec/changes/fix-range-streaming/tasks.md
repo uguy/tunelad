@@ -15,11 +15,11 @@
 
 ## 3. Byte ranges: 206, 416 and ignored headers
 
-- [ ] 3.1 In `TrackController.play`, parse the header with `HttpRange.parseRanges`: one range gives 206 with `Content-Range`, `Content-Length` and `content(first, last)` via `getRangeStart`/`getRangeEnd(length)`; a start at or past the end gives 416 with `Content-Range: bytes */<length>`; malformed or multi-range headers give the 200 whole-file response (design Decision 1)
-- [ ] 3.2 Document the play operation in OpenAPI: optional `Range` header parameter and 200/206/404/416 responses with `Content-Range`/`Accept-Ranges` headers (design Decision 5). Verify `GET /v3/api-docs` (or the configured springdoc path) shows them by adding an assertion on the api-docs JSON to `TrackApiTest`, or by checking manually with `curl` against `./mvnw spring-boot:run`
-- [ ] 3.3 Add one Testcontainers test per new spec scenario, named after it: `range_in_the_middle_of_the_file` (`bytes=1000000-1499999` on `Knees_Up.mp3`, byte-exact slice), `open_ended_range`, `range_from_the_start_as_sent_by_a_browser`, `suffix_range`, `range_ending_past_the_end_of_the_file`, `range_starting_past_the_end_of_the_file`, `unsatisfiable_range_on_an_unknown_track`, `several_ranges`, `malformed_range`. Verify `./mvnw -Dtest=TrackApiTest test` passes
+- [x] 3.1 In `TrackController.play`, parse the header with `HttpRange.parseRanges`: one range gives 206 with `Content-Range`, `Content-Length` and `content(first, last)` via `getRangeStart`/`getRangeEnd(length)`; a start at or past the end gives 416 with `Content-Range: bytes */<length>`; malformed or multi-range headers give the 200 whole-file response (design Decision 1)
+- [x] 3.2 Document the play operation in OpenAPI: optional `Range` header parameter and 200/206/404/416 responses with `Content-Range`/`Accept-Ranges` headers (design Decision 5). Verify `GET /v3/api-docs` (or the configured springdoc path) shows them by adding an assertion on the api-docs JSON to `TrackApiTest`, or by checking manually with `curl` against `./mvnw spring-boot:run`
+- [x] 3.3 Add one Testcontainers test per new spec scenario, named after it: `range_in_the_middle_of_the_file` (`bytes=1000000-1499999` on `Knees_Up.mp3`, byte-exact slice), `open_ended_range`, `range_from_the_start_as_sent_by_a_browser`, `suffix_range`, `range_ending_past_the_end_of_the_file`, `range_starting_past_the_end_of_the_file`, `unsatisfiable_range_on_an_unknown_track`, `several_ranges`, `malformed_range`. Verify `./mvnw -Dtest=TrackApiTest test` passes
 - [ ] 3.4 Check by hand in a browser (`docker compose up -d`, `./mvnw spring-boot:run`, upload a track at http://localhost:8080): dragging the audio scrubber jumps to that position, and the devtools Network tab shows 206 responses with `Content-Range`
-- [ ] 3.5 Commit as `feat(track): serve byte ranges of track audio`
+- [x] 3.5 Commit as `feat(track): serve byte ranges of track audio`
 
 ## 4. UI: deep link and copy link at current time
 

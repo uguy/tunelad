@@ -54,7 +54,7 @@ service.execute(new PlayTrackCommand(id))           // empty track -> NotFoundEx
   })
 ```
 
-Range parsing and arithmetic use Spring's `HttpRange` (`parseRanges`, `getRangeStart(length)` and `getRangeEnd(length)`, which clamp the end and resolve suffix ranges). `getRangeStart` throws `IllegalArgumentException` when the start is at or past the end, and that becomes the 416. `parseRanges` throws on malformed input, and that becomes "ignore the header". A list with more than one range is also ignored. All responses set `Accept-Ranges: bytes` and `Content-Type: audio/mpeg`, and return `ResponseEntity<Flux<DataBuffer>>`. With an explicit `Content-Length`, WebFlux writes a fixed-length response, not a chunked one.
+Range parsing and arithmetic use Spring's `HttpRange` (`parseRanges`, `getRangeStart(length)` and `getRangeEnd(length)`, which clamp the end and resolve suffix ranges). `getRangeStart` does not validate the start against the length, so the controller checks `first >= length` itself and answers 416. `parseRanges` throws on malformed input, and that becomes "ignore the header". A list with more than one range is also ignored. All responses set `Accept-Ranges: bytes` and `Content-Type: audio/mpeg`, and return `ResponseEntity<Flux<DataBuffer>>`. With an explicit `Content-Length`, WebFlux writes a fixed-length response, not a chunked one.
 
 `PlayTrackCommand(String trackId)` is unchanged.
 
