@@ -57,7 +57,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 == Features
 
 * Upload a track with description
-* List tracks with basic search
+* List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
 * OpenAPI v3 endpoint
@@ -157,7 +157,9 @@ docker compose down -v
 
 === MongoDB database
 
-MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection names `tracks` but audio files are stored in MongoDB GridFS system. The application also uses in a simple way MongoDB fulltext search capabilities when looking for tracks.
+MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection named `tracks`, and audio files in MongoDB GridFS.
+
+Search follows CQRS: the `search` module keeps its own read model, the `search_tracks` collection with a MongoDB full-text index, and fills it from the `NewTrackSaved` events that the `track` module publishes. Events go through the Spring Modulith Event Publication Registry (the `event_publication` collection), and are delivered once the upload's MongoDB transaction has committed.
 
 [source, yaml]
 ----
