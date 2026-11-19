@@ -139,7 +139,19 @@ The application depends on MongoDB. You can start an instance by running docker 
 docker compose up -d
 ----
 
+MongoDB runs as a single-node replica set (`rs0`), because the application uses MongoDB transactions, which
+need one. The replica set is initiated by the container healthcheck on first start; `docker compose up -d --wait`
+returns once it is ready.
+
 Mongo Express (a MongoDB web UI) should be available at http://localhost:8081
+
+To wipe the local data (tracks, audio and search index) and start from an empty database, remove the containers
+together with their volumes:
+
+[source,bash,subs="attributes"]
+----
+docker compose down -v
+----
 
 == Configuration
 
