@@ -23,8 +23,8 @@
 
 ## 4. Verify and open the PR
 
-- [ ] 4.1 Run `./mvnw clean verify` and verify the build succeeds, including `ModularApplicationTests` and both new test classes (no README change: behaviour is unchanged, nothing user-visible)
-- [ ] 4.2 Archive the change on the branch (`openspec archive baseline-track-search-specs`), verify `openspec/specs/track/spec.md` and `openspec/specs/search/spec.md` exist with their Purpose sections, and commit as `docs(openspec): archive baseline-track-search-specs`
+- [x] 4.1 Run `./mvnw clean verify` and verify the build succeeds, including `ModularApplicationTests` and both new test classes (no README change: behaviour is unchanged, nothing user-visible)
+- [x] 4.2 Archive the change on the branch (`openspec archive baseline-track-search-specs`), verify `openspec/specs/track/spec.md` and `openspec/specs/search/spec.md` exist with their Purpose sections, and commit as `docs(openspec): archive baseline-track-search-specs`
 - [ ] 4.3 Push the branch and open a PR to `main` titled `test(track): add baseline specs and characterization tests for track and search`; verify the `build` and `commitlint` checks pass
 
 ## Workflow follow-up
