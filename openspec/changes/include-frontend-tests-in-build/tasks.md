@@ -13,12 +13,12 @@
 
 ## 3. Run frontend tests in the Maven build (commit: `build(ui): run frontend unit and e2e tests in the maven build`)
 
-- [ ] 3.1 Add `skipTests` (`false`) and `skipITs` (`${skipTests}`) to `pom.xml` `<properties>`
-- [ ] 3.2 Add a `playwright install` execution (`npx` goal, `generate-test-resources`, `playwright install chromium`, `<skip>${skipTests}</skip>`) and a profile activated by `env.CI` that adds `--with-deps`. Check `./mvnw generate-test-resources` logs the Playwright install step
-- [ ] 3.3 Add a `webapp unit tests` execution (`npm` goal, `test` phase, `run test:unit -- --run`, `<skip>${skipTests}</skip>`). Check `./mvnw test` logs the vitest run, and that the build fails when the placeholder assertion is temporarily broken
-- [ ] 3.4 Add a `webapp e2e tests` execution (`npm` goal, `integration-test` phase, `run test:e2e`, env `E2E_PREBUILT=true`, `<skip>${skipITs}</skip>`). Check `./mvnw verify` logs the Playwright run without a second `vite build`, and that the build fails when an e2e assertion is temporarily broken
-- [ ] 3.5 Check the skip flags: `./mvnw verify -DskipITs` runs vitest but not Playwright, and `./mvnw verify -DskipTests` runs neither (nor the Java tests)
-- [ ] 3.6 Document in `README.adoc` (Developing > Building) and in the `CLAUDE.md` Commands section that `verify` runs the frontend unit and e2e tests, downloads Chromium on first run, and how `-DskipITs` / `-DskipTests` skip them. Then commit
+- [x] 3.1 Add `skipTests` (`false`) and `skipITs` (`${skipTests}`) to `pom.xml` `<properties>`
+- [x] 3.2 Add a `playwright install` execution (`npx` goal, `generate-test-resources`, `playwright install chromium`, `<skip>${skipTests}</skip>`) and a profile activated by `env.CI` that adds `--with-deps`. Check `./mvnw generate-test-resources` logs the Playwright install step
+- [x] 3.3 Add a `webapp unit tests` execution (`npm` goal, `test` phase, `run test:unit -- --run`, `<skip>${skipTests}</skip>`). Check `./mvnw test` logs the vitest run, and that the build fails when the placeholder assertion is temporarily broken
+- [x] 3.4 Add a `webapp e2e tests` execution (`npm` goal, `integration-test` phase, `run test:e2e`, env `E2E_PREBUILT=true`, `<skip>${skipITs}</skip>`). Check `./mvnw verify` logs the Playwright run without a second `vite build`, and that the build fails when an e2e assertion is temporarily broken
+- [x] 3.5 Check the skip flags: `./mvnw verify -DskipITs` runs vitest but not Playwright, and `./mvnw verify -DskipTests` runs neither (nor the Java tests)
+- [x] 3.6 Document in `README.adoc` (Developing > Building) and in the `CLAUDE.md` Commands section that `verify` runs the frontend unit and e2e tests, downloads Chromium on first run, and how `-DskipITs` / `-DskipTests` skip them. Then commit
 
 ## 4. CI workflow (commit: `ci(build): cache playwright browsers and upload report on failure`)
 

@@ -23,6 +23,11 @@
 		<node.version>v26.11.1</node.version>
 		<npm.version>11.20.0</npm.version>
 
+		<!-- Tests: -DskipTests skips Java and frontend tests, -DskipITs skips only the e2e tests -->
+		<skipTests>false</skipTests>
+		<skipITs>${skipTests}</skipITs>
+		<playwright.install.args>playwright install chromium</playwright.install.args>
+
 		<!-- Dependencies versions -->
 		<spring-boot.version>4.1.2</spring-boot.version>
 		<springdoc-openapi.version>3.2.0</springdoc-openapi.version>
@@ -282,6 +287,43 @@
 							<arguments>run build</arguments>
 						</configuration>
 					</execution>
+					<execution>
+						<id>playwright install</id>
+						<goals>
+							<goal>npx</goal>
+						</goals>
+						<phase>generate-test-resources</phase>
+						<configuration>
+							<arguments>${playwright.install.args}</arguments>
+							<skip>${skipTests}</skip>
+						</configuration>
+					</execution>
+					<execution>
+						<id>webapp unit tests</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<phase>test</phase>
+						<configuration>
+							<arguments>run test:unit -- --run</arguments>
+							<skip>${skipTests}</skip>
+						</configuration>
+					</execution>
+					<execution>
+						<id>webapp e2e tests</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<phase>integration-test</phase>
+						<configuration>
+							<arguments>run test:e2e</arguments>
+							<environmentVariables>
+								<!-- Reuse the build from generate-resources instead of building again -->
+								<E2E_PREBUILT>true</E2E_PREBUILT>
+							</environmentVariables>
+							<skip>${skipITs}</skip>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 
@@ -305,5 +347,20 @@
 
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<!-- CI runners (GitHub Actions sets CI) also need the browser's system libraries -->
+			<id>ci</id>
+			<activation>
+				<property>
+					<name>env.CI</name>
+				</property>
+			</activation>
+			<properties>
+				<playwright.install.args>playwright install --with-deps chromium</playwright.install.args>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>
