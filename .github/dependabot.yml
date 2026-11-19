@@ -11,6 +11,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 7
 
   # Maintain dependencies for maven
   - package-ecosystem: "maven"
@@ -18,6 +20,8 @@ updates:
     target-branch: main
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 7
 
   # Maintain dependencies for node
   - package-ecosystem: "npm"
@@ -25,3 +29,5 @@ updates:
     target-branch: main
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 7
