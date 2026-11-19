@@ -29,8 +29,8 @@ Commit: `feat(track): publish track events within reactive mongo transactions`
 
 Commit: `feat(search): project track events into a search read model`
 
-- [ ] 4.1 In `org.tunelad.search`, add the read-model document (`search_tracks`: `id, title, description, artist, album, format`, with a compound text index on `title` and `description`), its reactive repository, and a query that returns a `$text` match sorted by score, or every document for a blank query (design D5). All of this goes in an internal package. Verify that `ModularApplicationTests` passes.
-- [ ] 4.2 Add `SearchProjection` with an `@ApplicationModuleListener` that upserts by track id on `NewTrackSaved`, blocking on the listener thread (design D6; with D8, use `@EventListener` returning `Mono<Void>`). Set `search/package-info.java` `allowedDependencies` to `{ "track", "track::event" }`. Verify with an `@ApplicationModuleTest` for `search` that uses the `Scenario` API: publishing `NewTrackSaved` makes the document appear with the event's fields, and publishing it twice leaves one document. `ModularApplicationTests` passes.
+- [x] 4.1 In `org.tunelad.search`, add the read-model document (`search_tracks`: `id, title, description, artist, album, format`, with a compound text index on `title` and `description`), its reactive repository, and a query that returns a `$text` match sorted by score, or every document for a blank query (design D5). All of this goes in an internal package. Verify that `ModularApplicationTests` passes.
+- [x] 4.2 Add `SearchProjection` with an `@ApplicationModuleListener` that upserts by track id on `NewTrackSaved`, blocking on the listener thread (design D6; with D8, use `@EventListener` returning `Mono<Void>`). Set `search/package-info.java` `allowedDependencies` to `{ "track", "track::event" }`. Verify with an `@ApplicationModuleTest` for `search` that uses the `Scenario` API: publishing `NewTrackSaved` makes the document appear with the event's fields, and publishing it twice leaves one document. `ModularApplicationTests` passes.
 
 ## 5. Serve search from the read model
 
