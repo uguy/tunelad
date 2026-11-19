@@ -93,6 +93,22 @@ The build should produce under the `target/` folder (and in your local maven rep
 
 For more details about apache maven, please refer to the https://maven.apache.org/guides/getting-started/[documentation]
 
+==== Tests
+
+`./mvnw clean verify` runs every test: the Java tests (Testcontainers, so Docker must be running), the frontend unit tests (vitest) in the `test` phase, and the Playwright e2e tests in the `integration-test` phase.
+The e2e tests run against the static frontend build with the REST API mocked, so they need neither the backend nor MongoDB.
+The first build downloads Chromium for Playwright (cached in `~/.cache/ms-playwright`).
+
+Use the usual maven flags to skip tests:
+
+[source,bash]
+----
+./mvnw verify -DskipITs    # skip the frontend e2e tests only
+./mvnw verify -DskipTests  # skip all Java and frontend tests
+----
+
+From the `app/` folder, `npm run test:unit` and `npm run test:e2e` run each frontend suite on its own.
+
 ==== Frontend
 
 The frontend source code lives in `<project root>/app` folder.
