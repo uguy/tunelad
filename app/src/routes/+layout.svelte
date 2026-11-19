@@ -24,7 +24,7 @@
 				<slot />
 			</div>
 			<div class="py-10 w-full">
-				<Player src={$playerSource} />
+				<Player source={$playerSource} />
 			</div>
 		</div>
 	</div>

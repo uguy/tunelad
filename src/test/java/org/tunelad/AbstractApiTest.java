@@ -5,6 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -62,9 +63,14 @@ public abstract class AbstractApiTest {
 
     /** Requests playback with "Range: bytes=0-", as a browser audio element does (see design.md). */
     protected WebTestClient.ResponseSpec play(String id) {
-        return client.get().uri("/api/tracks/{id}/play", id)
-                .header("Range", "bytes=0-")
-                .exchange();
+        return play(id, "bytes=0-");
+    }
+
+    /** Requests playback with the given Range header value; null sends no Range header. */
+    protected WebTestClient.ResponseSpec play(String id, String range) {
+        var request = client.get().uri("/api/tracks/{id}/play", id);
+        if (range != null) request.header(HttpHeaders.RANGE, range);
+        return request.exchange();
     }
 
     protected List<TrackDTO> listTracks() {

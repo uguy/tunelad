@@ -2,6 +2,8 @@
 	import TrackList from './component/TrackList.svelte';
 	import playerSource from '#lib/store/media-source.js';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 
 	import TrackService from './Tracks.js';
 
@@ -9,6 +11,21 @@
 	export let data;
 
 	const trackService = new TrackService(fetch);
+
+	/** Seconds to start at from a `t` query value; anything not a non-negative number starts at 0. */
+	function startTime(t: string | null): number {
+		const seconds = Number(t);
+		return t !== null && Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+	}
+
+	// Deep link: /tracks?play=<id>&t=<seconds> loads the player on that track at that time.
+	// Read in the browser only, since the page is prerendered without query parameters.
+	onMount(() => {
+		const trackId = page.url.searchParams.get('play');
+		if (trackId) {
+			$playerSource = { trackId, start: startTime(page.url.searchParams.get('t')) };
+		}
+	});
 
 	async function refreshTracks() {
 		const q = (document.querySelector('#search-input') as HTMLInputElement).value;
@@ -103,7 +120,7 @@
 	<TrackList
 		tracks={data.tracks}
 		on:trackPlayButtonClicked={(event) =>
-			($playerSource = `api/tracks/${event.detail.trackId}/play`)}
+			($playerSource = { trackId: event.detail.trackId, start: 0 })}
 		on:trackTagClicked={(event) => {
 			document.querySelector('#search-input').value = event.detail.tag;
 			refreshTracks();

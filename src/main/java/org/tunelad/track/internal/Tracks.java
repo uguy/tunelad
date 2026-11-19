@@ -2,7 +2,7 @@ package org.tunelad.track.internal;
 
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.tunelad.track.TrackDTO;
+import org.tunelad.track.TrackMedia;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,7 +16,8 @@ public interface Tracks {
 
 	Mono<Void> deleteAll();
 
-    Publisher<DataBuffer> readMedia(String id);
+    /** The stored audio of the track with that id, or empty when it has none. */
+    Mono<TrackMedia> readMedia(String id);
 
     Flux<Track> searchTracks(String q);
 }

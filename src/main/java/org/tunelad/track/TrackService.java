@@ -1,7 +1,5 @@
 package org.tunelad.track;
 
-import org.reactivestreams.Publisher;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
@@ -15,7 +13,8 @@ public interface TrackService {
 
     Mono<TrackDTO> findById(String id);
 
-    Publisher<DataBuffer> execute(PlayTrackCommand command);
+    /** The audio of a track; errors with {@code NotFoundException} when the track or its audio is missing. */
+    Mono<TrackMedia> execute(PlayTrackCommand command);
 
     Mono<Void> execute(DeleteAllTrackCommand command);
 
