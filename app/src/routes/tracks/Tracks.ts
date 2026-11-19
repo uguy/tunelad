@@ -1,4 +1,4 @@
-import * as api from '$lib/api.js';
+import * as api from '#lib/api.js';
 
 export default class TrackService {
 	#fetchFunc: typeof fetch;

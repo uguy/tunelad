@@ -1,11 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 
-	import Header from '$lib/Header.svelte';
-	import Footer from '$lib/Footer.svelte';
+	import Header from '#lib/Header.svelte';
+	import Footer from '#lib/Footer.svelte';
 
 	import Player from './tracks/component/Player.svelte';
-	import playerSource from '$lib/store/media-source.ts';
+	import playerSource from '#lib/store/media-source.js';
 
 	import { pwaInfo } from 'virtual:pwa-info';
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
@@ -32,6 +32,6 @@
 </main>
 <Footer />
 
-{#await import('$lib/ReloadPrompt.svelte') then { default: ReloadPrompt }}
+{#await import('#lib/ReloadPrompt.svelte') then { default: ReloadPrompt }}
 	<ReloadPrompt />
 {/await}
