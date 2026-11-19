@@ -3,7 +3,6 @@ package org.tunelad.track.internal.db;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
-import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -54,11 +53,6 @@ class DbTracks implements Tracks {
             track.setId(UUID.randomUUID().toString());
         }
         return mongoTrackRepository.save(track);
-    }
-
-    @Override
-    public Mono<Track> saveMedia(Track track, Publisher<DataBuffer> data) {
-        return gridFsOperations.store(data, track.getId()).then(Mono.just(track));
     }
 
     @Override

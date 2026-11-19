@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.infrastructure.ReactiveTransactional;
 import org.tunelad.infrastructure.TransactionalEvents;
+import org.tunelad.media.MediaStore;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
@@ -25,6 +26,8 @@ class DefaultTrackService implements TrackService {
 
     private final Tracks tracks;
 
+    private final MediaStore mediaStore;
+
     private final TransactionalEvents events;
 
     @Override
@@ -37,7 +40,7 @@ class DefaultTrackService implements TrackService {
         track.setFormat(command.format());
 
         return tracks.save(track)
-                .flatMap(saved -> tracks.saveMedia(saved, command.data()))
+                .flatMap(saved -> mediaStore.store(saved.getId(), command.data()).thenReturn(saved))
                 // Published within the transaction: module listeners only see it once the track is committed
                 .flatMap(saved -> events.publish(new NewTrackSaved(trackMapper.toDto(saved))));
     }

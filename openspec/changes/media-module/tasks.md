@@ -17,7 +17,7 @@ Commit: `refactor(media): add a media module that stores audio in gridfs`
 
 Commit: `refactor(track): store uploaded audio through the media module`
 
-- [ ] 3.1 Add `media` to `track/package-info.java` `allowedDependencies`. Change `DefaultTrackService.execute(AddTrackCommand)` to `tracks.save → mediaStore.store(saved.getId(), command.data()) → events.publish(NewTrackSaved)` (design D3), and remove `Tracks.saveMedia` and its `DbTracks` implementation. Verify that `TrackApiTest` (upload and play tests, play is still served by `track` from the same GridFS files), `TrackEventsTest` and `ModularApplicationTests` pass with all tests forced.
+- [x] 3.1 Add `media` to `track/package-info.java` `allowedDependencies`. Change `DefaultTrackService.execute(AddTrackCommand)` to `tracks.save → mediaStore.store(saved.getId(), command.data()) → events.publish(NewTrackSaved)` (design D3), and remove `Tracks.saveMedia` and its `DbTracks` implementation. Verify that `TrackApiTest` (upload and play tests, play is still served by `track` from the same GridFS files), `TrackEventsTest` and `ModularApplicationTests` pass with all tests forced.
 
 ## 4. Serve play from media
 
