@@ -2,13 +2,12 @@ package org.tunelad.track.internal;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Publisher;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.track.TrackDTO;
+import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteAllTrackCommand;
@@ -48,10 +47,10 @@ class DefaultTrackService implements TrackService {
     }
 
     @Override
-    public Publisher<DataBuffer> execute(PlayTrackCommand command) {
+    public Mono<TrackMedia> execute(PlayTrackCommand command) {
         return tracks.findById(command.trackId())
-                .switchIfEmpty(Mono.error(new NotFoundException("Not tracks found for id: " + command.trackId())))
-                .flatMapMany(track -> tracks.readMedia(track.getId()));
+                .flatMap(track -> tracks.readMedia(track.getId()))
+                .switchIfEmpty(Mono.error(new NotFoundException("No track audio found for id: " + command.trackId())));
     }
 
     @Override

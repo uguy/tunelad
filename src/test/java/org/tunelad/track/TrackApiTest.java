@@ -2,6 +2,7 @@ package org.tunelad.track;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
 import org.tunelad.AbstractApiTest;
 
 import java.util.HashMap;
@@ -130,6 +131,22 @@ class TrackApiTest extends AbstractApiTest {
                 .expectBody(byte[].class).returnResult().getResponseBody();
 
         assertThat(body).isEqualTo(new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray());
+    }
+
+    @Test
+    void play_without_a_range_header() throws Exception {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+        var file = new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray();
+
+        var body = play(id, null)
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg")
+                .expectHeader().valueEquals(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .expectHeader().contentLength(file.length)
+                .expectBody(byte[].class).returnResult().getResponseBody();
+
+        assertThat(body).isEqualTo(file);
     }
 
     @Test

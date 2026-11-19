@@ -8,19 +8,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackFormat;
+import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
-import org.tunelad.track.internal.Tracks;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +29,8 @@ import reactor.core.publisher.Mono;
 @Tag(name = "Tracks", description = "Tracks API")
 @RequestMapping(value = "api/tracks", produces = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.api+json"})
 public class TrackController {
+
+    private static final MediaType AUDIO_MPEG = MediaType.parseMediaType("audio/mpeg");
 
     private final TrackService service;
     private final TrackService trackService;
@@ -75,8 +77,18 @@ public class TrackController {
     }
 
     @GetMapping(value = "{id}/play", produces = {"audio/mpeg", MediaType.APPLICATION_OCTET_STREAM_VALUE})
-    public Publisher<DataBuffer> play(@PathVariable("id") String id, @RequestHeader("Range") String range) {
-        return service.execute(new PlayTrackCommand(id));
+    public Mono<ResponseEntity<Flux<DataBuffer>>> play(
+            @PathVariable("id") String id,
+            @RequestHeader(name = HttpHeaders.RANGE, required = false) String range) {
+        return service.execute(new PlayTrackCommand(id)).map(TrackController::wholeFile);
+    }
+
+    private static ResponseEntity<Flux<DataBuffer>> wholeFile(TrackMedia media) {
+        return ResponseEntity.ok()
+                .contentType(AUDIO_MPEG)
+                .contentLength(media.length())
+                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .body(media.content(0, media.length() - 1));
     }
 
 }

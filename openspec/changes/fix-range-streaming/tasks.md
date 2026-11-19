@@ -7,11 +7,11 @@
 
 ## 2. Media handle with chunk-level reads (whole-file responses)
 
-- [ ] 2.1 Add the public `TrackMedia` interface (`length()`, `content(first, last)`) in `org.tunelad.track` and verify `ModularApplicationTests` still passes
-- [ ] 2.2 Change `Tracks.readMedia` to `Mono<TrackMedia> readMedia(String id)` and implement it in `DbTracks`: `GridFSFile` lookup by filename, an `fs.chunks` query on `n` in `[first/chunkSize, last/chunkSize]` sorted by `n`, first and last chunk trimmed, bucket name from configuration with default `fs` (design Decisions 2 and 3). Verify the exact Boot 4.1 property key while doing so
-- [ ] 2.3 Change `TrackService.execute(PlayTrackCommand)` to return `Mono<TrackMedia>` (still 404 for an unknown track), and make `TrackController.play` take the `Range` header as optional and always answer 200 with `Content-Type: audio/mpeg`, `Content-Length` and `Accept-Ranges: bytes`, streaming `content(0, length - 1)`
-- [ ] 2.4 Add the `play(id, range)` overload to `AbstractApiTest` (null omits the header) and the test `play_without_a_range_header` (200, headers, byte-exact body). Verify `./mvnw -Dtest='TrackApiTest,TrackSearchApiTest' test` passes, including the unchanged `play_an_uploaded_track`, `play_an_unknown_track` and `clear_a_populated_library`
-- [ ] 2.5 Commit as `feat(track): read track audio by gridfs chunk and allow play without range`
+- [x] 2.1 Add the public `TrackMedia` interface (`length()`, `content(first, last)`) in `org.tunelad.track` and verify `ModularApplicationTests` still passes
+- [x] 2.2 Change `Tracks.readMedia` to `Mono<TrackMedia> readMedia(String id)` and implement it in `DbTracks`: `GridFSFile` lookup by filename, an `fs.chunks` query on `n` in `[first/chunkSize, last/chunkSize]` sorted by `n`, first and last chunk trimmed, bucket name from configuration with default `fs` (design Decisions 2 and 3). Verify the exact Boot 4.1 property key while doing so
+- [x] 2.3 Change `TrackService.execute(PlayTrackCommand)` to return `Mono<TrackMedia>` (still 404 for an unknown track), and make `TrackController.play` take the `Range` header as optional and always answer 200 with `Content-Type: audio/mpeg`, `Content-Length` and `Accept-Ranges: bytes`, streaming `content(0, length - 1)`
+- [x] 2.4 Add the `play(id, range)` overload to `AbstractApiTest` (null omits the header) and the test `play_without_a_range_header` (200, headers, byte-exact body). Verify `./mvnw -Dtest='TrackApiTest,TrackSearchApiTest' test` passes, including the unchanged `play_an_uploaded_track`, `play_an_unknown_track` and `clear_a_populated_library`
+- [x] 2.5 Commit as `feat(track): read track audio by gridfs chunk and allow play without range`
 
 ## 3. Byte ranges: 206, 416 and ignored headers
 
