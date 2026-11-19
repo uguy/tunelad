@@ -22,7 +22,7 @@
 
 ## 4. CI workflow (commit: `ci(build): cache playwright browsers and upload report on failure`)
 
-- [ ] 4.1 In `.github/workflows/workflow-build.yml`, add `actions/cache` for `~/.cache/ms-playwright` keyed on `hashFiles('app/package-lock.json')` before the Maven step, and an `actions/upload-artifact` step for `app/playwright-report` with `if: failure()`. Check the YAML with `npx --yes yaml-lint .github/workflows/workflow-build.yml` (or an equivalent parser), then commit
+- [x] 4.1 In `.github/workflows/workflow-build.yml`, add `actions/cache` for `~/.cache/ms-playwright` keyed on `hashFiles('app/package-lock.json')` before the Maven step, and an `actions/upload-artifact` step for `app/playwright-report` with `if: failure()`. Check the YAML with `npx --yes yaml-lint .github/workflows/workflow-build.yml` (or an equivalent parser), then commit
 
 ## 5. Verify and open the PR
 
