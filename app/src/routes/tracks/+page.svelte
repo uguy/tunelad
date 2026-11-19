@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TrackList from './component/TrackList.svelte';
-	import playerSource from '$lib/store/media-source.js';
+	import playerSource from '#lib/store/media-source.js';
 	import { resolve } from '$app/paths';
 
 	import TrackService from './Tracks.js';
