@@ -1,48 +1,19 @@
 package org.tunelad.track;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.tunelad.TestContainerDefinitions;
+import org.tunelad.AbstractApiTest;
 
-import java.time.Duration;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 /**
  * Characterization tests for openspec/specs/track: one test per spec scenario, named after it.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestContainerDefinitions.class)
-class TrackApiTest {
-
-    static final String KNEES_UP_MP3 = "mp3/Knees_Up.mp3";
-    static final String MOSSY_BANKS_MP3 = "mp3/Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3";
-
-    @LocalServerPort
-    int port;
-
-    WebTestClient client;
-
-    @BeforeEach
-    void clearLibrary() {
-        client = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:" + port)
-                .responseTimeout(Duration.ofSeconds(30))
-                // play responses carry whole mp3 fixtures (~3 MB), above the 256 KB default
-                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
-                .build();
-        client.delete().uri("/api/tracks").exchange().expectStatus().is2xxSuccessful();
-    }
+class TrackApiTest extends AbstractApiTest {
 
     // --- Requirement: Upload a track ---------------------------------------------------------
 
@@ -78,11 +49,11 @@ class TrackApiTest {
 
     @Test
     void required_part_missing() {
-        var noTitle = new java.util.HashMap<String, String>();
+        var noTitle = new HashMap<String, String>();
         noTitle.put("description", "A reel and a song");
         upload(noTitle, KNEES_UP_MP3).expectStatus().isBadRequest();
 
-        var noDescription = new java.util.HashMap<String, String>();
+        var noDescription = new HashMap<String, String>();
         noDescription.put("title", "Knees Up");
         upload(noDescription, KNEES_UP_MP3).expectStatus().isBadRequest();
 
@@ -116,8 +87,8 @@ class TrackApiTest {
         assertThat(listTracks())
                 .extracting(TrackDTO::title, TrackDTO::description, TrackDTO::format)
                 .containsExactlyInAnyOrder(
-                        org.assertj.core.groups.Tuple.tuple("Knees Up", "A reel and a song", TrackFormat.MP3),
-                        org.assertj.core.groups.Tuple.tuple("Mossy Banks", "Two reels", TrackFormat.MP3));
+                        tuple("Knees Up", "A reel and a song", TrackFormat.MP3),
+                        tuple("Mossy Banks", "Two reels", TrackFormat.MP3));
     }
 
     @Test
@@ -181,44 +152,5 @@ class TrackApiTest {
             client.get().uri("/api/tracks/{id}", id).exchange().expectStatus().isNotFound();
             play(id).expectStatus().isNotFound();
         }
-    }
-
-    // --- helpers -----------------------------------------------------------------------------
-
-    /** Uploads a track; a null value omits that part, and a null file omits the file part. */
-    WebTestClient.ResponseSpec upload(Map<String, String> parts, String fixture) {
-        var builder = new MultipartBodyBuilder();
-        parts.forEach((name, value) -> {
-            if (value != null) builder.part(name, value);
-        });
-        if (fixture != null) builder.part("file", new ClassPathResource(fixture));
-        return client.post().uri("/api/tracks")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(builder.build()))
-                .exchange();
-    }
-
-    void uploadOk(String title, String description, String fixture) {
-        upload(Map.of("title", title, "description", description), fixture)
-                .expectStatus().is2xxSuccessful();
-    }
-
-    WebTestClient.ResponseSpec play(String id) {
-        return client.get().uri("/api/tracks/{id}/play", id)
-                .header("Range", "bytes=0-")
-                .exchange();
-    }
-
-    List<TrackDTO> listTracks() {
-        return client.get().uri("/api/tracks").exchange()
-                .expectStatus().isOk()
-                .expectBodyList(TrackDTO.class).returnResult().getResponseBody();
-    }
-
-    TrackDTO trackTitled(String title) {
-        return listTracks().stream()
-                .filter(t -> title.equals(t.title()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("No track titled " + title));
     }
 }

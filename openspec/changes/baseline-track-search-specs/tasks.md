@@ -15,11 +15,11 @@
 
 ## 3. Search characterization tests (`specs/search`)
 
-- [ ] 3.1 Create `src/test/java/org/tunelad/search/TrackSearchApiTest` with the same setup as `TrackApiTest` (shared Spring context), uploading tracks with explicit titles and descriptions ("Knees Up", "Mossy Banks", a description mentioning "Breabach"); verify an empty smoke test passes with `./mvnw -Dtest=TrackSearchApiTest test`
-- [ ] 3.2 Add tests for "Search tracks by words in title or description": `match_on_a_title_word`, `match_on_a_description_word`, `case_insensitive_match`, `any_query_word_matches`; verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
-- [ ] 3.3 Add tests for "Match whole words, including word variants" and "Order search results by relevance": `word_variant_matches`, `partial_word_does_not_match`, `better_match_first` (data designed per design.md so the scores differ clearly); verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
-- [ ] 3.4 Add tests for "Blank query returns every track" and "No match returns an empty result": `empty_query`, `whitespace_only_query`, `unmatched_word`; verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
-- [ ] 3.5 Check every scenario in `specs/search/spec.md` has exactly one test with the matching name; then commit as `test(search): add characterization tests for track search`
+- [x] 3.1 Create `src/test/java/org/tunelad/search/TrackSearchApiTest` with the same setup as `TrackApiTest` (shared Spring context), uploading tracks with explicit titles and descriptions ("Knees Up", "Mossy Banks", a description mentioning "Breabach"); verify an empty smoke test passes with `./mvnw -Dtest=TrackSearchApiTest test`
+- [x] 3.2 Add tests for "Search tracks by words in title or description": `match_on_a_title_word`, `match_on_a_description_word`, `case_insensitive_match`, `any_query_word_matches`; verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
+- [x] 3.3 Add tests for "Match whole words, including word variants" and "Order search results by relevance": `word_variant_matches`, `partial_word_does_not_match`, `better_match_first` (data designed per design.md so the scores differ clearly); verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
+- [x] 3.4 Add tests for "Blank query returns every track" and "No match returns an empty result": `empty_query`, `whitespace_only_query`, `unmatched_word`; verify they pass with `./mvnw -Dtest=TrackSearchApiTest test`
+- [x] 3.5 Check every scenario in `specs/search/spec.md` has exactly one test with the matching name; then commit as `test(search): add characterization tests for track search`
 
 ## 4. Verify and open the PR
 
