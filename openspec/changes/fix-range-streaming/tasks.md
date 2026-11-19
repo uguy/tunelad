@@ -33,7 +33,7 @@
 
 - [x] 5.1 Update the README.adoc feature list: keep "streaming bytes with range support" (now true) and add "Share a link that starts a track at a given time". Verify it renders with an AsciiDoc preview, then commit as `docs(track): document start-at-position links`
 - [x] 5.2 Run `./mvnw clean verify` and verify it passes (frontend build, all tests, `ModularApplicationTests`)
-- [ ] 5.3 Push `feat/range-streaming` and open a PR to `main` titled `feat(track): stream byte ranges and start playback at a position`. Verify the `workflow-pr-title` and build checks pass
+- [x] 5.3 Push `feat/range-streaming` and open a PR to `main` titled `feat(track): stream byte ranges and start playback at a position`. Verify the `workflow-pr-title` and build checks pass
 
 ## Workflow follow-up
 
