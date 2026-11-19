@@ -63,9 +63,4 @@ class DefaultTrackService implements TrackService {
                 .map(trackMapper::toDto);
     }
 
-    @ReactiveTransactional(readOnly = true)
-    public Flux<TrackDTO> searchTracks(String q) {
-        return tracks.searchTracks(q).map(trackMapper::toDto);
-    }
-
 }

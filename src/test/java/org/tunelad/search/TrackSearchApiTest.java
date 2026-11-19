@@ -4,14 +4,18 @@ import org.junit.jupiter.api.Test;
 import org.tunelad.AbstractApiTest;
 import org.tunelad.track.TrackDTO;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
- * Characterization tests for openspec/specs/search: one test per spec scenario, named after it.
- * Search is served by the track module today (GET /api/tracks/search); these tests live in the
- * search package to mirror the capability and its future module.
+ * Tests for openspec/specs/search: one test per spec scenario, named after it.
+ * <p>
+ * Search is served from the search module's read model, which catches up with uploads shortly after they
+ * complete. Uploads made to set up a scenario therefore wait until the track is searchable.
  */
 class TrackSearchApiTest extends AbstractApiTest {
 
@@ -66,8 +70,8 @@ class TrackSearchApiTest extends AbstractApiTest {
     @Test
     void better_match_first() {
         // Uploaded first, so insertion order alone would put it first.
-        uploadOk("Mossy Banks", "Two reels played on the flute", MOSSY_BANKS_MP3);
-        uploadOk("Fiddle Jig", "A lively fiddle jig for the fiddle", KNEES_UP_MP3);
+        uploadSearchable("Mossy Banks", "Two reels played on the flute", MOSSY_BANKS_MP3);
+        uploadSearchable("Fiddle Jig", "A lively fiddle jig for the fiddle", KNEES_UP_MP3);
 
         // "Fiddle Jig" matches "fiddle" and "jig" in its title and again in its description;
         // "Mossy Banks" matches only "flute", once, in its description.
@@ -102,11 +106,40 @@ class TrackSearchApiTest extends AbstractApiTest {
                 .expectBody().json("[]");
     }
 
+    // --- Requirement: Uploaded tracks become searchable shortly after upload --------------------
+
+    @Test
+    void new_track_found_after_a_short_delay() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+
+        await().atMost(SEARCHABLE_WITHIN).untilAsserted(() ->
+                assertThat(titles(search("knees"))).contains("Knees Up"));
+    }
+
+    @Test
+    void searchable_track_has_the_track_list_fields() {
+        upload(Map.of("title", "Knees Up", "description", "A reel and a song",
+                "artist", "Breabach", "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
+                .expectStatus().is2xxSuccessful();
+
+        await().atMost(SEARCHABLE_WITHIN).until(() -> !search("knees").isEmpty());
+        assertThat(search("knees")).containsExactly(trackTitled("Knees Up"));
+    }
+
     // --- helpers -----------------------------------------------------------------------------
 
+    /** How soon an uploaded track must be searchable, per the spec. */
+    private static final Duration SEARCHABLE_WITHIN = Duration.ofSeconds(5);
+
+    /** Uploads a track and waits until search returns it. */
+    private void uploadSearchable(String title, String description, String fixture) {
+        uploadOk(title, description, fixture);
+        await().atMost(SEARCHABLE_WITHIN).until(() -> titles(search("")).contains(title));
+    }
+
     private void uploadKneesUpAndMossyBanks() {
-        uploadOk("Knees Up", "A reel and a song from the Frenzy of the Meeting album by Breabach", KNEES_UP_MP3);
-        uploadOk("Mossy Banks", "Two reels played on the flute", MOSSY_BANKS_MP3);
+        uploadSearchable("Knees Up", "A reel and a song from the Frenzy of the Meeting album by Breabach", KNEES_UP_MP3);
+        uploadSearchable("Mossy Banks", "Two reels played on the flute", MOSSY_BANKS_MP3);
     }
 
     private List<TrackDTO> search(String q) {

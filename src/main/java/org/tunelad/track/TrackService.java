@@ -14,6 +14,4 @@ public interface TrackService {
 
     /** The audio of a track; errors with {@code NotFoundException} when the track or its audio is missing. */
     Mono<TrackMedia> execute(PlayTrackCommand command);
-
-    Flux<TrackDTO> searchTracks(String q);
 }

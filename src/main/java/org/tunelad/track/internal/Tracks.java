@@ -16,6 +16,4 @@ public interface Tracks {
 
     /** The stored audio of the track with that id, or empty when it has none. */
     Mono<TrackMedia> readMedia(String id);
-
-    Flux<Track> searchTracks(String q);
 }
