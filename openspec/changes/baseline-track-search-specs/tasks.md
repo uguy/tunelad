@@ -7,11 +7,11 @@
 
 ## 2. Track API characterization tests (`specs/track`)
 
-- [ ] 2.1 Replace the empty `src/test/java/org/tunelad/track/TrackTest.java` with `TrackApiTest`: `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@Import(TestContainerDefinitions.class)`, a `WebTestClient` bound to `@LocalServerPort`, a `DELETE /api/tracks` call in `@BeforeEach`, and helpers to upload a fixture mp3 with given parts and resolve a track id by title via `GET /api/tracks`; verify the class compiles and an empty smoke test passes with `./mvnw -Dtest=TrackApiTest test`
-- [ ] 2.2 Add tests for "Upload a track": `upload_with_all_metadata`, `upload_without_optional_metadata`, and `required_part_missing` (one case each for missing title, description and file, also asserting no track is stored); verify they pass with `./mvnw -Dtest=TrackApiTest test`
-- [ ] 2.3 Add tests for "Assign a unique identifier", "List tracks" and "Get a track by id": `two_uploads_with_the_same_title`, `library_with_tracks`, `empty_library`, `existing_track`, `unknown_id`; verify they pass with `./mvnw -Dtest=TrackApiTest test`
-- [ ] 2.4 Add tests for "Play a track" (sending `Range: bytes=0-`, asserting 2xx, `audio/mpeg` and byte-for-byte equality with `Knees_Up.mp3`) and "Delete all tracks": `play_an_uploaded_track`, `play_an_unknown_track`, `clear_a_populated_library`; verify they pass with `./mvnw -Dtest=TrackApiTest test`
-- [ ] 2.5 Check every scenario in `specs/track/spec.md` has exactly one test with the matching name and that no test asserts out-of-scope behaviour (400 without `Range`, `UNSUPPORTED` format, title rules); then commit as `test(track): add characterization tests for the track API`
+- [x] 2.1 Replace the empty `src/test/java/org/tunelad/track/TrackTest.java` with `TrackApiTest`: `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@Import(TestContainerDefinitions.class)`, a `WebTestClient` bound to `@LocalServerPort`, a `DELETE /api/tracks` call in `@BeforeEach`, and helpers to upload a fixture mp3 with given parts and resolve a track id by title via `GET /api/tracks`; verify the class compiles and an empty smoke test passes with `./mvnw -Dtest=TrackApiTest test`
+- [x] 2.2 Add tests for "Upload a track": `upload_with_all_metadata`, `upload_without_optional_metadata`, and `required_part_missing` (one case each for missing title, description and file, also asserting no track is stored); verify they pass with `./mvnw -Dtest=TrackApiTest test`
+- [x] 2.3 Add tests for "Assign a unique identifier", "List tracks" and "Get a track by id": `two_uploads_with_the_same_title`, `library_with_tracks`, `empty_library`, `existing_track`, `unknown_id`; verify they pass with `./mvnw -Dtest=TrackApiTest test`
+- [x] 2.4 Add tests for "Play a track" (sending `Range: bytes=0-`, asserting 2xx, `audio/mpeg` and byte-for-byte equality with `Knees_Up.mp3`) and "Delete all tracks": `play_an_uploaded_track`, `play_an_unknown_track`, `clear_a_populated_library`; verify they pass with `./mvnw -Dtest=TrackApiTest test`
+- [x] 2.5 Check every scenario in `specs/track/spec.md` has exactly one test with the matching name and that no test asserts out-of-scope behaviour (400 without `Range`, `UNSUPPORTED` format, title rules); then commit as `test(track): add characterization tests for the track API`
 
 ## 3. Search characterization tests (`specs/search`)
 
