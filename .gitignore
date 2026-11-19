@@ -107,3 +107,8 @@ Desktop.ini
 # ESLint
 ######################
 .eslintcache
+
+######################
+# Claude Code
+######################
+.claude/settings.local.json
