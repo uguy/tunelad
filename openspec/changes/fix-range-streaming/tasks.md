@@ -23,11 +23,11 @@
 
 ## 4. UI: deep link and copy link at current time
 
-- [ ] 4.1 Change `#lib/store/media-source` to hold `{ trackId, start } | null` (initially `null`), and update the play button handler in `tracks/+page.svelte` to set `{ trackId, start: 0 }`
-- [ ] 4.2 In `Player.svelte`, derive `src` from the store (`#t=<start>` when `start > 0`), bind `currentTime`, and add the "Copy link at current time" button, shown only when a track is loaded, which writes the absolute `/tracks?play=<id>&t=<floor(currentTime)>` URL to the clipboard, with "Link copied" feedback and a visible-text fallback when the clipboard rejects (design Decision 6)
-- [ ] 4.3 In `tracks/+page.svelte`, on mount read `play` and `t` from `page.url.searchParams` (`$app/state`) and set the store (NaN or negative `t` becomes 0). Verify `cd app && npm run build` still prerenders without errors
-- [ ] 4.4 Add `app/e2e/player.test.js` with `page.route` mocks for the search and play endpoints, one test per UI scenario: `open a link with a start time`, `open a link without a start time`, `open a link with an invalid start time`, `copy a link while a track is playing`, `no track loaded`. Verify `cd app && npx playwright test e2e/player.test.js` passes
-- [ ] 4.5 Run `cd app && npm run format && npm run lint`, check the flow by hand with `npm run dev` against the running backend (open a copied link in a new tab and check it starts at that time), and commit as `feat(ui): start playback at a position from a shareable link`
+- [x] 4.1 Change `#lib/store/media-source` to hold `{ trackId, start } | null` (initially `null`), and update the play button handler in `tracks/+page.svelte` to set `{ trackId, start: 0 }`
+- [x] 4.2 In `Player.svelte`, derive `src` from the store (`#t=<start>` when `start > 0`), bind `currentTime`, and add the "Copy link at current time" button, shown only when a track is loaded, which writes the absolute `/tracks?play=<id>&t=<floor(currentTime)>` URL to the clipboard, with "Link copied" feedback and a visible-text fallback when the clipboard rejects (design Decision 6)
+- [x] 4.3 In `tracks/+page.svelte`, on mount read `play` and `t` from `page.url.searchParams` (`$app/state`) and set the store (NaN or negative `t` becomes 0). Verify `cd app && npm run build` still prerenders without errors
+- [x] 4.4 Add `app/e2e/player.test.js` with `page.route` mocks for the search and play endpoints, one test per UI scenario: `open a link with a start time`, `open a link without a start time`, `open a link with an invalid start time`, `copy a link while a track is playing`, `no track loaded`. Verify `cd app && npx playwright test e2e/player.test.js` passes
+- [x] 4.5 Run `cd app && npm run format && npm run lint`, check the flow by hand with `npm run dev` against the running backend (open a copied link in a new tab and check it starts at that time), and commit as `feat(ui): start playback at a position from a shareable link`
 
 ## 5. Docs, verification and PR
 
