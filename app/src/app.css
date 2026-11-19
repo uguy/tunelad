@@ -4,7 +4,6 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 @plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
 
 body {
 	background-color: #f3f3f3;
