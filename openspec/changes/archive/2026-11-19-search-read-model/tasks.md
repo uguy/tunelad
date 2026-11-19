@@ -45,7 +45,7 @@ Commit: `refactor(search): serve track search from the read model`
 
 - [x] 6.1 Run `./mvnw clean verify` with Docker running. Verify that it ends in `BUILD SUCCESS` (Java tests, vitest and Playwright e2e).
 - [x] 6.2 Update `README.adoc`: the MongoDB section says full-text search runs on the search module's own collection, kept up to date from track events (not on `tracks`). The features list notes that new uploads become searchable after a short delay. Remove any mention of clearing the library through the API. Verify that the README renders and no longer says search runs on the `tracks` collection. Commit as `docs(search): describe the search read model`.
-- [ ] 6.3 Push the branch and open a PR to `main` titled `refactor(search)!: serve search from a read model and drop the delete-all endpoint`. Its body summarizes the change, the removal of `DELETE /api/tracks` (breaking), the spike outcome and the local data wipe. Verify that the `workflow-pr-title` and build checks pass on the PR.
+- [x] 6.3 Push the branch and open a PR to `main` titled `refactor(search)!: serve search from a read model and drop the delete-all endpoint`. Its body summarizes the change, the removal of `DELETE /api/tracks` (breaking), the spike outcome and the local data wipe. Verify that the `workflow-pr-title` and build checks pass on the PR.
 
 ## Workflow follow-up
 
