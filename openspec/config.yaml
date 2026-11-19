@@ -1,32 +1,36 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  Playground repo for trying out Spring Modulith, WebFlux, OpenAPI and SvelteKit. Prefer
+  idiomatic use of those tools over shortcuts, since learning them is the point.
+  Solo maintainer; work goes through feature branches and squash-merged PRs to main.
+  Specs are organised by Spring Modulith application module (track, search, ...).
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Name the affected Modulith modules and whether the change touches the REST API, the UI, or both
+    - Flag breaking REST API changes explicitly
+    - Always include an explicit Out of scope section
+    - Propose the conventional commit type and scope to use as the PR title
+  specs:
+    - One capability per Modulith module (specs/track, specs/search); use a sub-path only when a module grows several distinct capabilities
+    - Describe behaviour observable through the REST API or the UI, never internal classes
+  design:
+    - Modules communicate through published events or a module's public API package; never reach into another module's internal package
+    - Stay fully reactive; call out any blocking call and how it is isolated
+    - Any REST change must say how the OpenAPI description changes
+  tasks:
+    - First task creates a feature branch named <type>/<short-kebab-name> from an up-to-date main
+    - Each task group is one reviewable commit with a conventional commit message
+    - Every behaviour change has a test in the same task group (Testcontainers for Mongo, Playwright for UI flows)
+    - Last tasks are running ./mvnw clean verify, updating README.adoc features if user-visible, then opening a PR
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - Never commit to main; work on the change's feature branch
+      - Commit at the end of each task group using conventional commits
+      - Do not push or open the PR until ./mvnw clean verify passes locally
+  archive:
+    guidance:
+      - Archive on the feature branch before merge, so specs land in main together with the code
