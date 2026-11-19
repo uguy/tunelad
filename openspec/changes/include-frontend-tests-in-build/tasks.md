@@ -28,7 +28,7 @@
 
 - [x] 5.1 Run `./mvnw clean verify` and check it passes, with the logs showing the Java tests, the vitest run and the Playwright run
 - [x] 5.2 Leave `README.adoc` Features unchanged (nothing user-visible changes; the build docs were updated in 3.6)
-- [ ] 5.3 Push the branch and open a PR to `main` titled `build(ui): run frontend unit and e2e tests in the maven build`. Check the `build` workflow passes, including the Playwright step on the runner
+- [x] 5.3 Push the branch and open a PR to `main` titled `build(ui): run frontend unit and e2e tests in the maven build`. Check the `build` workflow passes, including the Playwright step on the runner
 
 ## Workflow follow-up
 
