@@ -24,7 +24,6 @@ import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
-import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,12 +50,6 @@ public class TrackController {
     @GetMapping("/search")
     public Flux<TrackDTO> searchTracks(@RequestParam("q") String q) {
         return trackService.searchTracks(q);
-    }
-
-    @DeleteMapping
-    @Operation(summary = "Delete tracks", description = "Delete all tracks")
-    public Mono<Void> clear() {
-        return service.execute(new DeleteAllTrackCommand());
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

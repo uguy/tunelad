@@ -10,9 +10,7 @@ import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackMedia;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
-import org.tunelad.track.command.DeleteAllTrackCommand;
 import org.tunelad.track.command.PlayTrackCommand;
-import org.tunelad.track.event.AllTracksDeleted;
 import org.tunelad.track.event.NewTrackSaved;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,15 +49,6 @@ class DefaultTrackService implements TrackService {
         return tracks.findById(command.trackId())
                 .flatMap(track -> tracks.readMedia(track.getId()))
                 .switchIfEmpty(Mono.error(new NotFoundException("No track audio found for id: " + command.trackId())));
-    }
-
-    @Override
-    public Mono<Void> execute(DeleteAllTrackCommand command) {
-        return tracks.deleteAll()
-                .and(Mono.fromSupplier(() -> {
-                    events.publishEvent(new AllTracksDeleted());
-                    return Mono.empty();
-                }));
     }
 
     @Transactional(readOnly = true)

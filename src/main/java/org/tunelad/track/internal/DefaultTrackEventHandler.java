@@ -3,7 +3,6 @@ package org.tunelad.track.internal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.tunelad.track.event.AllTracksDeleted;
 import org.tunelad.track.event.NewTrackSaved;
 import reactor.core.publisher.Mono;
 
@@ -19,12 +18,6 @@ class DefaultTrackEventHandler implements TrackEventHandler {
     @Override
     public Mono<Void> on(NewTrackSaved event) {
         log.info("New track saved: " + event.track());
-        return Mono.empty();
-    }
-
-    @Override
-    public Mono<Void> on(AllTracksDeleted event) {
-        log.info("All tracks deleted");
         return Mono.empty();
     }
 }

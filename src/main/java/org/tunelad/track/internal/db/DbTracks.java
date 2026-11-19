@@ -69,12 +69,6 @@ class DbTracks implements Tracks {
     }
 
     @Override
-    public Mono<Void> deleteAll() {
-        return mongoTrackRepository.deleteAll()
-                .then(gridFsOperations.delete(Query.query(Criteria.where("filename").exists(true))));
-    }
-
-    @Override
     public Mono<TrackMedia> readMedia(String id) {
         return gridFsOperations.findOne(Query.query(Criteria.where("filename").is(id)))
                 .map(file -> new GridFsTrackMedia(file.getObjectId(), file.getLength(), file.getChunkSize()));
