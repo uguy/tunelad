@@ -157,7 +157,7 @@ docker compose down -v
 
 === MongoDB database
 
-MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection named `tracks`, and audio files in MongoDB GridFS.
+MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection named `tracks` by the `track` module. Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in MongoDB GridFS under the track id and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges).
 
 Search follows CQRS: the `search` module keeps its own read model, the `search_tracks` collection with a MongoDB full-text index, and fills it from the `NewTrackSaved` events that the `track` module publishes. Events go through the Spring Modulith Event Publication Registry (the `event_publication` collection), and are delivered once the upload's MongoDB transaction has committed.
 

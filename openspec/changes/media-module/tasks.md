@@ -30,8 +30,8 @@ Commit: `refactor(media): serve track audio from the media module`
 
 ## 5. Verify, document, open the PR
 
-- [ ] 5.1 Run `./mvnw clean verify` with Docker running. If Spring Modulith's test selection skips any module's tests, run again with all tests forced (`-Dspring.modulith.test.file-modification-detector=reference-commit -Dspring.modulith.test.reference-commit=$(git rev-parse HEAD) -Dspring.modulith.test.on-no-changes=execute-all`). Verify that it ends in `BUILD SUCCESS` with no test skipped other than the `@Disabled` `ImporterTest`.
-- [ ] 5.2 Update the MongoDB section of `README.adoc`: audio files are stored in GridFS by the `media` module, which also serves playback, and `track` hands the uploaded audio to it. No features-list change (nothing user-visible). Verify that the README no longer suggests that `track` owns the audio. Commit as `docs(media): describe the media module`.
+- [x] 5.1 Run `./mvnw clean verify` with Docker running. If Spring Modulith's test selection skips any module's tests, run again with all tests forced (`-Dspring.modulith.test.file-modification-detector=reference-commit -Dspring.modulith.test.reference-commit=$(git rev-parse HEAD) -Dspring.modulith.test.on-no-changes=execute-all`). Verify that it ends in `BUILD SUCCESS` with no test skipped other than the `@Disabled` `ImporterTest`.
+- [x] 5.2 Update the MongoDB section of `README.adoc`: audio files are stored in GridFS by the `media` module, which also serves playback, and `track` hands the uploaded audio to it. No features-list change (nothing user-visible). Verify that the README no longer suggests that `track` owns the audio. Commit as `docs(media): describe the media module`.
 - [ ] 5.3 Push the branch and open a PR to `main` titled `refactor(media): move audio storage and play into a media module`, with a body that summarizes the module split, the unchanged REST contract and data, and the OpenAPI tag change. Verify that the `workflow-pr-title` and build checks pass on the PR.
 
 ## Workflow follow-up
