@@ -6,23 +6,24 @@
 	<title>Tune Lad</title>
 </svelte:head>
 
-<section class="flex flex-col w-full">
-	<h1 class="ml-auto mr-auto text-3xl font-bold">Welcome to Tune Lad !</h1>
-	<p class="font-medium my-5 ml-auto mr-auto">
-		Start listening to some <a
-			class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-			href={resolve('/tracks')}>tracks</a
-		> ...
-	</p>
-	<img
-		class="ml-auto mr-auto rounded-md"
-		src="images/celtic-connections.webp"
-		alt="celtic connections concert"
-		width="600px"
-		height="364px"
-	/>
+<section class="flex flex-col gap-8">
+	<div class="relative overflow-hidden rounded-lg bg-header shadow-md">
+		<img
+			class="absolute inset-0 h-full w-full object-cover opacity-50"
+			src="images/celtic-connections.webp"
+			alt="celtic connections concert"
+			width="600"
+			height="364"
+		/>
+		<div class="absolute inset-0 bg-gradient-to-r from-header via-header/70 to-transparent"></div>
+		<div class="relative px-6 py-16 sm:px-12 sm:py-24">
+			<h1 class="text-3xl font-bold tracking-tight text-white sm:text-5xl">
+				Welcome to Tune Lad !
+			</h1>
+			<p class="mt-4 max-w-md text-lg text-white/80">
+				Share your tunes, and listen to everybody else's, right in the browser.
+			</p>
+			<a href={resolve('/tracks')} class="btn-accent mt-8 px-6 py-3 text-base">Start listening</a>
+		</div>
+	</div>
 </section>
-
-<style lang="postcss">
-	@reference "tailwindcss";
-</style>

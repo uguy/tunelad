@@ -33,7 +33,8 @@
 
 	/** The waveforms fetched so far, by track id. */
 	let waveforms = $state<Record<string, TrackWaveform>>({});
-	/** Tracks whose waveform has been asked for, so each is fetched once. */
+	/** Tracks whose waveform has been asked for, so each is fetched once. Bookkeeping only: nothing renders it. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
 	const requested = new Set<string>();
 	let alive = true;
 	$effect(() => () => {

@@ -12,26 +12,24 @@
 	<title>Tune Lad - About</title>
 </svelte:head>
 
-<section class="flex flex-col">
-	<h1 class="text-3xl font-medium leading-normal">
+<section class="flex flex-col gap-2">
+	<h1 class="text-3xl font-bold tracking-tight">
 		{data.info.app.name}
 	</h1>
-	<p>
+	<p class="text-ink-muted">
 		{data.info.app.description}
 	</p>
 	<div class="flex flex-wrap gap-4">
-		<div
-			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
-		>
-			<div class="w-full text-center p-4 bg-zinc-200 rounded-t-lg">
-				<h2 class="text-3xl font-medium">
+		<div class="card my-5 min-w-72 flex-1 overflow-hidden">
+			<div class="w-full border-b border-line bg-canvas px-6 py-4">
+				<h2 class="text-xl font-semibold">
 					Health
 					{#if data.health.status === 'UP'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							viewBox="0 0 24 24"
 							fill="currentColor"
-							class="w-6 h-6 text-3xl text-yellow-600 inline"
+							class="inline h-5 w-5 text-accent"
 						>
 							<path
 								d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"
@@ -42,7 +40,7 @@
 							xmlns="http://www.w3.org/2000/svg"
 							viewBox="0 0 24 24"
 							fill="currentColor"
-							class="w-6 h-6 text-3xl text-red-700 inline"
+							class="inline h-5 w-5 text-red-700"
 						>
 							<path
 								fill-rule="evenodd"
@@ -54,7 +52,7 @@
 				</h2>
 			</div>
 			<div class="stat-panel p-6">
-				<h2 class="text-2xl font-medium leading-6">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">
 					Database
 					{#if data.health.components.mongo.status === 'UP'}
 						<svg
@@ -90,7 +88,7 @@
 				</h2>
 				{#if data.health.components.mongo.status === 'UP'}
 					DB Names :
-					<ul class="my-2 list-disc list-inside">
+					<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 						{#each data.health.components.mongo.details.databases as db (db)}
 							<li>{db}</li>
 						{/each}
@@ -100,7 +98,7 @@
 					Error reason :
 					<code>{data.health.components.mongo.details.error}</code>
 				{/if}
-				<h2 class="text-2xl font-medium leading-6">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">
 					Disk usage
 					{#if data.health.components.diskSpace.status === 'UP'}
 						<svg
@@ -134,7 +132,7 @@
 						</svg>
 					{/if}
 				</h2>
-				<ul class="my-2 list-disc list-inside">
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>
 						{#if data.health.components.diskSpace.status === 'UP'}
 							Free space : {Math.round(
@@ -150,21 +148,19 @@
 				</ul>
 			</div>
 		</div>
-		<div
-			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
-		>
-			<div class=" w-full text-center p-4 bg-zinc-200 rounded-t-lg">
-				<h2 class="text-3xl font-medium">Runtime</h2>
+		<div class="card my-5 min-w-72 flex-1 overflow-hidden">
+			<div class="w-full border-b border-line bg-canvas px-6 py-4">
+				<h2 class="text-xl font-semibold">Runtime</h2>
 			</div>
 			<div class="stat-panel p-6">
-				<h2 class="text-2xl font-medium leading-6">Java</h2>
-				<ul class="my-2 list-disc list-inside">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">Java</h2>
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>JVM version : {data.info.java.version}</li>
 					<li>JVM name : {data.info.java.runtime.name}</li>
 					<li>JVM vendor : {data.info.java.vendor.version}</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6">OS</h2>
-				<ul class="my-2 list-disc list-inside">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">OS</h2>
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>OS name : {data.info.os.name}</li>
 					<li>OS arch : {data.info.os.arch}</li>
 					<li>Available Processors : {data.info.runtime.availableProcessors}</li>
@@ -172,15 +168,13 @@
 				</ul>
 			</div>
 		</div>
-		<div
-			class="my-5 inline bg-white border border-gray-200 rounded-lg shadow-xl dark:bg-gray-800 dark:border-gray-700"
-		>
-			<div class=" w-full text-center p-4 bg-zinc-200 rounded-t-lg">
-				<h2 class="text-3xl font-medium">Build</h2>
+		<div class="card my-5 min-w-72 flex-1 overflow-hidden">
+			<div class="w-full border-b border-line bg-canvas px-6 py-4">
+				<h2 class="text-xl font-semibold">Build</h2>
 			</div>
 			<div class="stat-panel p-6">
-				<h2 class="text-2xl font-medium leading-6">Last update</h2>
-				<ul class="my-2 list-disc list-inside">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">Last update</h2>
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>
 						Backend : <Time
 							timestamp={data.info.build.time || ''}
@@ -191,14 +185,14 @@
 						Frontend : <Time timestamp={frontendBuildDate} format="dddd D MMMM YYYY @ h:mm A " />
 					</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6">Maven coordinates</h2>
-				<ul class="my-2 list-disc list-inside">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">Maven coordinates</h2>
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>group : {data.info.build.group}</li>
 					<li>artifact : {data.info.build.artifact}</li>
 					<li>version : {data.info.build.version}</li>
 				</ul>
-				<h2 class="text-2xl font-medium leading-6">Git</h2>
-				<ul class="my-2 list-disc list-inside">
+				<h2 class="mt-4 text-base font-semibold first:mt-0">Git</h2>
+				<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
 					<li>Git repository : {data.info.git.remote.origin.url}</li>
 					<li>Git branch : {data.info.git.branch}</li>
 					<li>Git commit id : {data.info.git.commit.id.abbrev}</li>

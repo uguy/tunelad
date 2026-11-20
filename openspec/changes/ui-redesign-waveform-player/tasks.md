@@ -39,8 +39,8 @@
 
 ## 7. Restyle the remaining pages (commit: `feat(ui): restyle home, about, tracks, upload and placeholder pages`)
 
-- [ ] 7.1 Restyle the tracks page (search, sub-navigation) and the upload page (form, drop zone, progress bar) with the tokens, keeping their accessible names; verify `track-upload.test.js` passes
-- [ ] 7.2 Restyle home, about, favourites, playlists and albums; verify `index.test.js` passes and check every page by running the app (`docker compose up -d`, `./mvnw spring-boot:run`, `cd app && npm run dev`) on desktop and mobile widths
+- [x] 7.1 Restyle the tracks page (search, sub-navigation) and the upload page (form, drop zone, progress bar) with the tokens, keeping their accessible names; verify `track-upload.test.js` passes
+- [x] 7.2 Restyle home, about, favourites, playlists and albums; verify `index.test.js` passes and check every page by running the app (`docker compose up -d`, `./mvnw spring-boot:run`, `cd app && npm run dev`) on desktop and mobile widths
 
 ## 8. Integration and delivery
 
