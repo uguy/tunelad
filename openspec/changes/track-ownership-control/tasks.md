@@ -45,7 +45,7 @@ Commit: `feat(ui): edit and delete own tracks from the track list`
 ## 6. Finish
 
 - [x] 6.1 In README.adoc's Features, add "Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list". Add a curl example for `PUT`/`DELETE` with a bearer token next to the upload recipe, and verify it works against the running app
-- [ ] 6.2 Run `./mvnw clean verify` and verify it passes, including `ModularApplicationTests`, the Keycloak test, vitest and the Playwright e2e tests
+- [x] 6.2 Run `./mvnw clean verify` and verify it passes, including `ModularApplicationTests`, the Keycloak test, vitest and the Playwright e2e tests
 - [x] 6.3 Smoke-test with `docker compose up -d` and the built app: as alice, edit and delete one of her tracks from the track list and see search catch up within a few seconds. As bob, see no controls on alice's tracks, and get 403 from a curl `DELETE`. As `admin`, edit one of bob's tracks
 - [ ] 6.4 Push `feat/track-ownership-control` and open a PR to `main` titled `feat(track): let owners and admins edit and delete tracks`, mentioning the Keycloak container recreate step in the description
 
