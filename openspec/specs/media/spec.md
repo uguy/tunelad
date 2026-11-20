@@ -1,7 +1,7 @@
 # media Specification
 
 ## Purpose
-Play the stored audio of tracks: stream it through the REST API, whole or by byte range, and let listeners in the browser player start a track at a given time from a link, and share such a link.
+Play the stored audio of tracks: stream it through the REST API, whole or by byte range, and compute and serve each track's waveform. In the browser, a persistent player bar plays tracks with play/pause, previous/next, seeking (also by clicking a track's waveform) and volume, and lets listeners start a track at a given time from a link, and share such a link.
 
 ## Requirements
 
