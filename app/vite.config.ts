@@ -91,6 +91,10 @@ export default defineConfig({
 						}
 					]
 				},
+				workbox: {
+					// Navigations the service worker must leave to the server instead of serving the SPA shell
+					navigateFallbackDenylist: [/^\/login/, /^\/oauth2\//, /^\/logout/, /^\/api\//]
+				},
 				injectManifest: {
 					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
 				},
@@ -128,6 +132,13 @@ export default defineConfig({
 		]
 	},
 	server: {
-		proxy: { '/api': 'http://localhost:8080', '/actuator': 'http://localhost:8080' }
+		// Login and logout are served by the backend too; /login also covers the /login/oauth2/code callback
+		proxy: {
+			'/api': 'http://localhost:8080',
+			'/actuator': 'http://localhost:8080',
+			'/login': 'http://localhost:8080',
+			'/oauth2': 'http://localhost:8080',
+			'/logout': 'http://localhost:8080'
+		}
 	}
 });

@@ -47,11 +47,11 @@ Commit: `feat(track)!: require authentication to upload and record the track own
 
 Commit: `feat(ui): show login state in the header and the owner of each track`
 
-- [ ] 6.1 Make `app/src/lib/api.ts` send `X-XSRF-TOKEN` from the `XSRF-TOKEN` cookie on non-GET requests and drop the unused `Token` header parameter. Add a `me` store loaded from `GET /api/me` (401 means anonymous)
-- [ ] 6.2 Update `Header.svelte` for both desktop and mobile menus: a "Log in" link to `/login` when anonymous, and the display name plus a "Log out" form (POST `/logout` with a hidden `_csrf`) when logged in
-- [ ] 6.3 Show the owner's display name for each track in `TrackList.svelte`
-- [ ] 6.4 Add `/login`, `/oauth2` and `/logout` to the Vite dev proxy, and add `/login`, `/oauth2/`, `/logout` and `/api/` to the PWA `navigateFallbackDenylist`
-- [ ] 6.5 Add Playwright tests for "Login state in the header" (anonymous, logged in, logout posts to `/logout` with the token), "Show who uploaded each track" and "Anonymous link with a start time". Mock `/api/me` as anonymous and add `owner` to the fixtures in the existing tests. Run `npm run format` and `npm run lint`, and verify `npm run test:e2e` passes
+- [x] 6.1 Make `app/src/lib/api.ts` send `X-XSRF-TOKEN` from the `XSRF-TOKEN` cookie on non-GET requests and drop the unused `Token` header parameter. Add a `me` store loaded from `GET /api/me` (401 means anonymous)
+- [x] 6.2 Update `Header.svelte` for both desktop and mobile menus: a "Log in" link to `/login` when anonymous, and the display name plus a "Log out" form (POST `/logout` with a hidden `_csrf`) when logged in
+- [x] 6.3 Show the owner's display name for each track in `TrackList.svelte`
+- [x] 6.4 Add `/login`, `/oauth2` and `/logout` to the Vite dev proxy, and add `/login`, `/oauth2/`, `/logout` and `/api/` to the PWA `navigateFallbackDenylist`
+- [x] 6.5 Add Playwright tests for "Login state in the header" (anonymous, logged in, logout posts to `/logout` with the token), "Show who uploaded each track" and "Anonymous link with a start time". Mock `/api/me` as anonymous and add `owner` to the fixtures in the existing tests. Run `npm run format` and `npm run lint`, and verify `npm run test:e2e` passes
 
 ## 7. Real Keycloak integration test
 
