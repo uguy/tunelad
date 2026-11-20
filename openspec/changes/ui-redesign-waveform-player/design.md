@@ -57,8 +57,11 @@ stored in GridFS metadata. That keeps the GridFS store focused and lets the back
 waveform" with a simple `$lookup` or set difference.
 
 ### D4. Trigger: `media` publishes its own internal event after storing
-`GridFsMediaStore.store` becomes: store in GridFS → save `Waveform(key, PENDING)` → publish
-`AudioStored(key)` via `TransactionalEvents` (same reactive transaction as the track's save when there is one). An
+`GridFsMediaStore.store` becomes: store in GridFS → then, in a short reactive transaction of its own
+(`TransactionalOperator`), save `Waveform(key, PENDING)` and publish `AudioStored(key)` via `TransactionalEvents`.
+The transaction is needed because uploads store audio *outside* any transaction (so a long write holds none open), and
+a module listener never hears about an event published outside one. The listener only *updates* an existing waveform
+(no upsert), so a waveform deleted while it was being computed (failed upload, quick delete) does not come back. An
 `@ApplicationModuleListener` in `media.internal` (`WaveformComputer`) handles it: it extracts the peaks and saves
 `READY` or `FAILED`. Because it goes through the Event Publication Registry, an event lost to a crash or redeploy is
 republished on restart, which is the idiomatic Modulith way. The upload response never waits for ffmpeg.

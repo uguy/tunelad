@@ -5,6 +5,7 @@ import org.bson.Document;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -14,13 +15,20 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.ReactiveGridFsOperations;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.infrastructure.TransactionalEvents;
 import org.tunelad.media.MediaStore;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 
-/** Keeps audio in GridFS, one file per key, named after the key. */
+/**
+ * Keeps audio in GridFS, one file per key, named after the key, along with its waveform: storing audio leaves a
+ * pending waveform and announces it with {@link AudioStored}, so {@link WaveformComputer} computes it after the fact.
+ */
 @Component
 public class GridFsMediaStore implements MediaStore {
 
@@ -28,26 +36,47 @@ public class GridFsMediaStore implements MediaStore {
 
     private final ReactiveMongoOperations mongoOperations;
     private final ReactiveGridFsOperations gridFsOperations;
+    private final Waveforms waveforms;
+    private final TransactionalEvents events;
+    private final TransactionalOperator transactionalOperator;
 
     /** GridFS stores file content in "{bucket}.chunks", one document per chunk: {files_id, n, data}. */
     private final String chunksCollection;
 
     GridFsMediaStore(ReactiveMongoOperations mongoOperations,
                      ReactiveGridFsOperations gridFsOperations,
+                     Waveforms waveforms,
+                     TransactionalEvents events,
+                     @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager,
                      @Value("${spring.data.mongodb.gridfs.bucket:fs}") String bucket) {
         this.mongoOperations = mongoOperations;
         this.gridFsOperations = gridFsOperations;
+        this.waveforms = waveforms;
+        this.events = events;
+        this.transactionalOperator = TransactionalOperator.create(transactionManager);
         this.chunksCollection = bucket + ".chunks";
     }
 
     @Override
     public Mono<Void> store(String key, Publisher<DataBuffer> audio, String contentType) {
-        return gridFsOperations.store(audio, key, contentType).then();
+        return gridFsOperations.store(audio, key, contentType)
+                .then(Mono.defer(() -> awaitWaveform(key)));
+    }
+
+    /**
+     * Saves a pending waveform and announces it, in a transaction of its own: callers may store audio outside any
+     * transaction (uploads do), and module listeners only hear about events published within one.
+     */
+    private Mono<Void> awaitWaveform(String key) {
+        return waveforms.save(Waveform.pending(key))
+                .then(events.publish(new AudioStored(key)))
+                .as(transactionalOperator::transactional);
     }
 
     @Override
     public Mono<Void> delete(String key) {
-        return gridFsOperations.delete(Query.query(Criteria.where("filename").is(key)));
+        return gridFsOperations.delete(Query.query(Criteria.where("filename").is(key)))
+                .then(waveforms.deleteById(key));
     }
 
     /** The audio stored under that key, or empty when there is none. */

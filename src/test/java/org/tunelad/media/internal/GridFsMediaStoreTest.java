@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** The media module on its own: audio stored under a key, read back whole or by slice. */
-@ApplicationModuleTest
+@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 @Import(TestContainerDefinitions.class)
 class GridFsMediaStoreTest {
 

@@ -7,12 +7,12 @@
 
 ## 2. Waveform computation in the media module (commit: `feat(media): compute waveform peaks after audio is stored`)
 
-- [ ] 2.1 Add the pure peak reduction (window maxima → 200 buckets → normalised to the loudest peak, all zeros when silent) and verify with unit tests for normalisation, silence, and inputs shorter than 200 windows
-- [ ] 2.2 Add the `tunelad.media.ffmpeg` configuration properties (path, timeout) and `FfmpegPeakExtractor`, which pipes GridFS content to ffmpeg on `boundedElastic` and reads s16le PCM; verify with a test on the existing wav/mp3/m4a/ogg/flac fixtures that each gives 200 peaks, and that random bytes give a decode failure
-- [ ] 2.3 Add the `Waveform` document and reactive repository (`waveforms` collection), make `GridFsMediaStore.store` save a `PENDING` waveform and publish the internal `AudioStored` event via `TransactionalEvents`, and make `delete` remove the waveform; verify with Testcontainers tests
-- [ ] 2.4 Add the `@ApplicationModuleListener` that computes and saves `READY`/`FAILED`, and leaves `PENDING` with a single WARN when ffmpeg cannot start; verify with Testcontainers + Awaitility tests (silent-then-loud wav peaks, random bytes → `FAILED`), and that `ModularApplicationTests` still passes
-- [ ] 2.5 Add the `ApplicationReadyEvent` backfill that processes, one at a time, stored audio with no `READY`/`FAILED` waveform; verify with a test that stores GridFS audio directly with no waveform and sees it become `READY`
-- [ ] 2.6 Document ffmpeg as a prerequisite in README.adoc (Prerequisite section) and verify the documented `ffmpeg -version` check
+- [x] 2.1 Add the pure peak reduction (window maxima → 200 buckets → normalised to the loudest peak, all zeros when silent) and verify with unit tests for normalisation, silence, and inputs shorter than 200 windows
+- [x] 2.2 Add the `tunelad.media.ffmpeg` configuration properties (path, timeout) and `FfmpegPeakExtractor`, which pipes GridFS content to ffmpeg on `boundedElastic` and reads s16le PCM; verify with a test on the existing wav/mp3/m4a/ogg/flac fixtures that each gives 200 peaks, and that random bytes give a decode failure
+- [x] 2.3 Add the `Waveform` document and reactive repository (`waveforms` collection), make `GridFsMediaStore.store` save a `PENDING` waveform and publish the internal `AudioStored` event via `TransactionalEvents`, and make `delete` remove the waveform; verify with Testcontainers tests
+- [x] 2.4 Add the `@ApplicationModuleListener` that computes and saves `READY`/`FAILED`, and leaves `PENDING` with a single WARN when ffmpeg cannot start; verify with Testcontainers + Awaitility tests (silent-then-loud wav peaks, random bytes → `FAILED`), and that `ModularApplicationTests` still passes
+- [x] 2.5 Add the `ApplicationReadyEvent` backfill that processes, one at a time, stored audio with no `READY`/`FAILED` waveform; verify with a test that stores GridFS audio directly with no waveform and sees it become `READY`
+- [x] 2.6 Document ffmpeg as a prerequisite in README.adoc (Prerequisite section) and verify the documented `ffmpeg -version` check
 
 ## 3. Waveform REST endpoint (commit: `feat(api): expose track waveforms`)
 
