@@ -58,6 +58,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 
 * Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
 * Upload a track with description (requires login or a bearer token); every track shows who uploaded it
+* Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
@@ -227,6 +228,23 @@ curl -H "Authorization: Bearer $TOKEN" \
 ----
 
 The track is stored with alice as its owner. Without a token, the upload is rejected with 401 Unauthorized.
+
+=== Editing and deleting a track
+
+The owner of a track, or an administrator, can replace its metadata (title, description, artist, album: an omitted
+artist or album is cleared) or delete it with its audio, from the track list or the API. Anyone else gets 403
+Forbidden. Continuing with alice's token from above:
+
+[source,bash]
+----
+ID=$(curl -s 'http://localhost:8080/api/tracks' | sed 's/.*"id":"\([^"]*\)","title":"Knees Up".*/\1/')
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"title":"Knees Up (live)","description":"Recorded at Celtic Connections","artist":"Breabach"}' \
+  http://localhost:8080/api/tracks/$ID
+curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/tracks/$ID
+----
+
+Search shows the change within a few seconds.
 
 == Configuration
 
