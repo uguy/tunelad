@@ -2,15 +2,15 @@
 
 ## 1. Branch
 
-- [ ] 1.1 Update `main` (`git switch main && git pull`) and create `feat/track-upload-form` from it. Commit this change's `openspec/changes/add-track-upload-form/` files as `docs(openspec): propose add-track-upload-form change`. Verify `git status` shows the new branch with a clean tree
+- [x] 1.1 Update `main` (`git switch main && git pull`) and create `feat/track-upload-form` from it. Commit this change's `openspec/changes/add-track-upload-form/` files as `docs(openspec): propose add-track-upload-form change`. Verify `git status` shows the new branch with a clean tree
 
 ## 2. Content type per audio file
 
 Commit: `feat(media): serve each audio file with its own content type`
 
-- [ ] 2.1 Change `MediaStore.store` to `store(String key, Publisher<DataBuffer> audio, String contentType)` and implement it in `GridFsMediaStore` with `ReactiveGridFsOperations.store(content, filename, contentType)`. Add `contentType()` to `Media`, read from the GridFS metadata with a fallback to `audio/mpeg` when absent (design.md decision 5). For now, pass `audio/mpeg` from `DefaultTrackService`. Verify `ModularApplicationTests` passes
-- [ ] 2.2 Use `media.contentType()` in `MediaController` for 200 and 206 responses, and list `audio/mpeg`, `audio/mp4`, `audio/ogg`, `audio/flac` and `audio/wav` in its `produces` and OpenAPI response content. Verify `/v3/api-docs` shows them
-- [ ] 2.3 Add `GridFsMediaStoreTest` cases: the stored content type is returned by `find`, and a file stored without one (written directly through `ReactiveGridFsOperations` with no content type) reports `audio/mpeg`. Add a `MediaApiTest` test for "Audio stored before formats were recorded" (store audio without a content type under a track's id). Verify the existing `MediaApiTest` range tests still pass with `./mvnw verify -DskipITs`
+- [x] 2.1 Change `MediaStore.store` to `store(String key, Publisher<DataBuffer> audio, String contentType)` and implement it in `GridFsMediaStore` with `ReactiveGridFsOperations.store(content, filename, contentType)`. Add `contentType()` to `Media`, read from the GridFS metadata with a fallback to `audio/mpeg` when absent (design.md decision 5). For now, pass `audio/mpeg` from `DefaultTrackService`. Verify `ModularApplicationTests` passes
+- [x] 2.2 Use `media.contentType()` in `MediaController` for 200 and 206 responses, and list `audio/mpeg`, `audio/mp4`, `audio/ogg`, `audio/flac` and `audio/wav` in its `produces` and OpenAPI response content. Verify `/v3/api-docs` shows them
+- [x] 2.3 Add `GridFsMediaStoreTest` cases: the stored content type is returned by `find`, and a file stored without one (written directly through `ReactiveGridFsOperations` with no content type) reports `audio/mpeg`. Add a `MediaApiTest` test for "Audio stored before formats were recorded" (store audio without a content type under a track's id). Verify the existing `MediaApiTest` range tests still pass with `./mvnw verify -DskipITs`
 
 ## 3. Upload API: 201, formats, validation, size limit
 

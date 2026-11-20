@@ -1,10 +1,13 @@
 package org.tunelad.media;
 
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.tunelad.AbstractApiTest;
+
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 
@@ -58,6 +61,19 @@ class MediaApiTest extends AbstractApiTest {
                 .expectBody(byte[].class).returnResult().getResponseBody();
 
         assertThat(body).isEqualTo(file);
+    }
+
+    @Test
+    void audio_stored_before_formats_were_recorded() {
+        var id = uploadKneesUp();
+        // Audio stored before this change has no content type in its GridFS metadata
+        mongo.getCollection("fs.files")
+                .flatMap(files -> Mono.from(files.updateMany(new Document("filename", id),
+                        new Document("$unset", new Document("metadata._contentType", "")))))
+                .block();
+
+        play(id).expectStatus().is2xxSuccessful()
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg");
     }
 
     @Test

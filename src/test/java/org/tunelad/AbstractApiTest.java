@@ -41,7 +41,7 @@ public abstract class AbstractApiTest {
     protected WebTestClient client;
 
     @Autowired
-    ReactiveMongoTemplate mongo;
+    protected ReactiveMongoTemplate mongo;
 
     @BeforeEach
     void emptyDatabase() {

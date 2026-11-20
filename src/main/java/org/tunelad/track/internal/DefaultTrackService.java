@@ -45,7 +45,7 @@ class DefaultTrackService implements TrackService {
         track.setOwner(command.owner());
 
         return tracks.save(track)
-                .flatMap(saved -> mediaStore.store(saved.getId(), command.data()).thenReturn(saved))
+                .flatMap(saved -> mediaStore.store(saved.getId(), command.data(), "audio/mpeg").thenReturn(saved))
                 // Published within the transaction: module listeners only see it once the track is committed
                 .flatMap(saved -> events.publish(new NewTrackSaved(trackMapper.toDto(saved))));
     }
