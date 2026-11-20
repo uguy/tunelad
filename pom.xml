@@ -313,6 +313,26 @@
 						</configuration>
 					</execution>
 					<execution>
+						<id>webapp lint</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<arguments>run lint</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>webapp check</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<arguments>run check</arguments>
+						</configuration>
+					</execution>
+					<execution>
 						<id>webapp build</id>
 						<goals>
 							<goal>npm</goal>
