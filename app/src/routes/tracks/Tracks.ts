@@ -12,6 +12,12 @@ export interface Track {
 	tags?: string[];
 }
 
+/** The waveform of a track's audio: its peaks, from 0 to 1, once `READY`; none while `PENDING` or when `FAILED`. */
+export interface Waveform {
+	status: 'PENDING' | 'READY' | 'FAILED';
+	peaks: number[];
+}
+
 /** A track's metadata as an edit replaces it: an omitted artist or album is cleared. */
 export interface TrackEdit {
 	title: string;
@@ -130,6 +136,20 @@ export default class TrackService {
 	async findOne(id: string): Promise<Track | null> {
 		try {
 			const res = await api.request(this.#fetchFunc, 'GET', `tracks/${encodeURIComponent(id)}`);
+			return res.ok ? await res.json() : null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** The waveform of the track, or null when the track does not exist or the waveform cannot be fetched. */
+	async findWaveform(id: string): Promise<Waveform | null> {
+		try {
+			const res = await api.request(
+				this.#fetchFunc,
+				'GET',
+				`tracks/${encodeURIComponent(id)}/waveform`
+			);
 			return res.ok ? await res.json() : null;
 		} catch {
 			return null;

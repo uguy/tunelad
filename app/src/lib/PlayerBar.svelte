@@ -73,7 +73,7 @@
 		<div class="flex items-center gap-1">
 			<button
 				type="button"
-				class="{iconButton} hidden sm:inline-flex"
+				class={iconButton}
 				aria-label="Previous track"
 				disabled={!player.hasPrevious}
 				onclick={() => player.previous()}><Icon name="previous" /></button

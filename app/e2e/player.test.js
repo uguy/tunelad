@@ -25,11 +25,21 @@ const SHORT = track('track-0', 'Short Tune', 'Carol');
 const KNEES_UP = track('track-1', 'Knees Up', 'Alice Liddell');
 const REEL = track('track-2', 'Reel', 'Bob');
 const AUDIO = { 'track-0': WAV, 'track-1': MP3, 'track-2': MP3 };
+const PEAKS = Array.from({ length: 200 }, (_, i) => 0.2 + 0.8 * Math.abs(Math.sin(i / 7)));
+// Reel's waveform is still being computed
+const WAVEFORMS = {
+	'track-0': { status: 'READY', peaks: PEAKS },
+	'track-1': { status: 'READY', peaks: PEAKS },
+	'track-2': { status: 'PENDING', peaks: [] }
+};
 
 test.beforeEach(async ({ page }) => {
 	await page.route('**/api/me', (route) => route.fulfill({ status: 401 }));
 	await page.route('**/api/tracks/search*', (route) =>
 		route.fulfill({ json: [SHORT, KNEES_UP, REEL] })
+	);
+	await page.route('**/api/tracks/*/waveform', (route) =>
+		route.fulfill({ json: WAVEFORMS[new URL(route.request().url()).pathname.split('/')[3]] })
 	);
 	await page.route('**/api/tracks/*/play', (route) => {
 		const id = new URL(route.request().url()).pathname.split('/')[3];
@@ -57,6 +67,13 @@ const playTrack = (page, title) =>
 const metadataLoaded = (page) =>
 	expect.poll(() => audio(page).evaluate((a) => a.readyState)).toBeGreaterThanOrEqual(1);
 const loadedTrackSrc = (page) => audio(page).getAttribute('src');
+const waveformOf = (page, title) => page.getByRole('slider', { name: `seek ${title}` });
+/** Clicks a track's waveform at a share of its width. */
+const clickWaveform = async (page, title, fraction) => {
+	const waveform = waveformOf(page, title);
+	const box = await waveform.boundingBox();
+	await waveform.click({ position: { x: box.width * fraction, y: box.height / 2 } });
+};
 
 // --- Requirement: Start playback at a position from a link ---------------------------------
 
@@ -159,6 +176,31 @@ test('pause from the player bar', async ({ page }) => {
 
 	await expect.poll(() => audio(page).evaluate((a) => a.paused)).toBe(true);
 	await expect(playerBar(page).getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'play track Knees Up button' })).toBeVisible();
+});
+
+test('the track row shows a pause control while its track plays', async ({ page }) => {
+	await page.goto('/tracks');
+
+	await playTrack(page, 'Knees Up');
+
+	await expect(page.getByRole('button', { name: 'pause track Knees Up button' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'play track Reel button' })).toBeVisible();
+});
+
+test('resume from the track row', async ({ page }) => {
+	await page.goto('/tracks');
+	await playTrack(page, 'Knees Up');
+	await metadataLoaded(page);
+	await page.getByRole('button', { name: 'pause track Knees Up button' }).click();
+	await expect.poll(() => audio(page).evaluate((a) => a.paused)).toBe(true);
+	await audio(page).evaluate((a) => (a.currentTime = 30));
+
+	await playTrack(page, 'Knees Up');
+
+	await expect.poll(() => audio(page).evaluate((a) => a.paused)).toBe(false);
+	expect(await audioTime(page)).toBeGreaterThanOrEqual(30);
+	expect(await loadedTrackSrc(page)).toBe('/api/tracks/track-1/play');
 });
 
 test('resume from the player bar', async ({ page }) => {
@@ -254,6 +296,38 @@ test('seek with the progress control', async ({ page }) => {
 
 	await expect.poll(() => audioTime(page)).toBeGreaterThanOrEqual(100);
 	expect(await audioTime(page)).toBeLessThan(110);
+});
+
+test('seek by clicking the waveform of the loaded track', async ({ page }) => {
+	await page.goto('/tracks');
+	await playTrack(page, 'Knees Up');
+	await metadataLoaded(page);
+	await audio(page).evaluate((a) => a.pause());
+
+	await clickWaveform(page, 'Knees Up', 0.75);
+
+	// 3/4 of about 207 seconds
+	await expect.poll(() => audioTime(page)).toBeGreaterThanOrEqual(150);
+	expect(await audioTime(page)).toBeLessThan(162);
+	await expect(waveformOf(page, 'Knees Up')).toHaveAttribute('aria-valuenow', /^7[4-9]$/);
+});
+
+test('start another track from its waveform', async ({ page }) => {
+	await page.goto('/tracks');
+	await playTrack(page, 'Knees Up');
+
+	await clickWaveform(page, 'Reel', 0.5);
+
+	await expect(audio(page)).toHaveAttribute('src', '/api/tracks/track-2/play');
+	await expect.poll(() => audioTime(page)).toBeGreaterThanOrEqual(100);
+	expect(await audioTime(page)).toBeLessThan(110);
+});
+
+test('waveform still pending', async ({ page }) => {
+	await page.goto('/tracks');
+
+	await expect(page.getByTestId('track-track-2').getByTestId('waveform-placeholder')).toBeVisible();
+	await expect(page.getByTestId('track-track-1').getByTestId('waveform')).toBeVisible();
 });
 
 // --- Requirement: Volume and mute -----------------------------------------------------------

@@ -33,9 +33,9 @@
 
 ## 6. Track rows with waveforms (commit: `feat(ui): redesign track rows with a clickable waveform`)
 
-- [ ] 6.1 Add `Waveform.svelte` (SVG bars, played-part highlight via clip path, slider role with arrow keys, flat placeholder when not ready, `onseek(fraction)`) and verify with a vitest browser component test that clicking at a fraction reports it and that progress highlights the right share of bars
-- [ ] 6.2 Add `findWaveform(id)` to `Tracks.ts` and verify with a unit test in `Tracks.test.ts`
-- [ ] 6.3 Rewrite `TrackList.svelte` as rows (generated artwork tile, round play/pause button reflecting player state, owner and title with `data-testid="track-title"`, tags, waveform loaded lazily and polled while `PENDING`, expandable description, edit/delete) wired to `player.playFrom` with the shown list as queue; update `track-upload.test.js` and `track-ownership.test.js` selectors and add e2e tests for clicking a loaded track's waveform to seek, clicking another track's waveform to start it there, and the pending placeholder
+- [x] 6.1 Add `Waveform.svelte` (SVG bars, played-part highlight via clip path, slider role with arrow keys, flat placeholder when not ready, `onseek(fraction)`) and verify with a vitest browser component test that clicking at a fraction reports it and that progress highlights the right share of bars
+- [x] 6.2 Add `findWaveform(id)` to `Tracks.ts` and verify with a unit test in `Tracks.test.ts`
+- [x] 6.3 Rewrite `TrackList.svelte` as rows (generated artwork tile, round play/pause button reflecting player state, owner and title with `data-testid="track-title"`, tags, waveform loaded lazily and polled while `PENDING`, expandable description, edit/delete) wired to `player.playFrom` with the shown list as queue; update `track-upload.test.js` and `track-ownership.test.js` selectors and add e2e tests for clicking a loaded track's waveform to seek, clicking another track's waveform to start it there, and the pending placeholder
 
 ## 7. Restyle the remaining pages (commit: `feat(ui): restyle home, about, tracks, upload and placeholder pages`)
 
