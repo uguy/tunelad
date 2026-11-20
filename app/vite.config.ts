@@ -91,7 +91,7 @@ export default defineConfig({
 						}
 					]
 				},
-				workbox: {
+				generateSW: {
 					// Navigations the service worker must leave to the server instead of serving the SPA shell
 					navigateFallbackDenylist: [/^\/login/, /^\/oauth2\//, /^\/logout/, /^\/api\//]
 				},
