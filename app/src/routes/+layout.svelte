@@ -21,19 +21,11 @@
 </svelte:head>
 
 <Header />
-<main class="relative flex flex-row">
-	<div class="lg:basis-1/6 md:hidden sm:hidden"></div>
-	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
-		<div class="flex flex-col w-full">
-			<div class="w-full">
-				{@render children()}
-			</div>
-			<div class="py-10 w-full">
-				<Player source={player.source} />
-			</div>
-		</div>
+<main class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+	{@render children()}
+	<div class="py-10 w-full">
+		<Player source={player.source} />
 	</div>
-	<div class="lg:basis-1/6 md:hidden sm:hidden"></div>
 </main>
 <Footer />
 

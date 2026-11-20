@@ -16,8 +16,8 @@
 		{ path: '/about', label: 'About' }
 	] as const;
 
-	const linkClass = 'text-gray-300 hover:bg-gray-700 hover:text-white';
-	const currentLinkClass = 'bg-gray-900 text-white';
+	const linkClass = 'text-white/70 hover:text-white border-transparent';
+	const currentLinkClass = 'text-white border-accent';
 
 	let mobileMenuVisible = $state(false);
 	function toggleMobileMenuVisible() {
@@ -26,14 +26,14 @@
 </script>
 
 <header class="sticky top-0 z-50">
-	<nav class="bg-gray-800">
+	<nav class="bg-header shadow-md">
 		<div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-			<div class="relative flex h-16 items-center justify-between">
+			<div class="relative flex h-14 items-center justify-between">
 				<div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
 					<!-- Mobile menu button-->
 					<button
 						type="button"
-						class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+						class="inline-flex items-center justify-center rounded-md p-2 text-white/70 hover:bg-white/10 hover:text-white"
 						aria-controls="mobile-menu"
 						aria-expanded={mobileMenuVisible}
 						onclick={toggleMobileMenuVisible}
@@ -82,24 +82,27 @@
 					</button>
 				</div>
 				<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-					<div class="flex flex-shrink-0 items-center">
+					<a href={resolve('/')} class="flex flex-shrink-0 items-center gap-2">
 						<img
 							src="/images/icon-72x72.png"
 							alt="Tune Lad"
-							class="h-8 w-auto"
+							class="h-8 w-auto rounded"
 							width="64"
 							height="64"
 						/>
-					</div>
-					<div class="hidden sm:ml-6 sm:block">
-						<div class="flex space-x-4">
+						<span class="hidden text-lg font-bold tracking-tight text-white md:inline"
+							>Tune Lad</span
+						>
+					</a>
+					<div class="hidden sm:ml-8 sm:flex">
+						<div class="flex h-full space-x-1">
 							{#each links as link (link.path)}
 								{@const current = page.url.pathname === link.path}
 								<a
 									href={resolve(link.path)}
 									class="{current
 										? currentLinkClass
-										: linkClass} px-3 py-2 rounded-md text-sm font-medium"
+										: linkClass} flex items-center border-b-2 px-4 text-sm font-semibold transition-colors"
 									aria-current={current ? 'page' : undefined}>{link.label}</a
 								>
 							{/each}
@@ -120,8 +123,8 @@
 					<a
 						href={resolve(link.path)}
 						class="{current
-							? currentLinkClass
-							: linkClass} block px-3 py-2 rounded-md text-base font-medium"
+							? 'bg-white/10 text-white'
+							: 'text-white/70 hover:bg-white/10 hover:text-white'} block px-3 py-2 rounded-md text-base font-medium"
 						aria-current={current ? 'page' : undefined}>{link.label}</a
 					>
 				{/each}

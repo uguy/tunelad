@@ -12,15 +12,17 @@
 
 	const linkClass = $derived(
 		mobile
-			? 'text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium'
-			: 'text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium'
+			? 'text-white/70 hover:bg-white/10 hover:text-white block px-3 py-2 rounded-md text-base font-medium'
+			: 'text-white/80 hover:text-white border border-white/30 hover:border-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors'
 	);
 </script>
 
 {#if session.account}
 	<div class={mobile ? 'space-y-1' : 'flex items-center space-x-2'}>
-		<span class={mobile ? 'block px-3 py-2 text-base text-white' : 'px-3 py-2 text-sm text-white'}
-			>{session.account.displayName}</span
+		<span
+			class={mobile
+				? 'block px-3 py-2 text-base text-white'
+				: 'px-3 py-2 text-sm font-medium text-white'}>{session.account.displayName}</span
 		>
 		<!-- A plain form post: the server ends the session, then redirects through the provider's logout -->
 		<form method="post" action="/logout" onsubmit={addCsrfToken}>

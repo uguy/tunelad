@@ -22,8 +22,8 @@
 
 ## 4. Theme and layout shell (commit: `feat(ui): add the new theme and restyle the header and layout`)
 
-- [ ] 4.1 Define the `@theme` tokens (accent, accent-hover, ink, surface, canvas, font) in `app/src/app.css` and verify `npm run check` and `npm run lint` pass
-- [ ] 4.2 Restyle `Header.svelte` (dark bar, logo, nav, account menu, mobile menu) and `Footer.svelte` with the tokens, keeping their accessible names; verify `account.test.js` and `index.test.js` still pass
+- [x] 4.1 Define the `@theme` tokens (accent, accent-hover, ink, surface, canvas, font) in `app/src/app.css` and verify `npm run check` and `npm run lint` pass
+- [x] 4.2 Restyle `Header.svelte` (dark bar, logo, nav, account menu, mobile menu) and `Footer.svelte` with the tokens, keeping their accessible names; verify `account.test.js` and `index.test.js` still pass
 
 ## 5. Player state and player bar (commit: `feat(ui): replace the native audio controls with a persistent player bar`)
 
