@@ -11,6 +11,11 @@ export default defineConfig({
 		reuseExistingServer: !CI
 	},
 	testDir: 'e2e',
+	use: {
+		// A registered service worker would show its offline-ready toast and could serve requests that
+		// tests mock with page.route; service-worker.test.js opts back in
+		serviceWorkers: 'block'
+	},
 	forbidOnly: CI,
 	retries: CI ? 1 : 0,
 	reporter: [['list'], ['html', { open: 'never' }]]

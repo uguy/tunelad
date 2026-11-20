@@ -92,6 +92,11 @@ export default defineConfig({
 					]
 				},
 				generateSW: {
+					// adapter-static overwrites build/index.html with the SPA fallback, which `kit.spa` already
+					// precaches as `/`. Precaching the prerendered index.html too (as `./`) makes Workbox throw
+					// add-to-cache-list-conflicting-entries and the service worker never registers.
+					// node_modules and server/ are the plugin's defaults, which a custom list replaces.
+					globIgnores: ['**/node_modules/**/*', 'server/**', 'prerendered/pages/index.html'],
 					// Navigations the service worker must leave to the server instead of serving the SPA shell
 					navigateFallbackDenylist: [/^\/login/, /^\/oauth2\//, /^\/logout/, /^\/api\//]
 				},
