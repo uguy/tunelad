@@ -32,7 +32,14 @@
 	onMount(() => {
 		const trackId = page.url.searchParams.get('play');
 		if (trackId) {
-			player.play(trackId, startTime(page.url.searchParams.get('t')));
+			const listed = tracks.find((t) => t.id === trackId) ?? null;
+			player.play(trackId, startTime(page.url.searchParams.get('t')), listed);
+			// A track that is not listed is fetched, for the player bar to show its title
+			if (!listed) {
+				trackService.findOne(trackId).then((track) => {
+					if (track && player.isLoaded(track.id)) player.track = track;
+				});
+			}
 		}
 	});
 
@@ -151,7 +158,11 @@
 
 	<TrackList
 		{tracks}
-		onplay={(trackId) => player.play(trackId)}
+		onplay={(trackId) =>
+			player.playFrom(
+				tracks,
+				tracks.findIndex((t) => t.id === trackId)
+			)}
 		onupdated={replaceTrack}
 		ondeleted={removeTrack}
 		ontagclick={searchTag}

@@ -126,6 +126,16 @@ export default class TrackService {
 		return await api.get(this.#fetchFunc, `tracks/search?q=${encodeURIComponent(query)}`);
 	}
 
+	/** The track with that id, or null when there is none or it cannot be fetched. */
+	async findOne(id: string): Promise<Track | null> {
+		try {
+			const res = await api.request(this.#fetchFunc, 'GET', `tracks/${encodeURIComponent(id)}`);
+			return res.ok ? await res.json() : null;
+		} catch {
+			return null;
+		}
+	}
+
 	/** Replaces the track's metadata and returns the updated track; throws a {@link TrackChangeError} if refused. */
 	async update(id: string, edit: TrackEdit): Promise<Track> {
 		const res = await api.request(this.#fetchFunc, 'PUT', `tracks/${encodeURIComponent(id)}`, edit);

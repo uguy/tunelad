@@ -27,9 +27,9 @@
 
 ## 5. Player state and player bar (commit: `feat(ui): replace the native audio controls with a persistent player bar`)
 
-- [ ] 5.1 Extend `player.svelte.ts` into the full player state (queue, index, source, playing, currentTime, duration, volume/mute persisted in localStorage; playFrom/play/toggle/seek/next/previous) and verify with vitest unit tests for next/previous rules (3-second restart, disabled next on last/empty queue) and volume persistence
-- [ ] 5.2 Add `PlayerBar.svelte` in `$lib`, which owns the single `<audio id="player">` (same `src`/`#t=` logic, no native controls): play/pause, previous/next, progress slider with elapsed/duration, volume and mute, current title and owner (fetched for deep links), and the copy-link control moved from `Player.svelte`; render it from `+layout.svelte` only once a track is loaded, with bottom padding; remove `Player.svelte`
-- [ ] 5.3 Update and extend `app/e2e/player.test.js`: the existing deep-link and copy-link tests still pass, plus new tests for the bar appearing, pause/resume, next/previous, auto-advance on `ended`, seeking with the progress control, mute and remembered volume, and playback continuing after navigating to `/about`
+- [x] 5.1 Extend `player.svelte.ts` into the full player state (queue, index, source, playing, currentTime, duration, volume/mute persisted in localStorage; playFrom/play/toggle/seek/next/previous) and verify with vitest unit tests for next/previous rules (3-second restart, disabled next on last/empty queue) and volume persistence
+- [x] 5.2 Add `PlayerBar.svelte` in `$lib`, which owns the single `<audio id="player">` (same `src`/`#t=` logic, no native controls): play/pause, previous/next, progress slider with elapsed/duration, volume and mute, current title and owner (fetched for deep links), and the copy-link control moved from `Player.svelte`; render it from `+layout.svelte` only once a track is loaded, with bottom padding; remove `Player.svelte`
+- [x] 5.3 Update and extend `app/e2e/player.test.js`: the existing deep-link and copy-link tests still pass, plus new tests for the bar appearing, pause/resume, next/previous, auto-advance on `ended`, seeking with the progress control, mute and remembered volume, and playback continuing after navigating to the home page
 
 ## 6. Track rows with waveforms (commit: `feat(ui): redesign track rows with a clickable waveform`)
 

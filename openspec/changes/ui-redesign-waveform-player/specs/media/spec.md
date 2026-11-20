@@ -79,7 +79,7 @@ The UI SHALL show a player bar fixed to the bottom of the viewport once a track 
 
 #### Scenario: Playback continues across pages
 - **GIVEN** "Knees Up" is playing
-- **WHEN** the user navigates to the about page
+- **WHEN** the user navigates to the home page
 - **THEN** the player bar is still shown and the playback position keeps advancing
 
 #### Scenario: No player bar before playing
