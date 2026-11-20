@@ -22,7 +22,7 @@
 </script>
 
 {#if toast}
-	<div class="pwa-toast" role="alert">
+	<div class="pwa-toast" role="status">
 		<div class="message">
 			{#if $offlineReady}
 				<span> App ready to work offline </span>
