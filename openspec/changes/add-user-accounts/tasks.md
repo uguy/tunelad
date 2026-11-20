@@ -8,9 +8,9 @@
 
 Commit: `build(account): add keycloak with a tunelad realm for local login`
 
-- [ ] 2.1 Add `docker/keycloak/tunelad-realm.json`: realm `tunelad`, confidential client `tunelad` (dev-only secret, standard flow, redirect and post-logout URIs for `:8080` and `:5173`, direct access grants, audience mapper adding `tunelad`), and users `alice` ("Alice Liddell") and `bob` ("Bob Smith") with each password equal to the username. Mark it dev-only in its description field
-- [ ] 2.2 Add a `keycloak` service to `docker-compose.yaml` (pinned `quay.io/keycloak/keycloak`, `start-dev --import-realm`, host port 8180, realm mounted). Verify `docker compose up -d keycloak`, then `curl localhost:8180/realms/tunelad/.well-known/openid-configuration` returns JSON, and a password-grant token request for `alice` succeeds and its access token's `aud` contains `tunelad`
-- [ ] 2.3 Document the Keycloak service, its URL, the test users and the dev-only nature of the realm in README.adoc's "Developing" section. Verify the documented commands run as written
+- [x] 2.1 Add `docker/keycloak/tunelad-realm.json`: realm `tunelad`, confidential client `tunelad` (dev-only secret, standard flow, redirect and post-logout URIs for `:8080` and `:5173`, direct access grants, audience mapper adding `tunelad`), and users `alice` ("Alice Liddell") and `bob` ("Bob Smith") with each password equal to the username. Mark it dev-only in its description field
+- [x] 2.2 Add a `keycloak` service to `docker-compose.yaml` (pinned `quay.io/keycloak/keycloak`, `start-dev --import-realm`, host port 8180, realm mounted). Verify `docker compose up -d keycloak`, then `curl localhost:8180/realms/tunelad/.well-known/openid-configuration` returns JSON, and a password-grant token request for `alice` succeeds and its access token's `aud` contains `tunelad`
+- [x] 2.3 Document the Keycloak service, its URL, the test users and the dev-only nature of the realm in README.adoc's "Developing" section. Verify the documented commands run as written
 
 ## 3. Account module with bearer authentication and `/api/me`
 

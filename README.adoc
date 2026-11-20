@@ -145,6 +145,34 @@ returns once it is ready.
 
 Mongo Express (a MongoDB web UI) should be available at http://localhost:8081
 
+=== Keycloak (local login)
+
+Users log in through an OpenID Connect provider. Locally, Keycloak stands in for Google and friends: `docker compose up -d`
+starts it on http://localhost:8180 and imports the `tunelad` realm from `docker/keycloak/tunelad-realm.json`.
+The application needs Keycloak running to start, because it reads the provider's configuration at startup.
+
+[cols="1,1,2"]
+|===
+|User |Password |Display name
+
+|`alice` |`alice` |Alice Liddell
+|`bob` |`bob` |Bob Smith
+|===
+
+The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`).
+
+WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
+direct access grants are enabled so that curl and tests can get tokens with a username and password.
+
+To check that the realm is up and get an access token for alice:
+
+[source,bash]
+----
+curl -s http://localhost:8180/realms/tunelad/.well-known/openid-configuration
+curl -s -d grant_type=password -d client_id=tunelad -d client_secret=tunelad-dev-secret \
+  -d username=alice -d password=alice http://localhost:8180/realms/tunelad/protocol/openid-connect/token
+----
+
 To wipe the local data (tracks, audio and search index) and start from an empty database, remove the containers
 together with their volumes:
 

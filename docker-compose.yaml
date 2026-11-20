@@ -43,6 +43,22 @@ services:
     ports:
       - '8081:8081'
 
+  # OpenID Connect provider for local login, standing in for Google and friends.
+  # Imports the `tunelad` realm (client and test users alice/alice, bob/bob) on start: local development only.
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: 'admin'
+      KC_BOOTSTRAP_ADMIN_PASSWORD: 'admin'
+      KC_HEALTH_ENABLED: 'true'
+    volumes:
+      - ./docker/keycloak/:/opt/keycloak/data/import/:ro
+    # The app (8080) and Mongo Express (8081) already use the usual ports
+    ports:
+      - '8180:8080'
+
   zipkin:
      image: openzipkin/zipkin
      ports:
