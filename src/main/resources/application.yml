@@ -20,6 +20,13 @@ spring:
   webflux:
     problemdetails:
       enabled: true
+  security:
+    oauth2:
+      # API clients authenticate with access tokens from the local Keycloak realm (docker compose)
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/tunelad
+          audiences: tunelad
   web:
     resources:
       chain:

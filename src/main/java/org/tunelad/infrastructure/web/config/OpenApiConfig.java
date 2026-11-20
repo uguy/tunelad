@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,7 +24,12 @@ public class OpenApiConfig {
 	@Bean
 	public OpenAPI customOpenAPI() {
 		return new OpenAPI()
-				.components(new Components())
+				.components(new Components()
+						// Access tokens from the OpenID Connect issuer, for API clients such as scripts
+						.addSecuritySchemes("bearerAuth", new SecurityScheme()
+								.type(SecurityScheme.Type.HTTP)
+								.scheme("bearer")
+								.bearerFormat("JWT")))
 				.info(metaData());
 	}
 
