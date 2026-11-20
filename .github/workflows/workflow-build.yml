@@ -31,6 +31,10 @@ jobs:
           distribution: temurin
           cache: maven
 
+      # The media module decodes audio with ffmpeg to compute waveforms (and its tests need it)
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Cache Playwright browsers
         uses: actions/cache@v6
         with:
