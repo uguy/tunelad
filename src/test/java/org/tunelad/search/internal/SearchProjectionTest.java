@@ -11,6 +11,8 @@ import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
 import org.tunelad.track.event.NewTrackSaved;
+import org.tunelad.track.event.TrackDeleted;
+import org.tunelad.track.event.TrackUpdated;
 
 import java.util.UUID;
 
@@ -24,6 +26,7 @@ class SearchProjectionTest {
     private static final TrackOwner ALICE = new TrackOwner("account-alice", "Alice Liddell");
 
     @Autowired SearchTracks searchTracks;
+    @Autowired SearchProjection projection;
 
     @BeforeEach
     void emptyReadModel() {
@@ -55,6 +58,44 @@ class SearchProjectionTest {
                 .andWaitForStateChange(() -> searchTracks.findById(track.id()).block(),
                         stored -> stored != null && stored.title().equals("Knees Up Again"))
                 .andVerify(stored -> assertThat(searchTracks.count().block()).isEqualTo(1));
+    }
+
+    @Test
+    void track_updated_replaces_the_copy(Scenario scenario) {
+        var track = kneesUp(UUID.randomUUID().toString());
+        searchTracks.save(SearchTrack.of(track)).block();
+
+        var edited = new TrackDTO(track.id(), "Hornpipe Set", null, null, "Two hornpipes", track.format(),
+                track.owner());
+        scenario.publish(new TrackUpdated(edited))
+                .andWaitForStateChange(() -> searchTracks.findById(track.id()).block(),
+                        stored -> stored != null && stored.title().equals("Hornpipe Set"))
+                .andVerify(stored -> assertThat(stored).isEqualTo(
+                        new SearchTrack(track.id(), "Hornpipe Set", "Two hornpipes", null, null, TrackFormat.MP3, ALICE)));
+    }
+
+    @Test
+    void track_deleted_removes_the_copy(Scenario scenario) {
+        var track = kneesUp(UUID.randomUUID().toString());
+        var other = kneesUp(UUID.randomUUID().toString());
+        searchTracks.saveAll(java.util.List.of(SearchTrack.of(track), SearchTrack.of(other))).blockLast();
+
+        scenario.publish(new TrackDeleted(track.id()))
+                .andWaitForStateChange(() -> searchTracks.existsById(track.id()).block(), exists -> !exists)
+                .andVerify(exists -> assertThat(searchTracks.findAll().map(SearchTrack::id).collectList().block())
+                        .containsExactly(other.id()));
+    }
+
+    @Test
+    void track_deleted_again_is_harmless() {
+        var other = kneesUp(UUID.randomUUID().toString());
+        searchTracks.save(SearchTrack.of(other)).block();
+
+        // At-least-once delivery: the deletion of a track whose copy is already gone arrives (again). Called
+        // directly, so that a failure surfaces here instead of in the listener's thread.
+        projection.on(new TrackDeleted(UUID.randomUUID().toString()));
+
+        assertThat(searchTracks.count().block()).isEqualTo(1);
     }
 
     private static TrackDTO kneesUp(String id) {

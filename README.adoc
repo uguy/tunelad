@@ -58,6 +58,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 
 * Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
 * Upload a track with description (requires login or a bearer token); every track shows who uploaded it
+* Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
@@ -158,9 +159,22 @@ The application needs Keycloak running to start, because it reads the provider's
 
 |`alice` |`alice` |Alice Liddell
 |`bob` |`bob` |Bob Smith
+|`admin` |`admin` |Tune Lad Admin, with the realm role `admin`: may edit and delete any track
 |===
 
-The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`).
+The realm puts its realm roles in a `roles` claim of the tokens, and the application treats a user holding the `admin`
+role as an administrator (`GET /api/me` answers `"admin": true`).
+
+The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`). That `admin` is Keycloak's own
+administrator in the `master` realm, unrelated to the `admin` user of the `tunelad` realm who logs in to the app.
+
+Keycloak imports the realm only when it doesn't exist yet. After changing `docker/keycloak/tunelad-realm.json` (or
+pulling a change to it), recreate the container to import it again (Keycloak keeps its data inside the container):
+
+[source,bash]
+----
+docker compose up -d --force-recreate keycloak
+----
 
 WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
 direct access grants are enabled so that curl and tests can get tokens with a username and password.
@@ -214,6 +228,23 @@ curl -H "Authorization: Bearer $TOKEN" \
 ----
 
 The track is stored with alice as its owner. Without a token, the upload is rejected with 401 Unauthorized.
+
+=== Editing and deleting a track
+
+The owner of a track, or an administrator, can replace its metadata (title, description, artist, album: an omitted
+artist or album is cleared) or delete it with its audio, from the track list or the API. Anyone else gets 403
+Forbidden. Continuing with alice's token from above:
+
+[source,bash]
+----
+ID=$(curl -s 'http://localhost:8080/api/tracks' | sed 's/.*"id":"\([^"]*\)","title":"Knees Up".*/\1/')
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"title":"Knees Up (live)","description":"Recorded at Celtic Connections","artist":"Breabach"}' \
+  http://localhost:8080/api/tracks/$ID
+curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/tracks/$ID
+----
+
+Search shows the change within a few seconds.
 
 == Configuration
 

@@ -42,6 +42,11 @@ public class GridFsMediaStore implements MediaStore {
         return gridFsOperations.store(audio, key).then();
     }
 
+    @Override
+    public Mono<Void> delete(String key) {
+        return gridFsOperations.delete(Query.query(Criteria.where("filename").is(key)));
+    }
+
     /** The audio stored under that key, or empty when there is none. */
     public Mono<Media> find(String key) {
         return gridFsOperations.findOne(Query.query(Criteria.where("filename").is(key)))

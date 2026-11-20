@@ -9,4 +9,6 @@ public interface Tracks {
 	Mono<Track> save(Track track);
 
 	Mono<Track> findById(String id);
+
+	Mono<Void> delete(Track track);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.tunelad.account.AccountRef;
 import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
 
@@ -41,4 +42,9 @@ public class Track {
     private TrackOwner owner;
     @Indexed
     private List<String> tags = new ArrayList<>();
+
+    /** Only its owner, or an administrator, may edit or delete a track. */
+    public boolean isChangeableBy(AccountRef account) {
+        return account.admin() || (owner != null && owner.id().equals(account.id()));
+    }
 }

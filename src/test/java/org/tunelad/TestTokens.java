@@ -37,6 +37,12 @@ public final class TestTokens {
         return withClaims("sub-" + username, claims);
     }
 
+    /** A token for an administrator: its "roles" claim holds the identity provider's admin role. */
+    public static String admin() {
+        return withClaims("sub-admin", Map.of("preferred_username", "admin", "name", "Tune Lad Admin",
+                "roles", java.util.List.of("admin", "offline_access")));
+    }
+
     /** A token for the given subject with exactly the given extra claims, besides the standard ones. */
     public static String withClaims(String subject, Map<String, Object> claims) {
         return sign(KEYS.getPrivate(), standardClaims(subject, ISSUER, AUDIENCE).build(), claims);

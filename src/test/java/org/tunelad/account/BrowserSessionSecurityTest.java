@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
@@ -30,6 +31,7 @@ import org.tunelad.track.TrackDTO;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity;
@@ -54,6 +56,9 @@ class BrowserSessionSecurityTest {
 
     @Autowired
     ReactiveMongoTemplate mongo;
+
+    @Autowired
+    GrantedAuthoritiesMapper authoritiesMapper;
 
     WebTestClient client;
 
@@ -95,6 +100,28 @@ class BrowserSessionSecurityTest {
                 .expectBody(AccountRef.class).returnResult().getResponseBody();
 
         assertThat(account.displayName()).isEqualTo("Alice Liddell");
+    }
+
+    // --- Requirement: Administrators come from the identity provider's admin role -------------
+
+    @Test
+    void browser_login_with_the_admin_role() {
+        var session = loginSession("sub-admin", Map.of("preferred_username", "admin", "roles", List.of("admin")));
+
+        var account = client.get().uri("/api/me").cookie("SESSION", session).exchange()
+                .expectStatus().isOk()
+                .expectBody(AccountRef.class).returnResult().getResponseBody();
+
+        assertThat(account.admin()).isTrue();
+    }
+
+    @Test
+    void browser_login_without_the_admin_role() {
+        var account = client.get().uri("/api/me").cookie("SESSION", aliceSession()).exchange()
+                .expectStatus().isOk()
+                .expectBody(AccountRef.class).returnResult().getResponseBody();
+
+        assertThat(account.admin()).isFalse();
     }
 
     // --- Requirement: Log out ------------------------------------------------------------------
@@ -171,16 +198,24 @@ class BrowserSessionSecurityTest {
 
     /** Stores a session in which alice has logged in through Keycloak, and returns its id (the SESSION cookie). */
     private String aliceSession() {
+        return loginSession("sub-alice", Map.of("name", "Alice Liddell", "preferred_username", "alice"));
+    }
+
+    /**
+     * Stores a session as a successful login leaves it, for an identity with the given claims. Its authorities go
+     * through the application's mapper, as OAuth2 login does.
+     */
+    private String loginSession(String subject, Map<String, Object> claims) {
         var now = Instant.now();
-        var idToken = OidcIdToken.withTokenValue("id-token")
+        var builder = OidcIdToken.withTokenValue("id-token")
                 .issuer(TestTokens.ISSUER)
-                .subject("sub-alice")
-                .claim("name", "Alice Liddell")
-                .claim("preferred_username", "alice")
+                .subject(subject)
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(300))
-                .build();
-        var user = new DefaultOidcUser(List.of(new OidcUserAuthority(idToken)), idToken);
+                .expiresAt(now.plusSeconds(300));
+        claims.forEach(builder::claim);
+        var idToken = builder.build();
+        var authorities = authoritiesMapper.mapAuthorities(List.of(new OidcUserAuthority(idToken)));
+        var user = new DefaultOidcUser(authorities, idToken);
         var login = new OAuth2AuthenticationToken(user, user.getAuthorities(), "keycloak");
 
         var store = ((DefaultWebSessionManager) sessionManager).getSessionStore();

@@ -5,6 +5,14 @@
   "sslRequired": "external",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Tune Lad administrator: may edit and delete any track"
+      }
+    ]
+  },
   "clients": [
     {
       "clientId": "tunelad",
@@ -41,6 +49,21 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     }
@@ -72,6 +95,25 @@
         {
           "type": "password",
           "value": "bob",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@tunelad.test",
+      "emailVerified": true,
+      "firstName": "Tune Lad",
+      "lastName": "Admin",
+      "realmRoles": [
+        "default-roles-tunelad",
+        "admin"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
           "temporary": false
         }
       ]

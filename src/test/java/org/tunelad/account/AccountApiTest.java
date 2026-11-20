@@ -6,6 +6,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.tunelad.AbstractApiTest;
 import org.tunelad.TestTokens;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,6 +91,8 @@ class AccountApiTest extends AbstractApiTest {
 
         assertThat(account.id()).isNotBlank();
         assertThat(account.displayName()).isEqualTo("Alice Liddell");
+        assertThat(account.admin()).isFalse();
+        meRequest(ALICE).expectBody().jsonPath("$.admin").isEqualTo(false);
     }
 
     @Test
@@ -97,6 +100,21 @@ class AccountApiTest extends AbstractApiTest {
         client.get().uri("/api/me").exchange()
                 .expectStatus().isUnauthorized()
                 .expectHeader().doesNotExist(HttpHeaders.LOCATION);
+    }
+
+    // --- Requirement: Administrators come from the identity provider's admin role -------------
+
+    @Test
+    void token_with_the_admin_role() {
+        assertThat(me(TestTokens.admin()).admin()).isTrue();
+    }
+
+    @Test
+    void token_without_the_admin_role() {
+        assertThat(me(ALICE).admin()).isFalse();
+        var otherRoles = TestTokens.withClaims("sub-alice", Map.of("preferred_username", "alice",
+                "roles", List.of("offline_access")));
+        assertThat(me(otherRoles).admin()).isFalse();
     }
 
     private AccountRef me(String token) {

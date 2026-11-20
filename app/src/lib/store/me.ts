@@ -4,6 +4,8 @@ import { writable } from 'svelte/store';
 export interface Account {
 	id: string;
 	displayName: string;
+	/** Whether the user has the identity provider's admin role: may edit and delete any track. */
+	admin: boolean;
 }
 
 /** Who is logged in: null for an anonymous visitor (or until {@link loadMe} has answered). */

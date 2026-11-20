@@ -38,6 +38,24 @@ async function send(fetch: Fetch, { method, path, data }: SendParams) {
 	return [];
 }
 
+/**
+ * Sends a request to the API like {@link send}, with the CSRF token on state-changing requests, and returns the
+ * response as is: the caller decides what an error status means.
+ */
+export function request(fetch: Fetch, method: string, path: string, data?: unknown) {
+	const headers: Record<string, string> = {};
+	const opts: RequestInit = { method, headers };
+	if (data !== undefined) {
+		headers['Content-Type'] = 'application/json';
+		opts.body = JSON.stringify(data);
+	}
+	if (method !== 'GET') {
+		const token = csrfToken();
+		if (token) headers['X-XSRF-TOKEN'] = token;
+	}
+	return fetch(`${base}/${path}`, opts);
+}
+
 export function get(fetch: Fetch, path: string) {
 	return send(fetch, { method: 'GET', path });
 }

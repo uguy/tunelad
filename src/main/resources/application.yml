@@ -40,6 +40,9 @@ spring:
         jwt:
           issuer-uri: http://localhost:8180/realms/tunelad
           audiences: tunelad
+          # The realm puts its realm roles in a flat "roles" claim: the "admin" role becomes ROLE_admin
+          authorities-claim-name: roles
+          authority-prefix: ROLE_
   web:
     resources:
       chain:

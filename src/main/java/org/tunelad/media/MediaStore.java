@@ -9,4 +9,7 @@ public interface MediaStore {
 
     /** Stores the audio under the given key; nothing is read until the returned Mono is subscribed. */
     Mono<Void> store(String key, Publisher<DataBuffer> audio);
+
+    /** Deletes the audio stored under the given key; completes normally when there is none. */
+    Mono<Void> delete(String key);
 }
