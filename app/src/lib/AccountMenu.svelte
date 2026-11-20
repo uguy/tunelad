@@ -1,5 +1,5 @@
 <script lang="ts">
-	import me from '#lib/store/me.js';
+	import { session } from '#lib/session.svelte.js';
 	import { csrfToken } from '#lib/api.js';
 
 	let { mobile = false }: { mobile?: boolean } = $props();
@@ -17,10 +17,10 @@
 	);
 </script>
 
-{#if $me}
+{#if session.account}
 	<div class={mobile ? 'space-y-1' : 'flex items-center space-x-2'}>
 		<span class={mobile ? 'block px-3 py-2 text-base text-white' : 'px-3 py-2 text-sm text-white'}
-			>{$me.displayName}</span
+			>{session.account.displayName}</span
 		>
 		<!-- A plain form post: the server ends the session, then redirects through the provider's logout -->
 		<form method="post" action="/logout" onsubmit={addCsrfToken}>

@@ -3,14 +3,21 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import AccountMenu from '#lib/AccountMenu.svelte';
-	import { loadMe } from '#lib/store/me.js';
+	import { session } from '#lib/session.svelte.js';
 
 	// Who is logged in, for the account menus (desktop and mobile)
 	onMount(() => {
-		loadMe();
+		session.load();
 	});
 
-	let currentPathName = $derived(page.url.pathname);
+	const links = [
+		{ path: '/', label: 'Home' },
+		{ path: '/tracks', label: 'Tracks' },
+		{ path: '/about', label: 'About' }
+	] as const;
+
+	const linkClass = 'text-gray-300 hover:bg-gray-700 hover:text-white';
+	const currentLinkClass = 'bg-gray-900 text-white';
 
 	let mobileMenuVisible = $state(false);
 	function toggleMobileMenuVisible() {
@@ -45,7 +52,7 @@
 								viewBox="0 0 24 24"
 								stroke-width="1.5"
 								stroke="currentColor"
-								class="{mobileMenuVisible ? 'hidden' : 'block'} w-6 h-6"
+								class="block w-6 h-6"
 								aria-hidden="true"
 							>
 								<path
@@ -66,7 +73,7 @@
 								viewBox="0 0 24 24"
 								stroke-width="1.5"
 								stroke="currentColor"
-								class="{mobileMenuVisible ? 'block' : 'hidden'} w-6 h-6"
+								class="block w-6 h-6"
 								aria-hidden="true"
 							>
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -79,60 +86,23 @@
 						<img
 							src="/images/icon-72x72.png"
 							alt="Tune Lad"
-							class="block h-8 w-auto lg:hidden"
-							width="64px"
-							height="64px"
-						/>
-						<img
-							src="/images/icon-72x72.png"
-							alt="Tune Lad"
-							class="hidden h-8 w-auto lg:block"
-							width="64px"
-							height="64px"
+							class="h-8 w-auto"
+							width="64"
+							height="64"
 						/>
 					</div>
 					<div class="hidden sm:ml-6 sm:block">
 						<div class="flex space-x-4">
-							<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-							{#if currentPathName === '/'}
+							{#each links as link (link.path)}
+								{@const current = page.url.pathname === link.path}
 								<a
-									href={resolve('/')}
-									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-									aria-current="page">Home</a
+									href={resolve(link.path)}
+									class="{current
+										? currentLinkClass
+										: linkClass} px-3 py-2 rounded-md text-sm font-medium"
+									aria-current={current ? 'page' : undefined}>{link.label}</a
 								>
-							{:else}
-								<a
-									href={resolve('/')}
-									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-									>Home</a
-								>
-							{/if}
-							{#if currentPathName === '/tracks'}
-								<a
-									href={resolve('/tracks')}
-									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-									aria-current="page">Tracks</a
-								>
-							{:else}
-								<a
-									href={resolve('/tracks')}
-									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-									>Tracks</a
-								>
-							{/if}
-							{#if currentPathName === '/about'}
-								<a
-									href={resolve('/about')}
-									class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium"
-									aria-current="page">About</a
-								>
-							{:else}
-								<a
-									href={resolve('/about')}
-									class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-									>About</a
-								>
-							{/if}
+							{/each}
 						</div>
 					</div>
 				</div>
@@ -143,48 +113,18 @@
 		</div>
 
 		<!-- Mobile menu, show/hide based on menu state. -->
-		<div class={mobileMenuVisible ? 'sm:block block' : 'sm:hidden hidden'} id="mobile-menu">
+		<div class={mobileMenuVisible ? 'sm:hidden' : 'hidden'} id="mobile-menu">
 			<div class="space-y-1 px-2 pt-2 pb-3">
-				<!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-				{#if currentPathName === '/'}
+				{#each links as link (link.path)}
+					{@const current = page.url.pathname === link.path}
 					<a
-						href={resolve('/')}
-						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-						aria-current="page">Home</a
+						href={resolve(link.path)}
+						class="{current
+							? currentLinkClass
+							: linkClass} block px-3 py-2 rounded-md text-base font-medium"
+						aria-current={current ? 'page' : undefined}>{link.label}</a
 					>
-				{:else}
-					<a
-						href={resolve('/')}
-						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-						>Home</a
-					>
-				{/if}
-				{#if currentPathName === '/tracks'}
-					<a
-						href={resolve('/tracks')}
-						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-						aria-current="page">Tracks</a
-					>
-				{:else}
-					<a
-						href={resolve('/tracks')}
-						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-						>Tracks</a
-					>
-				{/if}
-				{#if currentPathName === '/about'}
-					<a
-						href={resolve('/about')}
-						class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium"
-						aria-current="page">About</a
-					>
-				{:else}
-					<a
-						href={resolve('/about')}
-						class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-						>About</a
-					>
-				{/if}
+				{/each}
 				<AccountMenu mobile />
 			</div>
 		</div>

@@ -1,17 +1,19 @@
 <script lang="ts">
 	import TrackList from './component/TrackList.svelte';
-	import playerSource from '#lib/store/media-source.js';
+	import { player } from '#lib/player.svelte.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 
 	import TrackService, { type Track } from './Tracks.js';
-	import type { PageData } from './$types';
+	import type { PageProps } from './$types';
 
-	export let data: PageData;
+	let { data }: PageProps = $props();
 
-	const trackService = new TrackService(fetch);
-	let query = '';
+	const trackService = new TrackService();
+	let query = $state('');
+	// The loaded tracks, replaced locally by searches and by edits the search has not caught up with yet
+	let tracks = $derived(data.tracks);
 
 	/** Seconds to start at from a `t` query value; anything not a non-negative number starts at 0. */
 	function startTime(t: string | null): number {
@@ -24,12 +26,26 @@
 	onMount(() => {
 		const trackId = page.url.searchParams.get('play');
 		if (trackId) {
-			$playerSource = { trackId, start: startTime(page.url.searchParams.get('t')) };
+			player.play(trackId, startTime(page.url.searchParams.get('t')));
 		}
 	});
 
 	async function refreshTracks() {
-		data.tracks = await trackService.findAll(query);
+		tracks = await trackService.findAll(query);
+	}
+
+	function replaceTrack(track: Track) {
+		// Search catches up a few seconds later: show the server's answer right away
+		tracks = tracks.map((t) => (t.id === track.id ? { ...t, ...track } : t));
+	}
+
+	function removeTrack(trackId: string) {
+		tracks = tracks.filter((t) => t.id !== trackId);
+	}
+
+	function searchTag(tag: string) {
+		query = tag;
+		refreshTracks();
 	}
 </script>
 
@@ -40,7 +56,7 @@
 <section class="flex flex-col w-full space-y-5">
 	<h1 class="text-3xl leading-2">Tracks</h1>
 
-	<div class="flex flex-row pY-10">
+	<div class="flex flex-row">
 		<div class="w-full">
 			<a
 				href={resolve('/tracks/favourites')}
@@ -57,8 +73,14 @@
 		</div>
 	</div>
 	<br />
-	<div class="flex flex-row pY-10">
-		<form class="w-full h-full">
+	<div class="flex flex-row">
+		<form
+			class="w-full h-full"
+			onsubmit={(event) => {
+				event.preventDefault();
+				refreshTracks();
+			}}
+		>
 			<label for="search-input" class="block mb-2.5 text-sm font-medium text-heading sr-only"
 				>Search</label
 			>
@@ -86,20 +108,12 @@
 					type="search"
 					placeholder="search for tracks ..."
 					bind:value={query}
-					on:keydown={(e) => {
-						if (e.key === 'Enter') {
-							refreshTracks();
-						}
-					}}
 				/>
 				<button
 					id="search-track-btn"
 					aria-label="search-track-btn"
-					type="button"
-					class="bg-gray-300 absolute end-1.5 bottom-1.5 bg-brand hover:bg-brand-strong box-border border border-transparent shadow-xs font-medium leading-5 rounded text-xs px-3 py-1 focus:outline-none"
-					on:click|preventDefault={() => {
-						refreshTracks();
-					}}
+					type="submit"
+					class="bg-gray-300 absolute end-1.5 bottom-1.5 box-border border border-transparent shadow-xs font-medium leading-5 rounded text-xs px-3 py-1 focus:outline-none"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -119,21 +133,10 @@
 	</div>
 
 	<TrackList
-		tracks={data.tracks}
-		on:trackPlayButtonClicked={(event) =>
-			($playerSource = { trackId: event.detail.trackId, start: 0 })}
-		on:trackUpdated={(event) => {
-			// Search catches up a few seconds later: show the server's answer right away
-			data.tracks = data.tracks.map((t: Track) =>
-				t.id === event.detail.track.id ? { ...t, ...event.detail.track } : t
-			);
-		}}
-		on:trackDeleted={(event) => {
-			data.tracks = data.tracks.filter((t: Track) => t.id !== event.detail.trackId);
-		}}
-		on:trackTagClicked={(event) => {
-			query = event.detail.tag;
-			refreshTracks();
-		}}
+		{tracks}
+		onplay={(trackId) => player.play(trackId)}
+		onupdated={replaceTrack}
+		ondeleted={removeTrack}
+		ontagclick={searchTag}
 	/>
 </section>
