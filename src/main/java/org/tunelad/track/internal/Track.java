@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.tunelad.track.TrackFormat;
+import org.tunelad.track.TrackOwner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,8 @@ public class Track {
     private Publisher<DataBuffer> data;
 
     private TrackFormat format;
+
+    private TrackOwner owner;
     @Indexed
     private List<String> tags = new ArrayList<>();
 }

@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import AccountMenu from '#lib/AccountMenu.svelte';
+	import { loadMe } from '#lib/store/me.js';
+
+	// Who is logged in, for the account menus (desktop and mobile)
+	onMount(() => {
+		loadMe();
+	});
 
 	let currentPathName = $derived(page.url.pathname);
 
@@ -128,6 +136,9 @@
 						</div>
 					</div>
 				</div>
+				<div class="hidden sm:ml-6 sm:flex sm:items-center">
+					<AccountMenu />
+				</div>
 			</div>
 		</div>
 
@@ -174,6 +185,7 @@
 						>About</a
 					>
 				{/if}
+				<AccountMenu mobile />
 			</div>
 		</div>
 	</nav>

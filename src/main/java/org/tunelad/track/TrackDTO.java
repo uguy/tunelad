@@ -15,7 +15,8 @@ public record TrackDTO(
 		String artist,
 		String album,
 		String description,
-		TrackFormat format
+		TrackFormat format,
+		TrackOwner owner
 ) {
 }
 

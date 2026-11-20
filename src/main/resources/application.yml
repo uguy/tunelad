@@ -20,6 +20,26 @@ spring:
   webflux:
     problemdetails:
       enabled: true
+  security:
+    oauth2:
+      # Browser login through the local Keycloak realm (docker compose). Its configuration is read from the issuer at
+      # startup, so Keycloak must be running. The secret is the dev-only one from docker/keycloak/tunelad-realm.json.
+      client:
+        registration:
+          keycloak:
+            client-name: Keycloak
+            client-id: tunelad
+            client-secret: tunelad-dev-secret
+            authorization-grant-type: authorization_code
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8180/realms/tunelad
+      # API clients authenticate with access tokens from the same realm
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/tunelad
+          audiences: tunelad
   web:
     resources:
       chain:

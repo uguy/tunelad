@@ -16,6 +16,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MediaApiTest extends AbstractApiTest {
 
+    // --- Requirement: Play without logging in --------------------------------------------------
+
+    @Test
+    void anonymous_playback() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        // play() sends no session or token
+        play(id).expectStatus().is2xxSuccessful()
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg");
+    }
+
     // --- Requirement: Play a track ------------------------------------------------------------
     // Requests send "Range: bytes=0-" like a browser audio element (see design.md).
 

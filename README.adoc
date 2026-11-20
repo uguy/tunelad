@@ -56,7 +56,8 @@ This simple app allows to store an mp3 file with some description and play it vi
 
 == Features
 
-* Upload a track with description
+* Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
+* Upload a track with description (requires login or a bearer token); every track shows who uploaded it
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
@@ -145,6 +146,47 @@ returns once it is ready.
 
 Mongo Express (a MongoDB web UI) should be available at http://localhost:8081
 
+=== Keycloak (local login)
+
+Users log in through an OpenID Connect provider. Locally, Keycloak stands in for Google and friends: `docker compose up -d`
+starts it on http://localhost:8180 and imports the `tunelad` realm from `docker/keycloak/tunelad-realm.json`.
+The application needs Keycloak running to start, because it reads the provider's configuration at startup.
+
+[cols="1,1,2"]
+|===
+|User |Password |Display name
+
+|`alice` |`alice` |Alice Liddell
+|`bob` |`bob` |Bob Smith
+|===
+
+The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`).
+
+WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
+direct access grants are enabled so that curl and tests can get tokens with a username and password.
+
+Log in from the browser at http://localhost:8080/login, which lists the configured providers.
+
+To also offer Google, create an OAuth client in the Google Cloud console with the authorized redirect URI
+`http://localhost:8080/login/oauth2/code/google`, then run the application with the `google` profile and the client's
+credentials:
+
+[source,bash]
+----
+GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=google
+----
+
+The same person logging in through Keycloak and through Google gets two separate accounts.
+
+To check that the realm is up and get an access token for alice:
+
+[source,bash]
+----
+curl -s http://localhost:8180/realms/tunelad/.well-known/openid-configuration
+curl -s -d grant_type=password -d client_id=tunelad -d client_secret=tunelad-dev-secret \
+  -d username=alice -d password=alice http://localhost:8180/realms/tunelad/protocol/openid-connect/token
+----
+
 To wipe the local data (tracks, audio and search index) and start from an empty database, remove the containers
 together with their volumes:
 
@@ -152,6 +194,26 @@ together with their volumes:
 ----
 docker compose down -v
 ----
+
+NOTE: Every track has an owner since user accounts were added. Tracks stored by an earlier version have none and are
+not migrated: wipe the local data once when upgrading past that change.
+
+=== Uploading a track
+
+There is no upload form in the UI yet: upload through the REST API (or Scalar), authenticated with an access token.
+Listing, searching and playing tracks need no login. For example, as alice, with the application and Keycloak running:
+
+[source,bash]
+----
+TOKEN=$(curl -s -d grant_type=password -d client_id=tunelad -d client_secret=tunelad-dev-secret \
+  -d username=alice -d password=alice http://localhost:8180/realms/tunelad/protocol/openid-connect/token \
+  | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
+curl -H "Authorization: Bearer $TOKEN" \
+  -F title="Knees Up" -F description="A reel and a song" -F file=@src/test/resources/mp3/Knees_Up.mp3 \
+  http://localhost:8080/api/tracks
+----
+
+The track is stored with alice as its owner. Without a token, the upload is rejected with 401 Unauthorized.
 
 == Configuration
 
@@ -181,7 +243,7 @@ Application is available at http://localhost:8080
 
 image::./doc/track-list.png[Track list]
 
-You can load some sample by running import method on test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
+You can load some samples, uploaded as alice, by running the import methods of the (disabled) test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
 
 === Scalar UI and OpenAPI
 

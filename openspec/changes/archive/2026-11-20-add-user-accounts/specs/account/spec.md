@@ -1,0 +1,144 @@
+# Spec Delta
+
+## Purpose
+
+Identify the people using Tune Lad: log them in through an OpenID Connect provider from the browser or with a bearer
+token, keep an account for each identity, and tell the UI who is logged in.
+
+## ADDED Requirements
+
+### Requirement: Log in through an OpenID Connect provider
+The system SHALL let a browser user log in through any configured OpenID Connect provider. `/login` lists the
+configured providers, and `/oauth2/authorization/{provider}` starts the login. After the provider authenticates the
+user, the system SHALL establish a session and redirect the browser back to the application.
+
+#### Scenario: Start a login
+- **WHEN** a browser requests `/oauth2/authorization/keycloak`
+- **THEN** the response redirects to the Keycloak realm's authorization endpoint
+
+#### Scenario: Provider list
+- **WHEN** a browser requests `/login`
+- **THEN** the page offers a login link for each configured provider
+
+#### Scenario: Successful login
+- **GIVEN** the user `alice` exists in the identity provider
+- **WHEN** alice completes the login at the provider
+- **THEN** the browser is redirected back to the application with a session
+- **AND** `GET /api/me` in that session returns alice's account
+
+### Requirement: Authenticate API calls with a bearer token
+The system SHALL accept an access token issued by the configured Keycloak realm in an `Authorization: Bearer` header
+as authentication for API calls, and SHALL reject a missing, malformed, expired or foreign token with 401
+Unauthorized on endpoints that require authentication.
+
+#### Scenario: Valid token
+- **GIVEN** a valid access token for alice from the Keycloak realm
+- **WHEN** a client requests `GET /api/me` with that bearer token
+- **THEN** the response status is 200 OK and the body is alice's account
+
+#### Scenario: Invalid token
+- **WHEN** a client requests `GET /api/me` with a bearer token that is not signed by the realm
+- **THEN** the response status is 401 Unauthorized
+
+### Requirement: One account per identity
+The system SHALL create an account the first time an identity authenticates, by browser login or bearer token, and
+SHALL return the same account every later time that identity authenticates. An identity is the provider's issuer
+and subject, so the same person through two providers has two accounts.
+
+#### Scenario: First authentication creates an account
+- **GIVEN** alice has never authenticated
+- **WHEN** alice requests `GET /api/me` authenticated
+- **THEN** the response contains an account with a non-empty `id`
+
+#### Scenario: Same identity, same account
+- **GIVEN** alice has already authenticated once
+- **WHEN** alice authenticates again and requests `GET /api/me`
+- **THEN** the account `id` is the same as the first time
+
+#### Scenario: Different identities, different accounts
+- **WHEN** alice and bob each request `GET /api/me` authenticated
+- **THEN** their account ids differ
+
+### Requirement: Account display name from the identity
+The system SHALL give every account a `displayName` taken from the identity's claims: the full name if present,
+otherwise the preferred username, otherwise the email address, otherwise the subject. The system SHALL refresh it
+from the claims on every browser login.
+
+#### Scenario: Name claim present
+- **GIVEN** alice's identity has the name "Alice Liddell" and the username `alice`
+- **WHEN** alice requests `GET /api/me` authenticated
+- **THEN** `displayName` is "Alice Liddell"
+
+#### Scenario: Only a username
+- **GIVEN** an identity with the username `carol` and no name claim
+- **WHEN** carol requests `GET /api/me` authenticated
+- **THEN** `displayName` is "carol"
+
+#### Scenario: Name changed at the provider
+- **GIVEN** alice has an account with display name "Alice Liddell"
+- **AND** her name at the provider is now "Alice L."
+- **WHEN** alice logs in again from the browser
+- **THEN** `GET /api/me` returns `displayName` "Alice L."
+
+### Requirement: Current account endpoint
+The system SHALL return the authenticated user's account on `GET /api/me` as a JSON object with `id` and
+`displayName`, and SHALL respond 401 Unauthorized, without redirecting, when the request is not authenticated.
+
+#### Scenario: Authenticated
+- **WHEN** an authenticated user requests `GET /api/me`
+- **THEN** the response status is 200 OK and the body has their `id` and `displayName`
+
+#### Scenario: Anonymous
+- **WHEN** a client without a session or token requests `GET /api/me`
+- **THEN** the response status is 401 Unauthorized and the response is not a redirect
+
+### Requirement: Log out
+The system SHALL end the browser session on `POST /logout`, also end the user's session at the identity provider,
+and redirect the browser back to the application.
+
+#### Scenario: Log out from the browser
+- **GIVEN** alice is logged in from the browser
+- **WHEN** alice posts to `/logout` with a valid CSRF token
+- **THEN** the browser is redirected through the provider's logout back to the application
+- **AND** `GET /api/me` in that browser responds 401 Unauthorized
+
+### Requirement: CSRF protection for browser sessions
+The system SHALL reject a state-changing request (POST, PUT, PATCH, DELETE) that is authenticated by a browser
+session but carries no valid CSRF token, with 403 Forbidden. It SHALL give the browser the token in a readable
+`XSRF-TOKEN` cookie and accept it back in the `X-XSRF-TOKEN` header. Requests authenticated by a bearer token SHALL
+not need a CSRF token.
+
+#### Scenario: Session request without a token
+- **GIVEN** alice is logged in from the browser
+- **WHEN** her browser posts a track upload without the `X-XSRF-TOKEN` header
+- **THEN** the response status is 403 Forbidden and no track is stored
+
+#### Scenario: Session request with a token
+- **GIVEN** alice is logged in from the browser
+- **WHEN** her browser posts a track upload with the `X-XSRF-TOKEN` header matching the `XSRF-TOKEN` cookie
+- **THEN** the upload succeeds
+
+#### Scenario: Bearer request
+- **WHEN** a client uploads a track with a valid bearer token and no CSRF token
+- **THEN** the upload succeeds
+
+### Requirement: Login state in the header
+The UI header SHALL show a "Log in" link to `/login` when nobody is logged in, and the user's display name with a
+"Log out" control when someone is.
+
+#### Scenario: Anonymous visitor
+- **GIVEN** `GET /api/me` responds 401 Unauthorized
+- **WHEN** a visitor opens the application
+- **THEN** the header shows a "Log in" link to `/login`
+- **AND** no "Log out" control is shown
+
+#### Scenario: Logged-in user
+- **GIVEN** `GET /api/me` returns an account with display name "Alice Liddell"
+- **WHEN** the user opens the application
+- **THEN** the header shows "Alice Liddell" and a "Log out" control
+- **AND** no "Log in" link is shown
+
+#### Scenario: Log out from the header
+- **GIVEN** the user is logged in
+- **WHEN** the user activates "Log out"
+- **THEN** the browser posts to `/logout` with the CSRF token

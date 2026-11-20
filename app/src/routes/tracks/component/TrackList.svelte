@@ -38,6 +38,11 @@
 						</svg>
 					</button>
 					<span class="px-2">{track.title}</span>
+					{#if track.owner}
+						<span class="text-sm text-gray-500" data-testid="track-owner"
+							>by {track.owner.displayName}</span
+						>
+					{/if}
 
 					<button class="btn-detail ml-auto" aria-label="show track {track.title} detail button">
 						<svg

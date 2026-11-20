@@ -1,22 +1,10 @@
 package org.tunelad;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
-import org.testcontainers.mongodb.MongoDBContainer;
+import org.springframework.context.annotation.Import;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-
+/** What every application test needs around it: MongoDB, and a stand-in for the identity provider. */
 @TestConfiguration(proxyBeanMethods = false)
+@Import({MongoContainerDefinition.class, TestSecurityConfiguration.class})
 public class TestContainerDefinitions {
-
-    @Bean
-    @ServiceConnection
-    public MongoDBContainer mongoContainer() {
-        // A replica set, because the application uses MongoDB transactions
-        return new MongoDBContainer("mongo:7.0")
-                .withReplicaSet()
-                .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
-    }
 }
