@@ -1,5 +1,5 @@
 <script lang="ts">
-	import me from '#lib/store/me.js';
+	import { session } from '#lib/session.svelte.js';
 	import { canChange } from '#lib/permissions.js';
 	import TrackService, { type Track, type TrackEdit } from '../Tracks.js';
 
@@ -114,7 +114,7 @@
 							>
 						{/if}
 
-						{#if canChange($me, track)}
+						{#if canChange(session.account, track)}
 							<span class="ml-auto flex gap-2">
 								<button
 									type="button"
@@ -133,7 +133,7 @@
 
 						<button
 							type="button"
-							class="btn-detail {canChange($me, track) ? 'ml-2' : 'ml-auto'}"
+							class="btn-detail {canChange(session.account, track) ? 'ml-2' : 'ml-auto'}"
 							aria-label="show track {track.title} detail button"
 						>
 							<svg

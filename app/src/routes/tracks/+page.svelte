@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TrackList from './component/TrackList.svelte';
-	import playerSource from '#lib/store/media-source.js';
+	import { player } from '#lib/player.svelte.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -26,16 +26,12 @@
 	onMount(() => {
 		const trackId = page.url.searchParams.get('play');
 		if (trackId) {
-			$playerSource = { trackId, start: startTime(page.url.searchParams.get('t')) };
+			player.play(trackId, startTime(page.url.searchParams.get('t')));
 		}
 	});
 
 	async function refreshTracks() {
 		tracks = await trackService.findAll(query);
-	}
-
-	function play(trackId: string) {
-		$playerSource = { trackId, start: 0 };
 	}
 
 	function replaceTrack(track: Track) {
@@ -138,7 +134,7 @@
 
 	<TrackList
 		{tracks}
-		onplay={play}
+		onplay={(trackId) => player.play(trackId)}
 		onupdated={replaceTrack}
 		ondeleted={removeTrack}
 		ontagclick={searchTag}

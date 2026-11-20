@@ -5,7 +5,7 @@
 	import Footer from '#lib/Footer.svelte';
 
 	import Player from './tracks/component/Player.svelte';
-	import playerSource from '#lib/store/media-source.js';
+	import { player } from '#lib/player.svelte.js';
 
 	import { pwaInfo } from 'virtual:pwa-info';
 
@@ -29,7 +29,7 @@
 				{@render children()}
 			</div>
 			<div class="py-10 w-full">
-				<Player source={$playerSource} />
+				<Player source={player.source} />
 			</div>
 		</div>
 	</div>

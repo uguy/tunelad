@@ -3,11 +3,11 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import AccountMenu from '#lib/AccountMenu.svelte';
-	import { loadMe } from '#lib/store/me.js';
+	import { session } from '#lib/session.svelte.js';
 
 	// Who is logged in, for the account menus (desktop and mobile)
 	onMount(() => {
-		loadMe();
+		session.load();
 	});
 
 	const links = [

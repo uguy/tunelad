@@ -1,4 +1,4 @@
-import type { Account } from '#lib/store/me.js';
+import type { Account } from '#lib/session.svelte.js';
 
 /** The part of a track that decides who may change it. */
 export interface OwnedTrack {

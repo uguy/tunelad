@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { MediaSource } from '#lib/store/media-source.js';
+	import type { MediaSource } from '#lib/player.svelte.js';
 
 	interface Props {
 		id?: string;
