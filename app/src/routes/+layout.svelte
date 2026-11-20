@@ -8,6 +8,9 @@
 	import playerSource from '#lib/store/media-source.js';
 
 	import { pwaInfo } from 'virtual:pwa-info';
+
+	let { children } = $props();
+
 	const webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 </script>
 
@@ -23,7 +26,7 @@
 	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
 		<div class="flex flex-col w-full">
 			<div class="w-full">
-				<slot />
+				{@render children()}
 			</div>
 			<div class="py-10 w-full">
 				<Player source={$playerSource} />

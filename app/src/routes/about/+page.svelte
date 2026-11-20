@@ -1,11 +1,11 @@
-<script lang=" ts">
+<script lang="ts">
 	import Time from 'svelte-time';
+	import type { PageProps } from './$types';
 
 	// replaced dynamically
 	const frontendBuildDate = __DATE__;
 
-	/** @type {import('./$types').PageData} */
-	export let data;
+	let { data }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -98,7 +98,7 @@
 					maxWireVersion : {data.health.components.mongo.details.maxWireVersion}
 				{:else}
 					Error reason :
-					<code>{data.health.components.db.details.error}</code>
+					<code>{data.health.components.mongo.details.error}</code>
 				{/if}
 				<h2 class="text-2xl font-medium leading-6">
 					Disk usage

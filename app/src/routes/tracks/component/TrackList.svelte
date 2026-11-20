@@ -1,28 +1,30 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import me from '#lib/store/me.js';
 	import { canChange } from '#lib/permissions.js';
 	import TrackService, { type Track, type TrackEdit } from '../Tracks.js';
 
-	export let tracks: Track[] = [];
+	interface Props {
+		tracks?: Track[];
+		/** The play button of a track was clicked. */
+		onplay?: (trackId: string) => void;
+		/** A tag of a track was clicked. */
+		ontagclick?: (tag: string) => void;
+		/** A track was edited: `track` is the track as the server now has it. */
+		onupdated?: (track: Track) => void;
+		/** A track was deleted. */
+		ondeleted?: (trackId: string) => void;
+	}
 
-	// Events dispatched externally
-	export const TRACK_PLAY_BUTTON_CLICKED = 'trackPlayButtonClicked';
-	export const TRACK_TAG_CLICKED = 'trackTagClicked';
-	/** A track was edited: `detail.track` is the track as the server now has it. */
-	export const TRACK_UPDATED = 'trackUpdated';
-	/** A track was deleted: `detail.trackId` is its id. */
-	export const TRACK_DELETED = 'trackDeleted';
+	let { tracks = [], onplay, ontagclick, onupdated, ondeleted }: Props = $props();
 
-	const dispatch = createEventDispatcher();
-	const trackService = new TrackService(undefined);
+	const trackService = new TrackService();
 
 	/** The id of the track being edited, and the form's values; one track at a time. */
-	let editing: string | null = null;
-	let form: TrackEdit = { title: '', description: '', artist: '', album: '' };
-	let saving = false;
+	let editing = $state<string | null>(null);
+	let form = $state<TrackEdit>({ title: '', description: '', artist: '', album: '' });
+	let saving = $state(false);
 	/** Error message per track id, for the last refused change. */
-	let errors: Record<string, string> = {};
+	let errors = $state<Record<string, string>>({});
 
 	function startEdit(track: Track) {
 		editing = track.id;
@@ -32,7 +34,7 @@
 			artist: track.artist ?? '',
 			album: track.album ?? ''
 		};
-		errors = { ...errors, [track.id]: '' };
+		errors[track.id] = '';
 	}
 
 	function cancelEdit() {
@@ -50,9 +52,9 @@
 				album: form.album || null
 			});
 			editing = null;
-			dispatch(TRACK_UPDATED, { track: updated });
+			onupdated?.(updated);
 		} catch (e) {
-			errors = { ...errors, [track.id]: (e as Error).message };
+			errors[track.id] = (e as Error).message;
 		} finally {
 			saving = false;
 		}
@@ -62,14 +64,23 @@
 		if (!window.confirm(`Delete "${track.title}"? This cannot be undone.`)) return;
 		try {
 			await trackService.delete(track.id);
-			dispatch(TRACK_DELETED, { trackId: track.id });
+			ondeleted?.(track.id);
 		} catch (e) {
-			errors = { ...errors, [track.id]: (e as Error).message };
+			errors[track.id] = (e as Error).message;
 		}
+	}
+
+	/** Runs the action without letting the click toggle the enclosing `<details>`. */
+	function inSummary(action: () => void) {
+		return (event: MouseEvent) => {
+			event.preventDefault();
+			event.stopPropagation();
+			action();
+		};
 	}
 </script>
 
-<div id="trackList flex w-full">
+<div id="track-list" class="flex flex-col w-full">
 	{#if tracks.length === 0}
 		<div>No tracks found.</div>
 	{:else}
@@ -80,9 +91,8 @@
 						<button
 							id="play-track-{track.id}-btn"
 							aria-label="play track {track.title} button"
-							class=""
-							on:click={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
-							on:keypress={() => dispatch(TRACK_PLAY_BUTTON_CLICKED, { trackId: track.id })}
+							type="button"
+							onclick={() => onplay?.(track.id)}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -110,18 +120,19 @@
 									type="button"
 									aria-label="edit track {track.title}"
 									class="text-sm px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-									on:click|preventDefault|stopPropagation={() => startEdit(track)}>Edit</button
+									onclick={inSummary(() => startEdit(track))}>Edit</button
 								>
 								<button
 									type="button"
 									aria-label="delete track {track.title}"
 									class="text-sm px-2 py-1 rounded bg-red-100 text-red-800 hover:bg-red-200"
-									on:click|preventDefault|stopPropagation={() => deleteTrack(track)}>Delete</button
+									onclick={inSummary(() => deleteTrack(track))}>Delete</button
 								>
 							</span>
 						{/if}
 
 						<button
+							type="button"
 							class="btn-detail {canChange($me, track) ? 'ml-2' : 'ml-auto'}"
 							aria-label="show track {track.title} detail button"
 						>
@@ -137,18 +148,17 @@
 						</button>
 					</summary>
 					<div class="mt-4 leading-normal text-md">
-						<b>Album : {track.album}</b>
+						{#if track.album}
+							<b>Album : {track.album}</b>
+						{/if}
 						<p class="my-2 text-sm">{track.description}</p>
 					</div>
 					<div class="card-footer flex flex-wrap">
-						{#each track.tags as tag, i (tag)}
-							<span
-								role="button"
-								aria-pressed="false"
-								tabindex={i}
+						{#each track.tags ?? [] as tag (tag)}
+							<button
+								type="button"
 								class="text-sm font-medium bg-gray-300 rounded-lg mr-2 my-1 px-2 py-1 hover:cursor-pointer"
-								on:click={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}
-								on:keypress={() => dispatch(TRACK_TAG_CLICKED, { tag: tag })}>{tag}</span
+								onclick={() => ontagclick?.(tag)}>{tag}</button
 							>
 						{/each}
 					</div>
@@ -157,7 +167,10 @@
 					<form
 						class="p-4 space-y-2 border-b border-grey-lighter"
 						aria-label="edit track {track.title}"
-						on:submit|preventDefault={() => saveEdit(track)}
+						onsubmit={(event) => {
+							event.preventDefault();
+							saveEdit(track);
+						}}
 					>
 						<label class="block text-sm"
 							>Title <input class="block w-full" required bind:value={form.title} /></label
@@ -181,7 +194,7 @@
 							<button
 								type="button"
 								class="text-sm px-3 py-1 rounded bg-gray-200"
-								on:click={cancelEdit}>Cancel</button
+								onclick={cancelEdit}>Cancel</button
 							>
 						</div>
 					</form>
@@ -221,8 +234,18 @@
 		transition: all 0.3s;
 	}
 
-	/* TO JE TO - TO JE TAJ */
 	summary::-webkit-details-marker {
 		display: none;
+	}
+
+	@keyframes ease-opacity-t-b {
+		from {
+			opacity: 0;
+			transform: translateY(-0.5rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>

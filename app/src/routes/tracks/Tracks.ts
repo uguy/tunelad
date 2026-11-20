@@ -38,12 +38,14 @@ export class TrackChangeError extends Error {
 export default class TrackService {
 	#fetchFunc: typeof fetch;
 
-	constructor(fetchFunc: typeof fetch | undefined) {
-		this.#fetchFunc = fetchFunc ? fetchFunc : fetch;
+	/** `fetchFunc` is the fetch to use: SvelteKit's in a load function, the global one by default. */
+	constructor(fetchFunc: typeof fetch = fetch) {
+		this.#fetchFunc = fetchFunc;
 	}
 
-	async findAll(request: string) {
-		return await api.get(this.#fetchFunc, 'tracks/search?q=' + request);
+	/** The tracks matching the query (all of them for an empty one); none if the search fails. */
+	async findAll(query: string): Promise<Track[]> {
+		return await api.get(this.#fetchFunc, `tracks/search?q=${encodeURIComponent(query)}`);
 	}
 
 	/** Replaces the track's metadata and returns the updated track; throws a {@link TrackChangeError} if refused. */
