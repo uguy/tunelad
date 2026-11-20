@@ -46,7 +46,7 @@
 
 - [x] 8.1 Run `cd app && npm run format`, then `./mvnw clean verify`, and verify it passes (Java tests, vitest, Playwright, lint, svelte-check, `ModularApplicationTests`)
 - [x] 8.2 Update README.adoc Features (waveforms, persistent player bar with previous/next and volume) and verify the list matches the shipped behaviour
-- [ ] 8.3 Push the branch and open a PR to `main` titled `feat(ui): redesign the ui with a waveform player`; verify the `workflow-pr-title` and `build` checks pass
+- [x] 8.3 Push the branch and open a PR to `main` titled `feat(ui): redesign the ui with a waveform player`; verify the `workflow-pr-title` and `build` checks pass
 
 ## Workflow follow-up
 
