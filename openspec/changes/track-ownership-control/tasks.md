@@ -37,10 +37,10 @@ Commit: `feat(search): reflect track edits and deletions in search results`
 
 Commit: `feat(ui): edit and delete own tracks from the track list`
 
-- [ ] 5.1 Add `admin: boolean` to the `Account` type in `app/src/lib/store/me.ts`, and add `app/src/lib/permissions.ts` with `canChange(me, track)` plus a vitest unit test (anonymous, owner, other user, admin, track without owner). Verify `npm run test:unit` passes
-- [ ] 5.2 Add a `request(fetch, method, path, data?)` helper to `app/src/lib/api.ts` (CSRF header on non-GET, returns the `Response`), and `update(id, edit)` / `delete(id)` to `Tracks.ts` that throw on a non-OK response
-- [ ] 5.3 In `TrackList.svelte`, render "Edit" and "Delete" buttons (with `aria-label`s that include the title) when `canChange($me, track)`. Edit shows an inline form with Save/Cancel, Delete asks with `window.confirm`, and failures show a `role="alert"` message on the track. Dispatch `trackUpdated`/`trackDeleted` so `+page.svelte` replaces or removes the track in `data.tracks`
-- [ ] 5.4 Add `app/e2e/track-ownership.test.js` (API mocked with `page.route`) with one test per scenario of "Edit and delete own tracks from the UI", "Edit a track from the UI" and "Delete a track from the UI", asserting the PUT/DELETE method, URL, body and `X-XSRF-TOKEN` header where the spec says so. Add `admin: false` to the account fixtures in the existing e2e tests. Run `npm run format` and `npm run lint`, and verify `npm run test:e2e` passes
+- [x] 5.1 Add `admin: boolean` to the `Account` type in `app/src/lib/store/me.ts`, and add `app/src/lib/permissions.ts` with `canChange(me, track)` plus a vitest unit test (anonymous, owner, other user, admin, track without owner). Verify `npm run test:unit` passes
+- [x] 5.2 Add a `request(fetch, method, path, data?)` helper to `app/src/lib/api.ts` (CSRF header on non-GET, returns the `Response`), and `update(id, edit)` / `delete(id)` to `Tracks.ts` that throw on a non-OK response
+- [x] 5.3 In `TrackList.svelte`, render "Edit" and "Delete" buttons (with `aria-label`s that include the title) when `canChange($me, track)`. Edit shows an inline form with Save/Cancel, Delete asks with `window.confirm`, and failures show a `role="alert"` message on the track. Dispatch `trackUpdated`/`trackDeleted` so `+page.svelte` replaces or removes the track in `data.tracks`
+- [x] 5.4 Add `app/e2e/track-ownership.test.js` (API mocked with `page.route`) with one test per scenario of "Edit and delete own tracks from the UI", "Edit a track from the UI" and "Delete a track from the UI", asserting the PUT/DELETE method, URL, body and `X-XSRF-TOKEN` header where the spec says so. Add `admin: false` to the account fixtures in the existing e2e tests. Run `npm run format` and `npm run lint`, and verify `npm run test:e2e` passes
 
 ## 6. Finish
 

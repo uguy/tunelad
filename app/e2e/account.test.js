@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 // UI-only tests: the REST API is mocked with page.route; GET /api/me answers 401 to anonymous visitors.
-const ALICE = { id: 'account-alice', displayName: 'Alice Liddell' };
+const ALICE = { id: 'account-alice', displayName: 'Alice Liddell', admin: false };
 const TRACK = {
 	id: 'track-1',
 	title: 'Knees Up',

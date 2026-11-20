@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 
-	import TrackService from './Tracks.js';
+	import TrackService, { type Track } from './Tracks.js';
 
 	/** @type {import('./$types').PageData} */
 	export let data;
@@ -121,6 +121,15 @@
 		tracks={data.tracks}
 		on:trackPlayButtonClicked={(event) =>
 			($playerSource = { trackId: event.detail.trackId, start: 0 })}
+		on:trackUpdated={(event) => {
+			// Search catches up a few seconds later: show the server's answer right away
+			data.tracks = data.tracks.map((t: Track) =>
+				t.id === event.detail.track.id ? { ...t, ...event.detail.track } : t
+			);
+		}}
+		on:trackDeleted={(event) => {
+			data.tracks = data.tracks.filter((t: Track) => t.id !== event.detail.trackId);
+		}}
 		on:trackTagClicked={(event) => {
 			document.querySelector('#search-input').value = event.detail.tag;
 			refreshTracks();
