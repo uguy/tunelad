@@ -158,9 +158,22 @@ The application needs Keycloak running to start, because it reads the provider's
 
 |`alice` |`alice` |Alice Liddell
 |`bob` |`bob` |Bob Smith
+|`admin` |`admin` |Tune Lad Admin, with the realm role `admin`: may edit and delete any track
 |===
 
-The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`).
+The realm puts its realm roles in a `roles` claim of the tokens, and the application treats a user holding the `admin`
+role as an administrator (`GET /api/me` answers `"admin": true`).
+
+The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`). That `admin` is Keycloak's own
+administrator in the `master` realm, unrelated to the `admin` user of the `tunelad` realm who logs in to the app.
+
+Keycloak imports the realm only when it doesn't exist yet. After changing `docker/keycloak/tunelad-realm.json` (or
+pulling a change to it), recreate the container to import it again (Keycloak keeps its data inside the container):
+
+[source,bash]
+----
+docker compose up -d --force-recreate keycloak
+----
 
 WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
 direct access grants are enabled so that curl and tests can get tokens with a username and password.

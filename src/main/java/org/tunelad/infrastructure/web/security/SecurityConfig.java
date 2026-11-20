@@ -7,6 +7,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
@@ -70,6 +71,15 @@ class SecurityConfig {
                 .addFilterAt(loginPage(clientRegistrations), SecurityWebFiltersOrder.LOGIN_PAGE_GENERATING)
                 .logout(logout -> logout.logoutSuccessHandler(providerLogout(clientRegistrations)))
                 .build();
+    }
+
+    /**
+     * Browser logins get the same {@code ROLE_<role>} authorities as bearer tokens (see the resource server's
+     * {@code authorities-claim-name} in application.yml). OAuth2 login picks this bean up by itself.
+     */
+    @Bean
+    GrantedAuthoritiesMapper rolesClaimAuthoritiesMapper() {
+        return new RolesClaimAuthoritiesMapper();
     }
 
     /** The API answers 401 without redirecting; browser pages go to the login page, which lists the providers. */

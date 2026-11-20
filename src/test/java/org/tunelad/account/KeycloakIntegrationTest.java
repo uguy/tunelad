@@ -100,6 +100,12 @@ class KeycloakIntegrationTest {
     }
 
     @Test
+    void local_realm_administrator() {
+        assertThat(me(token("admin")).admin()).isTrue();
+        assertThat(me(token("alice")).admin()).isFalse();
+    }
+
+    @Test
     void login_starts_at_the_realm() {
         client.get().uri("/oauth2/authorization/keycloak").exchange()
                 .expectStatus().is3xxRedirection()
@@ -111,14 +117,26 @@ class KeycloakIntegrationTest {
         return "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080) + "/realms/tunelad";
     }
 
-    /** An access token for alice, with the dev realm's password grant. */
+    private AccountRef me(String token) {
+        return client.get().uri("/api/me")
+                .headers(headers -> headers.setBearerAuth(token))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccountRef.class).returnResult().getResponseBody();
+    }
+
     private static String aliceToken() {
+        return token("alice");
+    }
+
+    /** An access token for a realm user whose password is their username, with the dev realm's password grant. */
+    private static String token(String username) {
         var form = new LinkedMultiValueMap<String, String>();
         form.add("grant_type", "password");
         form.add("client_id", "tunelad");
         form.add("client_secret", "tunelad-dev-secret");
-        form.add("username", "alice");
-        form.add("password", "alice");
+        form.add("username", username);
+        form.add("password", username);
         var response = WebClient.create(issuer() + "/protocol/openid-connect/token").post()
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(form))
