@@ -81,4 +81,12 @@ After an upload of a track completes successfully, the system SHALL include that
 #### Scenario: Searchable track has the track list fields
 - **GIVEN** a track titled "Knees Up" with an artist and an album has been uploaded
 - **WHEN** a search for `knees` returns it
-- **THEN** its `id`, `title`, `description`, `artist`, `album` and `format` equal those of the same track in `GET /api/tracks`
+- **THEN** its `id`, `title`, `description`, `artist`, `album`, `format` and `owner` equal those of the same track in `GET /api/tracks`
+
+### Requirement: Search without logging in
+The system SHALL serve `GET /api/tracks/search` to anonymous clients exactly as to authenticated ones.
+
+#### Scenario: Anonymous search
+- **GIVEN** a track titled "Knees Up" has been uploaded and is searchable
+- **WHEN** a client without a session or token searches for `knees`
+- **THEN** the response status is 200 OK and contains "Knees Up"
