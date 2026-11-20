@@ -38,8 +38,8 @@ export default defineConfig({
 					scope: './',
 					display: 'standalone',
 					display_override: ['window-controls-overlay'],
-					theme_color: '#f3f3f3',
-					background_color: '#f3f3f3',
+					theme_color: '#1f1f24',
+					background_color: '#f2f2f2',
 					icons: [
 						{
 							src: 'images/icon-72x72.png',

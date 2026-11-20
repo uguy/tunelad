@@ -4,31 +4,15 @@
 	const buildDate = __DATE__;
 </script>
 
-<footer>
-	<p class="text-center">
-		Simple <a href="https://kit.svelte.dev">SvelteKit</a> PWA demo
-		<br />
+<footer class="mt-10 border-t border-line px-6 py-8 text-center text-sm text-ink-muted">
+	<p>
+		Tune Lad, a <a
+			class="font-semibold text-accent-strong hover:underline"
+			href="https://svelte.dev/docs/kit">SvelteKit</a
+		> PWA playground
+	</p>
+	<p class="mt-1">
 		Last update :
 		<Time timestamp={buildDate} format="dddd D MMMM YYYY" />
 	</p>
 </footer>
-
-<style>
-	footer {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 40px;
-	}
-
-	footer a {
-		font-weight: bold;
-	}
-
-	@media (min-width: 480px) {
-		footer {
-			padding: 40px 0;
-		}
-	}
-</style>

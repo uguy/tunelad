@@ -1,12 +1,20 @@
 <script lang="ts">
-	import { session } from '#lib/session.svelte.js';
+	import type { Attachment } from 'svelte/attachments';
+	import Icon from '#lib/Icon.svelte';
+	import Waveform from '#lib/Waveform.svelte';
+	import { artworkGradient } from '#lib/artwork.js';
 	import { canChange } from '#lib/permissions.js';
-	import TrackService, { type Track, type TrackEdit } from '../Tracks.js';
+	import { player } from '#lib/player.svelte.js';
+	import { session } from '#lib/session.svelte.js';
+	import TrackService, {
+		type Track,
+		type TrackEdit,
+		type Waveform as TrackWaveform
+	} from '../Tracks.js';
 
 	interface Props {
+		/** The tracks to show; playing one of them makes this list the player's queue. */
 		tracks?: Track[];
-		/** The play button of a track was clicked. */
-		onplay?: (trackId: string) => void;
 		/** A tag of a track was clicked. */
 		ontagclick?: (tag: string) => void;
 		/** A track was edited: `track` is the track as the server now has it. */
@@ -15,9 +23,64 @@
 		ondeleted?: (trackId: string) => void;
 	}
 
-	let { tracks = [], onplay, ontagclick, onupdated, ondeleted }: Props = $props();
+	let { tracks = [], ontagclick, onupdated, ondeleted }: Props = $props();
 
 	const trackService = new TrackService();
+
+	/** Polls a pending waveform this often, this many times: a fresh upload gets its waveform within seconds. */
+	const POLL_INTERVAL = 3000;
+	const POLL_ATTEMPTS = 10;
+
+	/** The waveforms fetched so far, by track id. */
+	let waveforms = $state<Record<string, TrackWaveform>>({});
+	/** Tracks whose waveform has been asked for, so each is fetched once. Bookkeeping only: nothing renders it. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
+	const requested = new Set<string>();
+	let alive = true;
+	$effect(() => () => {
+		alive = false;
+	});
+
+	function loadWaveform(trackId: string, attempt = 1) {
+		trackService.findWaveform(trackId).then((waveform) => {
+			if (!alive || !waveform) return;
+			waveforms[trackId] = waveform;
+			if (waveform.status === 'PENDING' && attempt < POLL_ATTEMPTS) {
+				setTimeout(() => alive && loadWaveform(trackId, attempt + 1), POLL_INTERVAL);
+			}
+		});
+	}
+
+	/** Fetches the track's waveform once its row comes near the viewport, so a long list does not fetch them all. */
+	function waveformWhenVisible(trackId: string): Attachment {
+		return (element) => {
+			if (requested.has(trackId)) return;
+			const observer = new IntersectionObserver(
+				(entries) => {
+					if (!entries.some((entry) => entry.isIntersecting) || requested.has(trackId)) return;
+					requested.add(trackId);
+					observer.disconnect();
+					loadWaveform(trackId);
+				},
+				{ rootMargin: '200px' }
+			);
+			observer.observe(element);
+			return () => observer.disconnect();
+		};
+	}
+
+	function peaksOf(trackId: string): number[] | null {
+		const waveform = waveforms[trackId];
+		return waveform?.status === 'READY' ? waveform.peaks : null;
+	}
+
+	/** Plays the track, or pauses and resumes it when loaded; `fraction` starts or seeks it at that share. */
+	function play(index: number, fraction?: number) {
+		player.playFrom(tracks, index, fraction);
+	}
+
+	/** Track ids whose description is shown. */
+	let expanded = $state<Record<string, boolean>>({});
 
 	/** The id of the track being edited, and the form's values; one track at a time. */
 	let editing = $state<string | null>(null);
@@ -70,178 +133,172 @@
 		}
 	}
 
-	/** Runs the action without letting the click toggle the enclosing `<details>`. */
-	function inSummary(action: () => void) {
-		return (event: MouseEvent) => {
-			event.preventDefault();
-			event.stopPropagation();
-			action();
-		};
-	}
+	const inputClass =
+		'mt-1 block w-full rounded-md border-line text-sm focus:border-accent focus:ring-accent';
 </script>
 
-<div id="track-list" class="flex flex-col w-full">
+<div id="track-list" class="flex w-full flex-col gap-4">
 	{#if tracks.length === 0}
-		<div>No tracks found.</div>
+		<p class="card p-6 text-center text-ink-muted">No tracks found.</p>
 	{:else}
-		{#each tracks as track (track.id)}
-			<div data-testid="track-{track.id}">
-				<details class="w-full p-4 border-b border-grey-lighter hover:shadow-lg">
-					<summary class="flex items-center w-full hover:underline">
+		{#each tracks as track, index (track.id)}
+			{@const playing = player.isPlaying(track.id)}
+			{@const loaded = player.isLoaded(track.id)}
+			<article
+				data-testid="track-{track.id}"
+				class="card flex gap-4 p-4 transition-shadow hover:shadow-md"
+				{@attach waveformWhenVisible(track.id)}
+			>
+				<div
+					class="hidden h-36 w-36 shrink-0 rounded-sm sm:block"
+					style:background-image={artworkGradient(track.id)}
+					aria-hidden="true"
+				></div>
+
+				<div class="flex min-w-0 flex-1 flex-col">
+					<div class="flex items-start gap-3">
 						<button
 							id="play-track-{track.id}-btn"
-							aria-label="play track {track.title} button"
 							type="button"
-							onclick={() => onplay?.(track.id)}
+							aria-label="{playing ? 'pause' : 'play'} track {track.title} button"
+							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-strong"
+							onclick={() => play(index)}
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-								class="w-6 h-6 text-2xl text-gray-400"
-							>
-								<path
-									fill-rule="evenodd"
-									d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm14.024-.983a1.125 1.125 0 010 1.966l-5.603 3.113A1.125 1.125 0 019 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113z"
-									clip-rule="evenodd"
-								/>
-							</svg>
+							<Icon name={playing ? 'pause' : 'play'} class="h-6 w-6" />
 						</button>
-						<span class="px-2">{track.title}</span>
-						{#if track.owner}
-							<span class="text-sm text-gray-500" data-testid="track-owner"
-								>by {track.owner.displayName}</span
+
+						<div class="min-w-0 flex-1 leading-tight">
+							{#if track.owner}
+								<p class="truncate text-sm text-ink-muted" data-testid="track-owner">
+									{track.owner.displayName}
+								</p>
+							{/if}
+							<h2
+								class="truncate font-medium {loaded ? 'text-accent-strong' : ''}"
+								data-testid="track-title"
 							>
-						{/if}
+								{track.title}
+							</h2>
+						</div>
 
 						{#if canChange(session.account, track)}
-							<span class="ml-auto flex gap-2">
+							<div class="flex shrink-0 gap-2">
 								<button
 									type="button"
 									aria-label="edit track {track.title}"
-									class="text-sm px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-									onclick={inSummary(() => startEdit(track))}>Edit</button
+									class="rounded-full border border-line px-3 py-1 text-xs font-medium hover:border-ink-muted"
+									onclick={() => startEdit(track)}>Edit</button
 								>
 								<button
 									type="button"
 									aria-label="delete track {track.title}"
-									class="text-sm px-2 py-1 rounded bg-red-100 text-red-800 hover:bg-red-200"
-									onclick={inSummary(() => deleteTrack(track))}>Delete</button
+									class="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+									onclick={() => deleteTrack(track)}>Delete</button
 								>
-							</span>
+							</div>
 						{/if}
+					</div>
 
+					<div class="mt-3">
+						<Waveform
+							peaks={peaksOf(track.id)}
+							progress={player.progressOf(track.id)}
+							label={track.title}
+							onseek={(fraction) => play(index, fraction)}
+						/>
+					</div>
+
+					<div class="mt-2 flex flex-wrap items-center gap-2">
+						{#each track.tags ?? [] as tag (tag)}
+							<button
+								type="button"
+								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-strong"
+								onclick={() => ontagclick?.(tag)}>#{tag}</button
+							>
+						{/each}
 						<button
 							type="button"
-							class="btn-detail {canChange(session.account, track) ? 'ml-2' : 'ml-auto'}"
+							class="ml-auto inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink"
 							aria-label="show track {track.title} detail button"
+							aria-expanded={!!expanded[track.id]}
+							onclick={() => (expanded[track.id] = !expanded[track.id])}
 						>
+							{expanded[track.id] ? 'Less' : 'More'}
 							<svg
-								class="fill-current opacity-75 w-4 h-4 -mr-1"
-								xmlns="http://www.w3.org/2000/svg"
+								class="h-3 w-3 fill-current transition-transform {expanded[track.id]
+									? '-rotate-90'
+									: 'rotate-90'}"
 								viewBox="0 0 20 20"
+								aria-hidden="true"
 							>
 								<path
 									d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"
 								/>
 							</svg>
 						</button>
-					</summary>
-					<div class="mt-4 leading-normal text-md">
-						{#if track.album}
-							<b>Album : {track.album}</b>
-						{/if}
-						<p class="my-2 text-sm">{track.description}</p>
 					</div>
-					<div class="card-footer flex flex-wrap">
-						{#each track.tags ?? [] as tag (tag)}
-							<button
-								type="button"
-								class="text-sm font-medium bg-gray-300 rounded-lg mr-2 my-1 px-2 py-1 hover:cursor-pointer"
-								onclick={() => ontagclick?.(tag)}>{tag}</button
-							>
-						{/each}
-					</div>
-				</details>
-				{#if editing === track.id}
-					<form
-						class="p-4 space-y-2 border-b border-grey-lighter"
-						aria-label="edit track {track.title}"
-						onsubmit={(event) => {
-							event.preventDefault();
-							saveEdit(track);
-						}}
-					>
-						<label class="block text-sm"
-							>Title <input class="block w-full" required bind:value={form.title} /></label
-						>
-						<label class="block text-sm"
-							>Description <textarea class="block w-full" required bind:value={form.description}
-							></textarea></label
-						>
-						<label class="block text-sm"
-							>Artist <input class="block w-full" bind:value={form.artist} /></label
-						>
-						<label class="block text-sm"
-							>Album <input class="block w-full" bind:value={form.album} /></label
-						>
-						<div class="flex gap-2">
-							<button
-								type="submit"
-								class="text-sm px-3 py-1 rounded bg-gray-900 text-white"
-								disabled={saving}>Save</button
-							>
-							<button
-								type="button"
-								class="text-sm px-3 py-1 rounded bg-gray-200"
-								onclick={cancelEdit}>Cancel</button
-							>
+
+					{#if expanded[track.id]}
+						<div class="details mt-3 border-t border-line pt-3 text-sm leading-normal">
+							{#if track.artist}
+								<p><span class="text-ink-muted">Artist:</span> {track.artist}</p>
+							{/if}
+							{#if track.album}
+								<p><span class="text-ink-muted">Album:</span> {track.album}</p>
+							{/if}
+							<p class="mt-1 whitespace-pre-line">{track.description}</p>
 						</div>
-					</form>
-				{/if}
-				{#if errors[track.id]}
-					<p role="alert" class="px-4 py-2 text-sm text-red-700">{errors[track.id]}</p>
-				{/if}
-			</div>
+					{/if}
+
+					{#if editing === track.id}
+						<form
+							class="mt-3 space-y-3 border-t border-line pt-3"
+							aria-label="edit track {track.title}"
+							onsubmit={(event) => {
+								event.preventDefault();
+								saveEdit(track);
+							}}
+						>
+							<label class="block text-sm font-medium"
+								>Title <input class={inputClass} required bind:value={form.title} /></label
+							>
+							<label class="block text-sm font-medium"
+								>Description <textarea class={inputClass} required bind:value={form.description}
+								></textarea></label
+							>
+							<div class="grid gap-3 sm:grid-cols-2">
+								<label class="block text-sm font-medium"
+									>Artist <input class={inputClass} bind:value={form.artist} /></label
+								>
+								<label class="block text-sm font-medium"
+									>Album <input class={inputClass} bind:value={form.album} /></label
+								>
+							</div>
+							<div class="flex gap-2">
+								<button type="submit" class="btn-accent" disabled={saving}>Save</button>
+								<button type="button" class="btn-quiet" onclick={cancelEdit}>Cancel</button>
+							</div>
+						</form>
+					{/if}
+
+					{#if errors[track.id]}
+						<p role="alert" class="mt-2 text-sm text-red-700">{errors[track.id]}</p>
+					{/if}
+				</div>
+			</article>
 		{/each}
 	{/if}
 </div>
 
-<style lang="postcss">
-	@reference "tailwindcss";
-
-	details {
-		user-select: none;
+<style>
+	.details {
+		animation: reveal 0.25s ease;
 	}
 
-	details > summary > button.btn-detail > svg {
-		transform: rotate(90deg);
-	}
-
-	details[open] > summary > button.btn-detail > svg {
-		transform: rotate(-90deg);
-	}
-
-	details[open] > summary ~ * {
-		animation: ease-opacity-t-b 0.5s ease;
-	}
-
-	summary {
-		cursor: pointer;
-	}
-
-	svg {
-		transition: all 0.3s;
-	}
-
-	summary::-webkit-details-marker {
-		display: none;
-	}
-
-	@keyframes ease-opacity-t-b {
+	@keyframes reveal {
 		from {
 			opacity: 0;
-			transform: translateY(-0.5rem);
+			transform: translateY(-0.25rem);
 		}
 		to {
 			opacity: 1;

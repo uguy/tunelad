@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { checkFile, MAX_FILE_SIZE, progressFraction, uploadErrorMessage } from './Tracks.js';
+import TrackService, {
+	checkFile,
+	MAX_FILE_SIZE,
+	progressFraction,
+	uploadErrorMessage
+} from './Tracks.js';
 
 describe('checkFile', () => {
 	it('accepts each supported extension, whatever its case', () => {
@@ -56,5 +61,43 @@ describe('progressFraction', () => {
 	it('is 0 when the total is unknown', () => {
 		expect(progressFraction(50, 0)).toBe(0);
 		expect(progressFraction(50, 200, false)).toBe(0);
+	});
+});
+
+describe('TrackService.findWaveform', () => {
+	const ready = { status: 'READY', peaks: [0.5, 1] };
+
+	it('returns the waveform of the track', async () => {
+		let url = '';
+		const service = new TrackService(async (input) => {
+			url = String(input);
+			return Response.json(ready);
+		});
+
+		expect(await service.findWaveform('track 1')).toEqual(ready);
+		expect(url).toBe('/api/tracks/track%201/waveform');
+	});
+
+	it('returns null for an unknown track or a failed request', async () => {
+		expect(
+			await new TrackService(async () => new Response(null, { status: 404 })).findWaveform('x')
+		).toBeNull();
+		expect(
+			await new TrackService(async () => {
+				throw new TypeError('network down');
+			}).findWaveform('x')
+		).toBeNull();
+	});
+});
+
+describe('TrackService.findOne', () => {
+	it('returns the track, or null when there is none', async () => {
+		const track = { id: 'track-1', title: 'Knees Up' };
+		expect(await new TrackService(async () => Response.json(track)).findOne('track-1')).toEqual(
+			track
+		);
+		expect(
+			await new TrackService(async () => new Response(null, { status: 404 })).findOne('x')
+		).toBeNull();
 	});
 });

@@ -28,6 +28,10 @@ const MOSSY_BANKS = {
 
 /** Mocks who is logged in (null for nobody) and the track list, and gives the browser a CSRF cookie. */
 async function openTracks(page, context, account) {
+	// Waveforms are not under test here: an empty one, as for a track whose waveform failed
+	await page.route('**/api/tracks/*/waveform', (route) =>
+		route.fulfill({ json: { status: 'FAILED', peaks: [] } })
+	);
 	await context.addCookies([
 		{ name: 'XSRF-TOKEN', value: 'csrf-123', url: 'http://localhost:4173' }
 	]);
@@ -55,7 +59,7 @@ async function recordChanges(page, respond) {
 
 const editButton = (page, title) => page.getByRole('button', { name: `edit track ${title}` });
 const deleteButton = (page, title) => page.getByRole('button', { name: `delete track ${title}` });
-const trackTitles = (page) => page.locator('summary span.px-2');
+const trackTitles = (page) => page.getByTestId('track-title');
 
 // --- Requirement: Edit and delete own tracks from the UI -------------------------------------
 

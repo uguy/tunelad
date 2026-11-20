@@ -32,6 +32,10 @@ const KNEES_UP_FILE = {
 
 /** Mocks who is logged in (null for nobody) and a search that doesn't find new uploads yet, with a CSRF cookie. */
 async function mockApi(page, context, account) {
+	// Waveforms are not under test here: an empty one, as for a track whose waveform failed
+	await page.route('**/api/tracks/*/waveform', (route) =>
+		route.fulfill({ json: { status: 'FAILED', peaks: [] } })
+	);
 	await context.addCookies([
 		{ name: 'XSRF-TOKEN', value: 'csrf-123', url: 'http://localhost:4173' }
 	]);
@@ -79,7 +83,7 @@ function deferred() {
 	return { promise, release };
 }
 
-const trackTitles = (page) => page.locator('summary span.px-2');
+const trackTitles = (page) => page.getByTestId('track-title');
 const uploadButton = (page) => page.getByRole('button', { name: 'Upload' });
 
 // --- Requirement: Upload link on the tracks page ---------------------------------------------

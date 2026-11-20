@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
@@ -24,12 +25,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.media.internal.GridFsMediaStore;
 import org.tunelad.media.internal.Media;
+import org.tunelad.media.internal.Waveform;
+import org.tunelad.media.internal.WaveformStatus;
+import org.tunelad.media.internal.Waveforms;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Optional;
 
-/** Streams stored audio to the browser player, under the track URL it is keyed by. */
+/** Streams stored audio and its waveform to the browser player, under the track URL they are keyed by. */
 @RequiredArgsConstructor
 @RestController
 @Tag(name = "Media", description = "Stored audio and playback")
@@ -37,6 +42,7 @@ import java.util.Optional;
 public class MediaController {
 
     private final GridFsMediaStore store;
+    private final Waveforms waveforms;
 
     @GetMapping(value = "{id}/play",
             produces = {"audio/mpeg", "audio/mp4", "audio/ogg", "audio/flac", "audio/wav",
@@ -73,6 +79,31 @@ public class MediaController {
         return store.find(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("No audio found for id: " + id)))
                 .map(media -> requested.map(r -> partial(media, r)).orElseGet(() -> wholeFile(media)));
+    }
+
+    @GetMapping(value = "{id}/waveform", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get the waveform of a track",
+            description = "The peaks to draw the track's waveform with. They are computed from the audio shortly "
+                    + "after it is uploaded: until then the status is PENDING, and FAILED when the audio could not "
+                    + "be decoded. A READY waveform may be cached for an hour.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "the waveform, whatever its status",
+                    headers = @Header(name = HttpHeaders.CACHE_CONTROL, description = "`max-age=3600` when READY")),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
+    })
+    public Mono<ResponseEntity<WaveformResponse>> waveform(
+            @Parameter(description = "Track ID", required = true) @PathVariable("id") String id) {
+        return store.find(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("No audio found for id: " + id)))
+                // Audio stored a moment ago may not have its waveform saved yet
+                .then(waveforms.findById(id).defaultIfEmpty(Waveform.pending(id)))
+                .map(waveform -> {
+                    var response = ResponseEntity.ok();
+                    if (waveform.status() == WaveformStatus.READY) {
+                        response.cacheControl(CacheControl.maxAge(Duration.ofHours(1)));
+                    }
+                    return response.body(WaveformResponse.of(waveform));
+                });
     }
 
     /** The one byte range of a Range header; empty when absent, malformed or listing several ranges. */

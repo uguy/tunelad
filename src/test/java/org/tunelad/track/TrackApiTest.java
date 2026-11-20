@@ -440,7 +440,9 @@ class TrackApiTest extends AbstractApiTest {
         delete(id, BOB_TOKEN).expectStatus().isForbidden();
 
         assertThat(listTracks()).extracting(TrackDTO::id).containsExactly(id);
-        play(id).expectStatus().is2xxSuccessful();
+        // Read the body: an unread response stays in flight and stalls the server's graceful shutdown
+        play(id).expectStatus().is2xxSuccessful()
+                .expectBody(byte[].class).value(body -> assertThat(body).isNotEmpty());
     }
 
     @Test

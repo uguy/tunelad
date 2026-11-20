@@ -71,37 +71,30 @@
 	function cancel() {
 		controller?.abort();
 	}
+
+	const labelClass = 'block text-sm font-medium';
+	const inputClass =
+		'mt-1 block w-full rounded-md border-line text-sm focus:border-accent focus:ring-accent';
 </script>
 
 <svelte:head>
 	<title>Tune Lad - Upload a track</title>
 </svelte:head>
 
-<section class="flex flex-col w-full space-y-5">
-	<h1 class="text-3xl leading-2">Upload a track</h1>
+<section class="mx-auto flex w-full max-w-2xl flex-col gap-6">
+	<div>
+		<a href={resolve('/tracks')} class="text-sm font-medium text-ink-muted hover:text-ink"
+			>← Tracks</a
+		>
+		<h1 class="mt-2 text-3xl font-bold tracking-tight">Upload a track</h1>
+	</div>
 
 	{#if session.account}
-		<form class="space-y-3 max-w-xl" aria-label="upload a track" onsubmit={submit}>
-			<label class="block text-sm"
-				>Title <input class="block w-full" name="title" required bind:value={title} /></label
-			>
-			<label class="block text-sm"
-				>Description <textarea
-					class="block w-full"
-					name="description"
-					required
-					bind:value={description}></textarea></label
-			>
-			<label class="block text-sm"
-				>Artist <input class="block w-full" name="artist" bind:value={artist} /></label
-			>
-			<label class="block text-sm"
-				>Album <input class="block w-full" name="album" bind:value={album} /></label
-			>
-			<label class="block text-sm"
+		<form class="card space-y-4 p-6" aria-label="upload a track" onsubmit={submit}>
+			<label class={labelClass}
 				>Audio file (mp3, m4a, ogg, flac or wav, up to 100 MB)
 				<input
-					class="block w-full"
+					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-accent-strong"
 					name="file"
 					type="file"
 					accept={ACCEPTED_FILES}
@@ -109,44 +102,78 @@
 					bind:files
 				/></label
 			>
+			<label class={labelClass}
+				>Title <input class={inputClass} name="title" required bind:value={title} /></label
+			>
+			<label class={labelClass}
+				>Description <textarea
+					class={inputClass}
+					rows="3"
+					name="description"
+					required
+					bind:value={description}></textarea></label
+			>
+			<div class="grid gap-4 sm:grid-cols-2">
+				<label class={labelClass}
+					>Artist <input class={inputClass} name="artist" bind:value={artist} /></label
+				>
+				<label class={labelClass}
+					>Album <input class={inputClass} name="album" bind:value={album} /></label
+				>
+			</div>
 
 			{#if status === 'uploading'}
-				<div class="flex items-center gap-2">
-					<progress class="w-full" max="1" value={progress} aria-label="upload progress"></progress>
-					<span class="text-sm tabular-nums">{Math.round(progress * 100)}%</span>
+				<div class="flex items-center gap-3">
+					<progress
+						class="upload-progress h-2 w-full overflow-hidden rounded-full"
+						max="1"
+						value={progress}
+						aria-label="upload progress"
+					></progress>
+					<span class="w-10 text-right text-sm tabular-nums">{Math.round(progress * 100)}%</span>
 				</div>
 			{/if}
 
 			{#if message}
-				<p role="alert" class="text-sm text-red-700">
+				<p role="alert" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
 					{message}
 					{#if refusedWith === 401}
-						<a href="/login" rel="external" class="underline">Log in</a>
+						<a href="/login" rel="external" class="font-medium underline">Log in</a>
 					{/if}
 				</p>
 			{/if}
 
-			<div class="flex gap-2">
-				<button
-					type="submit"
-					class="text-sm px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-50"
-					disabled={status === 'uploading'}>Upload</button
-				>
+			<div class="flex gap-2 pt-2">
+				<button type="submit" class="btn-accent" disabled={status === 'uploading'}>Upload</button>
 				{#if status === 'uploading'}
-					<button type="button" class="text-sm px-3 py-1 rounded bg-gray-200" onclick={cancel}
-						>Cancel</button
-					>
+					<button type="button" class="btn-quiet" onclick={cancel}>Cancel</button>
 				{:else}
-					<a href={resolve('/tracks')} class="text-sm px-3 py-1 rounded bg-gray-200"
-						>Back to tracks</a
-					>
+					<a href={resolve('/tracks')} class="btn-quiet">Back to tracks</a>
 				{/if}
 			</div>
 		</form>
 	{:else}
-		<p>
+		<p class="card p-6">
 			<!-- Served by the server, not the SPA router: it lists the login providers -->
-			<a href="/login" rel="external" class="underline">Log in to upload</a> a track.
+			<a href="/login" rel="external" class="font-semibold text-accent-strong hover:underline"
+				>Log in to upload</a
+			> a track.
 		</p>
 	{/if}
 </section>
+
+<style>
+	.upload-progress {
+		appearance: none;
+		background-color: var(--color-line);
+	}
+	.upload-progress::-webkit-progress-bar {
+		background-color: var(--color-line);
+	}
+	.upload-progress::-webkit-progress-value {
+		background-color: var(--color-accent);
+	}
+	.upload-progress::-moz-progress-bar {
+		background-color: var(--color-accent);
+	}
+</style>

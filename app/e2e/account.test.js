@@ -18,6 +18,10 @@ const loggedInAsAlice = (route) => route.fulfill({ json: ALICE });
 
 test.beforeEach(async ({ page }) => {
 	await page.route('**/api/tracks/search*', (route) => route.fulfill({ json: [TRACK] }));
+	// Waveforms are not under test here: an empty one, as for a track whose waveform failed
+	await page.route('**/api/tracks/*/waveform', (route) =>
+		route.fulfill({ json: { status: 'FAILED', peaks: [] } })
+	);
 });
 
 // --- Requirement: Login state in the header --------------------------------------------------
@@ -67,5 +71,5 @@ test('uploader shown in the list', async ({ page }) => {
 	await page.route('**/api/me', anonymous);
 	await page.goto('/tracks');
 
-	await expect(page.getByTestId('track-owner')).toHaveText('by Alice Liddell');
+	await expect(page.getByTestId('track-owner')).toHaveText('Alice Liddell');
 });

@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -21,6 +23,8 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * Base for black-box REST API tests: the full application on a random port, backed by a
@@ -52,6 +56,11 @@ public abstract class AbstractApiTest {
                 // play responses carry whole mp3 fixtures (~3 MB), above the 256 KB default
                 .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
                 .build();
+        // Module listeners of the previous test may still be running (computing a waveform takes a moment):
+        // emptying the registry under them would make them fail to mark their event completed
+        await().atMost(Duration.ofSeconds(30)).until(() -> mongo.count(
+                Query.query(Criteria.where("completionDate").exists(false)), "event_publication")
+                .block() == 0);
         // Deletes the documents of every collection, whichever module owns it, but keeps the collections
         // and their indexes: those are only created at startup, and search relies on its text index.
         mongo.getCollectionNames()

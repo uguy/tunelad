@@ -4,7 +4,7 @@
 	import Header from '#lib/Header.svelte';
 	import Footer from '#lib/Footer.svelte';
 
-	import Player from './tracks/component/Player.svelte';
+	import PlayerBar from '#lib/PlayerBar.svelte';
 	import { player } from '#lib/player.svelte.js';
 
 	import { pwaInfo } from 'virtual:pwa-info';
@@ -21,21 +21,18 @@
 </svelte:head>
 
 <Header />
-<main class="relative flex flex-row">
-	<div class="lg:basis-1/6 md:hidden sm:hidden"></div>
-	<div class="lg:basis-4/6 sm:ml-auto sm:mr-auto flex bg-white px-5 py-10 w-full">
-		<div class="flex flex-col w-full">
-			<div class="w-full">
-				{@render children()}
-			</div>
-			<div class="py-10 w-full">
-				<Player source={player.source} />
-			</div>
-		</div>
-	</div>
-	<div class="lg:basis-1/6 md:hidden sm:hidden"></div>
-</main>
-<Footer />
+<!-- Room at the bottom for the player bar, so it never covers the end of the page -->
+<div class={player.source ? 'pb-20' : ''}>
+	<main class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+		{@render children()}
+	</main>
+	<Footer />
+</div>
+
+<!-- In the root layout, so it stays mounted, and keeps playing, while the user moves between pages -->
+{#if player.source}
+	<PlayerBar />
+{/if}
 
 {#await import('#lib/ReloadPrompt.svelte') then { default: ReloadPrompt }}
 	<ReloadPrompt />
