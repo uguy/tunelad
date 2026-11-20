@@ -42,7 +42,7 @@ Commit: `feat(ui): add an upload page with progress, cancel and retry`
 
 - [x] 6.1 In README.adoc's Features, change the upload line to "Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry", and update the upload curl recipe to show the 201 response. Verify the recipe works against the running app
 - [x] 6.2 Run `./mvnw clean verify` and verify it passes, including `ModularApplicationTests`, vitest and the Playwright e2e tests
-- [ ] 6.3 Smoke-test with `docker compose up -d` and the built app: as alice, upload a flac file from `/tracks/upload` and see it listed at once and playing (content type `audio/flac` in devtools). Cancel a large upload halfway and check Mongo Express shows no new `fs.files` entry. Try a `.txt` file and a file over 100 MB, and see the messages without a request being sent
+- [x] 6.3 Smoke-test with `docker compose up -d` and the built app: as alice, upload a flac file from `/tracks/upload` and see it listed at once and playing (content type `audio/flac` in devtools). Cancel a large upload halfway and check Mongo Express shows no new `fs.files` entry. Try a `.txt` file and a file over 100 MB, and see the messages without a request being sent
 - [ ] 6.4 Push `feat/track-upload-form` and open a PR to `main` titled `feat(track)!: add an upload form with progress and more audio formats`, calling out the 200 → 201 change in the description
 
 ## Workflow follow-up
