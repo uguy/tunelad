@@ -122,7 +122,10 @@ class TrackApiTest extends AbstractApiTest {
     void deleting_all_tracks_is_not_allowed() {
         uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
 
-        client.delete().uri("/api/tracks").exchange().expectStatus().isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        // Authenticated with a bearer token, so that the request gets past CSRF protection to the routing
+        client.delete().uri("/api/tracks")
+                .headers(headers -> headers.setBearerAuth(UPLOADER_TOKEN))
+                .exchange().expectStatus().isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 
         assertThat(listTracks()).extracting(TrackDTO::title).containsExactly("Knees Up");
     }

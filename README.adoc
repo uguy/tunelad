@@ -164,6 +164,19 @@ The Keycloak admin console is at http://localhost:8180/admin (`admin`/`admin`).
 WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
 direct access grants are enabled so that curl and tests can get tokens with a username and password.
 
+Log in from the browser at http://localhost:8080/login, which lists the configured providers.
+
+To also offer Google, create an OAuth client in the Google Cloud console with the authorized redirect URI
+`http://localhost:8080/login/oauth2/code/google`, then run the application with the `google` profile and the client's
+credentials:
+
+[source,bash]
+----
+GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=google
+----
+
+The same person logging in through Keycloak and through Google gets two separate accounts.
+
 To check that the realm is up and get an access token for alice:
 
 [source,bash]

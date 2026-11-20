@@ -31,6 +31,9 @@ public abstract class AbstractApiTest {
     protected static final String KNEES_UP_MP3 = "mp3/Knees_Up.mp3";
     protected static final String MOSSY_BANKS_MP3 = "mp3/Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3";
 
+    /** Uploads authenticate as alice with a bearer token, which also spares them the CSRF token. */
+    protected static final String UPLOADER_TOKEN = TestTokens.bearer("alice", "Alice Liddell");
+
     @LocalServerPort
     int port;
 
@@ -64,6 +67,7 @@ public abstract class AbstractApiTest {
         });
         if (fixture != null) builder.part("file", new ClassPathResource(fixture));
         return client.post().uri("/api/tracks")
+                .headers(headers -> headers.setBearerAuth(UPLOADER_TOKEN))
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(builder.build()))
                 .exchange();
