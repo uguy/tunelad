@@ -26,8 +26,8 @@ Commit: `feat(track)!: return the created track and accept more audio formats`
 
 Commit: `fix(track): leave no track or audio behind when an upload fails`
 
-- [ ] 4.1 Rework `DefaultTrackService.execute(AddTrackCommand)` as in design.md decision 4: generate the id up front, store the audio outside the transaction, then save the track and publish `NewTrackSaved` through a `TransactionalOperator` on the reactive transaction manager. Delete the audio by key on error (then rethrow) and on cancel. Verify the existing `TrackEventsTest` still passes (one `NewTrackSaved` per upload)
-- [ ] 4.2 Add tests for "A failed upload leaves nothing behind". "Storing the audio fails" uses a `MediaStore` test double that errors after the first buffer: no track listed, nothing in `fs.files`/`fs.chunks` for the key, no `NewTrackSaved`. "Client aborts during the upload" uses a raw HTTP client that sends part of a multipart body and closes the connection: no track, no GridFS file, and search finds nothing after 5 seconds. Verify they pass
+- [x] 4.1 Rework `DefaultTrackService.execute(AddTrackCommand)` as in design.md decision 4: generate the id up front, store the audio outside the transaction, then save the track and publish `NewTrackSaved` through a `TransactionalOperator` on the reactive transaction manager. Delete the audio by key on error (then rethrow) and on cancel. Verify the existing `TrackEventsTest` still passes (one `NewTrackSaved` per upload)
+- [x] 4.2 Add tests for "A failed upload leaves nothing behind". "Storing the audio fails" uses a `MediaStore` test double that errors after the first buffer: no track listed, nothing in `fs.files`/`fs.chunks` for the key, no `NewTrackSaved`. "Client aborts during the upload" uses a raw HTTP client that sends part of a multipart body and closes the connection: no track, no GridFS file, and search finds nothing after 5 seconds. Verify they pass
 
 ## 5. Upload page in the UI
 

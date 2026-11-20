@@ -37,7 +37,7 @@ public abstract class AbstractApiTest {
     protected static final String UPLOADER_TOKEN = TestTokens.bearer("alice", "Alice Liddell");
 
     @LocalServerPort
-    int port;
+    protected int port;
 
     protected WebTestClient client;
 
