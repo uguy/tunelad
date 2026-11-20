@@ -41,7 +41,9 @@ class MediaApiTest extends AbstractApiTest {
 
         // play() sends no session or token
         play(id).expectStatus().is2xxSuccessful()
-                .expectHeader().contentTypeCompatibleWith("audio/mpeg");
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg")
+                // Read the body: an unread response stays in flight and stalls the server's graceful shutdown
+                .expectBody(byte[].class).value(body -> assertThat(body).isNotEmpty());
     }
 
     // --- Requirement: Play a track ------------------------------------------------------------
@@ -106,7 +108,9 @@ class MediaApiTest extends AbstractApiTest {
                 .block();
 
         play(id).expectStatus().is2xxSuccessful()
-                .expectHeader().contentTypeCompatibleWith("audio/mpeg");
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg")
+                // Read the body: an unread response stays in flight and stalls the server's graceful shutdown
+                .expectBody(byte[].class).value(body -> assertThat(body).isNotEmpty());
     }
 
     @Test
