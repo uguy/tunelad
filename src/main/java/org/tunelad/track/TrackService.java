@@ -7,7 +7,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface TrackService {
-    Mono<Void> execute(AddTrackCommand command);
+    /** Stores the track with its audio and returns the stored track. */
+    Mono<TrackDTO> execute(AddTrackCommand command);
 
     /**
      * Replaces the track's metadata and returns the updated track. Fails with {@code NotFoundException} when no track

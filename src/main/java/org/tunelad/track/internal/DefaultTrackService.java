@@ -35,7 +35,7 @@ class DefaultTrackService implements TrackService {
     private final TransactionalEvents events;
 
     @Override
-    public Mono<Void> execute(AddTrackCommand command) {
+    public Mono<TrackDTO> execute(AddTrackCommand command) {
         var track = new Track();
         track.setTitle(command.title());
         track.setArtist(new Artist(command.artist()));
@@ -45,9 +45,10 @@ class DefaultTrackService implements TrackService {
         track.setOwner(command.owner());
 
         return tracks.save(track)
-                .flatMap(saved -> mediaStore.store(saved.getId(), command.data(), "audio/mpeg").thenReturn(saved))
+                .flatMap(saved -> mediaStore.store(saved.getId(), command.data(), command.format().mimeType()).thenReturn(saved))
                 // Published within the transaction: module listeners only see it once the track is committed
-                .flatMap(saved -> events.publish(new NewTrackSaved(trackMapper.toDto(saved))));
+                .map(trackMapper::toDto)
+                .flatMap(dto -> events.publish(new NewTrackSaved(dto)).thenReturn(dto));
     }
 
     @Override

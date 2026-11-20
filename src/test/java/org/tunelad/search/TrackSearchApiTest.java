@@ -120,7 +120,7 @@ class TrackSearchApiTest extends AbstractApiTest {
     void searchable_track_has_the_track_list_fields() {
         upload(Map.of("title", "Knees Up", "description", "A reel and a song",
                 "artist", "Breabach", "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
 
         await().atMost(SEARCHABLE_WITHIN).until(() -> !search("knees").isEmpty());
         var listed = trackTitled("Knees Up");

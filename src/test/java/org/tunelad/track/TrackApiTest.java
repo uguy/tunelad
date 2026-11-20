@@ -1,15 +1,28 @@
 package org.tunelad.track;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.tunelad.AbstractApiTest;
 import org.tunelad.TestTokens;
 import org.tunelad.account.AccountRef;
 
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.assertj.core.api.InstanceOfAssertFactories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -23,19 +36,26 @@ class TrackApiTest extends AbstractApiTest {
 
     @Test
     void upload_with_all_metadata() {
-        upload(Map.of(
+        var created = upload(Map.of(
                 "title", "Knees Up",
                 "description", "A reel and a song",
                 "artist", "Breabach",
                 "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult();
+        var body = created.getResponseBody();
 
+        assertThat(body).isNotNull();
+        assertThat(body.id()).isNotBlank();
+        assertThat(body.owner()).isEqualTo(owner(accountOf(UPLOADER_TOKEN)));
+        assertThat(created.getResponseHeaders().getLocation()).hasToString("/api/tracks/" + body.id());
         assertThat(listTracks()).singleElement().satisfies(track -> {
             assertThat(track.title()).isEqualTo("Knees Up");
             assertThat(track.description()).isEqualTo("A reel and a song");
             assertThat(track.artist()).isEqualTo("Breabach");
             assertThat(track.album()).isEqualTo("Frenzy of the Meeting");
             assertThat(track.format()).isEqualTo(TrackFormat.MP3);
+            assertThat(track).isEqualTo(body);
         });
     }
 
@@ -65,6 +85,117 @@ class TrackApiTest extends AbstractApiTest {
                 .expectStatus().isBadRequest();
 
         assertThat(listTracks()).isEmpty();
+    }
+
+    @Test
+    void created_track_can_be_fetched_from_its_location() {
+        var created = upload(Map.of("title", "Knees Up", "description", "A reel and a song"), KNEES_UP_MP3)
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult();
+
+        client.get().uri(created.getResponseHeaders().getLocation().toString()).exchange()
+                .expectStatus().isOk()
+                .expectBody(TrackDTO.class).isEqualTo(created.getResponseBody());
+    }
+
+    @Test
+    void blank_title_or_description() {
+        upload(Map.of("title", "  ", "description", "A reel and a song"), KNEES_UP_MP3)
+                .expectStatus().isBadRequest();
+        upload(Map.of("title", "Knees Up", "description", ""), KNEES_UP_MP3)
+                .expectStatus().isBadRequest();
+
+        assertThat(listTracks()).isEmpty();
+    }
+
+    // --- Requirement: Accepted audio formats ----------------------------------------------------
+
+    @ParameterizedTest
+    @CsvSource({"mp3/Knees_Up.mp3, MP3", "audio/tune.m4a, M4A", "audio/tune.ogg, OGG", "audio/tune.flac, FLAC",
+            "audio/tune.wav, WAV"})
+    void upload_each_supported_format(String fixture, TrackFormat format) {
+        var created = uploadOk("Tune", "One second of A", fixture);
+
+        assertThat(created.format()).isEqualTo(format);
+        assertThat(trackTitled("Tune").format()).isEqualTo(format);
+    }
+
+    @Test
+    void extension_in_upper_case() throws IOException {
+        var created = uploadFile(Map.of("title", "Tune", "description", "One second of A"), renamed("audio/tune.flac", "TUNE.FLAC"))
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(created.format()).isEqualTo(TrackFormat.FLAC);
+    }
+
+    @Test
+    void unsupported_file() throws IOException {
+        uploadFile(Map.of("title", "Notes", "description", "Not audio"), renamed("audio/tune.wav", "notes.txt"))
+                .expectStatus().isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        uploadFile(Map.of("title", "No extension", "description", "Not audio"), renamed("audio/tune.wav", "tune"))
+                .expectStatus().isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+
+        assertThat(listTracks()).extracting(TrackDTO::title).doesNotContain("Notes", "No extension");
+        assertThat(storedAudioFiles()).isZero();
+    }
+
+    // --- Requirement: Upload size limit ---------------------------------------------------------
+
+    private static final long MAX_FILE_SIZE = 100L * 1024 * 1024;
+
+    @Test
+    void file_over_the_limit() throws IOException {
+        uploadFile(Map.of("title", "Too Big", "description", "One byte too many"), fileOfSize(MAX_FILE_SIZE + 1))
+                .expectStatus().isEqualTo(HttpStatus.CONTENT_TOO_LARGE);
+
+        assertThat(listTracks()).extracting(TrackDTO::title).doesNotContain("Too Big");
+        assertThat(storedAudioFiles()).isZero();
+    }
+
+    @Test
+    void file_at_the_limit() throws IOException {
+        uploadFile(Map.of("title", "Just Right", "description", "Exactly 100 MB"), fileOfSize(MAX_FILE_SIZE))
+                .expectStatus().isCreated();
+    }
+
+    /** A copy of a fixture under another file name, which is the name the upload's file part carries. */
+    private Resource renamed(String fixture, String filename) throws IOException {
+        var file = tempDir.resolve(filename);
+        Files.write(file, new ClassPathResource(fixture).getContentAsByteArray());
+        return new FileSystemResource(file);
+    }
+
+    /** A sparse mp3-named file of the given size, so it takes neither memory nor much disk. */
+    private Resource fileOfSize(long size) throws IOException {
+        var file = tempDir.resolve("big-" + size + ".mp3");
+        try (var raf = new RandomAccessFile(file.toFile(), "rw")) {
+            raf.setLength(size);
+        }
+        return new FileSystemResource(file);
+    }
+
+    private long storedAudioFiles() {
+        return mongo.getCollection("fs.files").flatMap(files -> Mono.from(files.countDocuments())).block();
+    }
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void upload_is_documented_with_its_responses() {
+        client.get().uri("/v3/api-docs").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/api/tracks'].post.responses['201'].headers['Location']").exists()
+                .jsonPath("$.paths['/api/tracks'].post.responses['201'].content['application/json'].schema['$ref']")
+                .isEqualTo("#/components/schemas/TrackDTO")
+                .jsonPath("$.paths['/api/tracks'].post.responses['400']").exists()
+                .jsonPath("$.paths['/api/tracks'].post.responses['413']").exists()
+                .jsonPath("$.paths['/api/tracks'].post.responses['415']").exists()
+                .jsonPath("$.components.schemas.TrackDTO.properties.format.enum").value(formats ->
+                        assertThat(formats).asInstanceOf(InstanceOfAssertFactories.LIST)
+                                .contains("MP3", "M4A", "OGG", "FLAC", "WAV"));
     }
 
     // --- Requirement: Assign a unique identifier to each track --------------------------------
@@ -163,7 +294,7 @@ class TrackApiTest extends AbstractApiTest {
         var bobToken = TestTokens.bearer("bob", "Bob Smith");
         uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
         upload(Map.of("title", "Mossy Banks", "description", "Two reels"), MOSSY_BANKS_MP3, bobToken)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
 
         assertThat(trackTitled("Knees Up").owner()).isEqualTo(owner(accountOf(UPLOADER_TOKEN)));
         assertThat(trackTitled("Mossy Banks").owner()).isEqualTo(owner(accountOf(bobToken)));
@@ -197,7 +328,7 @@ class TrackApiTest extends AbstractApiTest {
     @Test
     void owner_edits_all_metadata() {
         upload(Map.of("title", "Knees Up", "description", "A reel and a song", "artist", "Breabach"), KNEES_UP_MP3)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
         var before = trackTitled("Knees Up");
 
         var updated = edit(before.id(), Map.of(
@@ -218,7 +349,7 @@ class TrackApiTest extends AbstractApiTest {
     void optional_metadata_omitted() {
         upload(Map.of("title", "Knees Up", "description", "A reel and a song",
                 "artist", "Breabach", "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
         var id = trackTitled("Knees Up").id();
 
         edit(id, Map.of("title", "Knees Up", "description", "A reel and a song"), UPLOADER_TOKEN)

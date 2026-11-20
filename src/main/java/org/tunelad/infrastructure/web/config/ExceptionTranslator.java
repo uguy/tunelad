@@ -3,6 +3,7 @@ package org.tunelad.infrastructure.web.config;
 import org.tunelad.infrastructure.ForbiddenException;
 import org.tunelad.infrastructure.NotFoundException;
 
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,6 +15,12 @@ public class ExceptionTranslator {
 	@ExceptionHandler({ NotFoundException.class })
 	public final ResponseEntity handleException() {
 		return ResponseEntity.notFound().build();
+	}
+
+	/** A request body over a codec limit, such as an uploaded file over the multipart disk usage limit per part. */
+	@ExceptionHandler({ DataBufferLimitException.class })
+	public final ResponseEntity handleTooLarge() {
+		return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build();
 	}
 
 	@ExceptionHandler({ ForbiddenException.class })

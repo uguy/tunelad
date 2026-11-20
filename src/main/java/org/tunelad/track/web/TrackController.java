@@ -9,11 +9,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.headers.Header;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebInputException;
 import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 import org.tunelad.account.AccountRef;
@@ -27,6 +31,8 @@ import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.UpdateTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 
 @RequiredArgsConstructor
@@ -46,24 +52,40 @@ public class TrackController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload a track", description = "Stores a track with its audio, owned by the authenticated user",
+    @Operation(summary = "Upload a track",
+            description = "Stores a track with its audio, owned by the authenticated user, and returns it. The audio "
+                    + "format is told by the file name's extension: mp3, m4a, ogg, flac or wav. Files over 100 MB are "
+                    + "refused.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Track stored", content = @Content),
-            @ApiResponse(responseCode = "400", description = "A required part is missing", content = @Content),
+            @ApiResponse(responseCode = "201", description = "Track stored",
+                    headers = @Header(name = HttpHeaders.LOCATION, description = "The track's URL, `/api/tracks/{id}`"),
+                    content = @Content(schema = @Schema(implementation = TrackDTO.class))),
+            @ApiResponse(responseCode = "400", description = "A required part is missing, or the title or description is blank", content = @Content),
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content)
+            @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content),
+            @ApiResponse(responseCode = "413", description = "The audio file is larger than 100 MB", content = @Content),
+            @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac or wav file", content = @Content)
     })
-    public Mono<Void> create(
+    public Mono<ResponseEntity<TrackDTO>> create(
             @RequestPart("title") String title,
             @RequestPart("description") String description,
             @RequestPart(name = "artist", required = false) String artist,
             @RequestPart(name = "album", required = false) String album,
             @RequestPart("file") FilePart filePart) {
+        if (!StringUtils.hasText(title) || !StringUtils.hasText(description)) {
+            return Mono.error(new ServerWebInputException("A track needs a title and a description."));
+        }
+        var format = TrackFormat.forFile(filePart.filename());
+        if (format.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Supported audio formats are mp3, m4a, ogg, flac and wav."));
+        }
         return authenticatedAccount()
                 .map(account -> new AddTrackCommand(title, artist, album, description, filePart.content(),
-                        TrackFormat.forFile(filePart.filename()), new TrackOwner(account.id(), account.displayName())))
-                .flatMap(service::execute);
+                        format.get(), new TrackOwner(account.id(), account.displayName())))
+                .flatMap(service::execute)
+                .map(track -> ResponseEntity.created(URI.create("/api/tracks/" + track.id())).body(track));
     }
 
     @PutMapping(value = "{id}", consumes = MediaType.APPLICATION_JSON_VALUE)

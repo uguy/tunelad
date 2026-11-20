@@ -41,7 +41,7 @@ class TrackEventsTest extends AbstractApiTest {
     void upload_publishes_new_track_saved_once_with_the_stored_track() {
         upload(Map.of("title", "Knees Up", "description", "A reel and a song",
                 "artist", "Breabach", "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
 
         // Published within the upload, so recorded by the time the response arrives.
         assertThat(saved).extracting(NewTrackSaved::track).containsExactly(trackTitled("Knees Up"));
