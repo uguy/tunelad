@@ -60,7 +60,11 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry; every track shows who uploaded it
 * Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
-* Play track from browser (streaming bytes with range support, so the player can seek)
+* Play track from browser (streaming bytes with range support, so the player can seek), in a player bar that stays
+  at the bottom of the screen across pages: play/pause, previous/next through the track list, seeking, volume and
+  mute (remembered between visits)
+* Track waveforms: computed with ffmpeg shortly after upload (and backfilled at startup for older tracks), served on
+  `GET /api/tracks/{id}/waveform`, and drawn on each track of the list, where a click seeks within the track
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
 * OpenAPI v3 endpoint
 * Spring boot actuator features (health, info, etc.)
