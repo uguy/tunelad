@@ -37,11 +37,11 @@ Commit: `feat(account): log in and out from the browser through oidc`
 
 Commit: `feat(track)!: require authentication to upload and record the track owner`
 
-- [ ] 5.1 Add `TrackOwner(id, displayName)` to the `track` package, add `owner` to `TrackDTO`, `AddTrackCommand` and the `Track` document, and update `TrackMapper`. Add `"account"` to `track`'s `allowedDependencies`. Verify `ModularApplicationTests` passes
-- [ ] 5.2 Make `TrackController.create` resolve `CurrentAccount` and pass the owner into the command, require authentication for `POST /api/tracks` in `SecurityConfig`, and document `bearerAuth`, 401 and 403 on the operation in OpenAPI
-- [ ] 5.3 Add `owner` to `SearchTrack` and `SearchTrack.of`
-- [ ] 5.4 Add an `AbstractApiTest` upload overload taking a user's token, and add tests for the spec's "Uploading requires authentication", "Every track has an owner", "Browse tracks without logging in", the updated upload and list scenarios, "Search without logging in", the updated "Searchable track has the track list fields" and "Play without logging in" (anonymous playback). Verify `./mvnw verify -DskipITs` passes
-- [ ] 5.5 Update the disabled `ImporterTest` to fetch a bearer token for alice from the dev realm, and add to README.adoc a curl recipe for uploading with a token plus the `docker compose down -v` wipe step for existing data. Verify the curl recipe uploads a track against the running app
+- [x] 5.1 Add `TrackOwner(id, displayName)` to the `track` package, add `owner` to `TrackDTO`, `AddTrackCommand` and the `Track` document, and update `TrackMapper`. Add `"account"` to `track`'s `allowedDependencies`. Verify `ModularApplicationTests` passes
+- [x] 5.2 Make `TrackController.create` resolve `CurrentAccount` and pass the owner into the command, require authentication for `POST /api/tracks` in `SecurityConfig`, and document `bearerAuth`, 401 and 403 on the operation in OpenAPI
+- [x] 5.3 Add `owner` to `SearchTrack` and `SearchTrack.of`
+- [x] 5.4 Add an `AbstractApiTest` upload overload taking a user's token, and add tests for the spec's "Uploading requires authentication", "Every track has an owner", "Browse tracks without logging in", the updated upload and list scenarios, "Search without logging in", the updated "Searchable track has the track list fields" and "Play without logging in" (anonymous playback). Verify `./mvnw verify -DskipITs` passes
+- [x] 5.5 Update the disabled `ImporterTest` to fetch a bearer token for alice from the dev realm, and add to README.adoc a curl recipe for uploading with a token plus the `docker compose down -v` wipe step for existing data. Verify the curl recipe uploads a track against the running app
 
 ## 6. UI login state and track owners
 

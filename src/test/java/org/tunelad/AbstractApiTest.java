@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.tunelad.account.AccountRef;
 import org.tunelad.track.TrackDTO;
 import reactor.core.publisher.Mono;
 
@@ -59,15 +60,22 @@ public abstract class AbstractApiTest {
                 .block(Duration.ofSeconds(30));
     }
 
-    /** Uploads a track; a null value omits that part, and a null fixture omits the file part. */
+    /** Uploads a track as alice; a null value omits that part, and a null fixture omits the file part. */
     protected WebTestClient.ResponseSpec upload(Map<String, String> parts, String fixture) {
+        return upload(parts, fixture, UPLOADER_TOKEN);
+    }
+
+    /** Uploads a track with the given bearer token, or anonymously when it is null. */
+    protected WebTestClient.ResponseSpec upload(Map<String, String> parts, String fixture, String token) {
         var builder = new MultipartBodyBuilder();
         parts.forEach((name, value) -> {
             if (value != null) builder.part(name, value);
         });
         if (fixture != null) builder.part("file", new ClassPathResource(fixture));
         return client.post().uri("/api/tracks")
-                .headers(headers -> headers.setBearerAuth(UPLOADER_TOKEN))
+                .headers(headers -> {
+                    if (token != null) headers.setBearerAuth(token);
+                })
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(builder.build()))
                 .exchange();
@@ -88,6 +96,13 @@ public abstract class AbstractApiTest {
         var request = client.get().uri("/api/tracks/{id}/play", id);
         if (range != null) request.header(HttpHeaders.RANGE, range);
         return request.exchange();
+    }
+
+    /** The account a bearer token authenticates as. */
+    protected AccountRef accountOf(String token) {
+        return client.get().uri("/api/me").headers(headers -> headers.setBearerAuth(token)).exchange()
+                .expectStatus().isOk()
+                .expectBody(AccountRef.class).returnResult().getResponseBody();
     }
 
     protected List<TrackDTO> listTracks() {

@@ -194,6 +194,26 @@ together with their volumes:
 docker compose down -v
 ----
 
+NOTE: Every track has an owner since user accounts were added. Tracks stored by an earlier version have none and are
+not migrated: wipe the local data once when upgrading past that change.
+
+=== Uploading a track
+
+There is no upload form in the UI yet: upload through the REST API (or Scalar), authenticated with an access token.
+Listing, searching and playing tracks need no login. For example, as alice, with the application and Keycloak running:
+
+[source,bash]
+----
+TOKEN=$(curl -s -d grant_type=password -d client_id=tunelad -d client_secret=tunelad-dev-secret \
+  -d username=alice -d password=alice http://localhost:8180/realms/tunelad/protocol/openid-connect/token \
+  | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
+curl -H "Authorization: Bearer $TOKEN" \
+  -F title="Knees Up" -F description="A reel and a song" -F file=@src/test/resources/mp3/Knees_Up.mp3 \
+  http://localhost:8080/api/tracks
+----
+
+The track is stored with alice as its owner. Without a token, the upload is rejected with 401 Unauthorized.
+
 == Configuration
 
 === MongoDB database
@@ -222,7 +242,7 @@ Application is available at http://localhost:8080
 
 image::./doc/track-list.png[Track list]
 
-You can load some sample by running import method on test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
+You can load some samples, uploaded as alice, by running the import methods of the (disabled) test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
 
 === Scalar UI and OpenAPI
 

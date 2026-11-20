@@ -123,7 +123,23 @@ class TrackSearchApiTest extends AbstractApiTest {
                 .expectStatus().is2xxSuccessful();
 
         await().atMost(SEARCHABLE_WITHIN).until(() -> !search("knees").isEmpty());
-        assertThat(search("knees")).containsExactly(trackTitled("Knees Up"));
+        var listed = trackTitled("Knees Up");
+        assertThat(listed.owner()).isNotNull();
+        // Records compare every field: id, title, description, artist, album, format and owner
+        assertThat(search("knees")).containsExactly(listed);
+    }
+
+    // --- Requirement: Search without logging in ------------------------------------------------
+
+    @Test
+    void anonymous_search() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        await().atMost(SEARCHABLE_WITHIN).until(() -> !search("knees").isEmpty());
+
+        // No session or token
+        client.get().uri("/api/tracks/search?q={q}", "knees").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body).contains("Knees Up"));
     }
 
     // --- helpers -----------------------------------------------------------------------------

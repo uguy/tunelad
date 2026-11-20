@@ -1,6 +1,7 @@
 package org.tunelad;
 
 import java.util.Collections;
+import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
@@ -12,14 +13,21 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Imports sample tracks into a running application (http://localhost:8080), as alice from the local Keycloak realm
+ * (docker compose): enable it and run it by hand.
+ */
 @Disabled
 @Slf4j
 public class ImporterTest {
+
+	private static final String TOKEN_URL = "http://localhost:8180/realms/tunelad/protocol/openid-connect/token";
 
 	private final ResourceLoader resourceLoader = new DefaultResourceLoader();
 
@@ -28,6 +36,23 @@ public class ImporterTest {
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 			.defaultUriVariables(Collections.singletonMap("url", "http://localhost:8080"))
 			.build();
+
+	/** An access token for alice, with the dev realm's password grant. */
+	private static String aliceToken() {
+		var form = new LinkedMultiValueMap<String, String>();
+		form.add("grant_type", "password");
+		form.add("client_id", "tunelad");
+		form.add("client_secret", "tunelad-dev-secret");
+		form.add("username", "alice");
+		form.add("password", "alice");
+		var response = WebClient.create(TOKEN_URL).post()
+				.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+				.body(BodyInserters.fromFormData(form))
+				.retrieve()
+				.bodyToMono(Map.class)
+				.block();
+		return (String) response.get("access_token");
+	}
 
 	@Test
 	void import_knees_up() {
@@ -40,6 +65,7 @@ public class ImporterTest {
 		builder.part("file", resourceLoader.getResource("classpath:mp3/Knees_Up.mp3"));
 
 		client.post().uri("api/tracks")
+				.headers(headers -> headers.setBearerAuth(aliceToken()))
 				.contentType(MediaType.MULTIPART_FORM_DATA)
 				.body(BodyInserters.fromMultipartData(builder.build()))
 				.exchangeToMono(response -> {
@@ -60,6 +86,7 @@ public class ImporterTest {
 		builder.part("file", resourceLoader.getResource("classpath:mp3/Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3"));
 
 		client.post().uri("api/tracks")
+				.headers(headers -> headers.setBearerAuth(aliceToken()))
 				.contentType(MediaType.MULTIPART_FORM_DATA)
 				.body(BodyInserters.fromMultipartData(builder.build()))
 				.exchangeToMono(response -> {

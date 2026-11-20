@@ -35,6 +35,7 @@ class DefaultTrackService implements TrackService {
         track.setAlbum(command.album());
         track.setDescription(command.description());
         track.setFormat(command.format());
+        track.setOwner(command.owner());
 
         return tracks.save(track)
                 .flatMap(saved -> mediaStore.store(saved.getId(), command.data()).thenReturn(saved))
