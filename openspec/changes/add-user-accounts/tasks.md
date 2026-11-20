@@ -57,8 +57,8 @@ Commit: `feat(ui): show login state in the header and the owner of each track`
 
 Commit: `test(account): verify login and bearer tokens against a real keycloak`
 
-- [ ] 7.1 Add the `testcontainers-keycloak` test dependency (check compatibility with Testcontainers 2.x, or fall back to a `GenericContainer` per design.md) and wire the container into a `KeycloakIntegrationTest` importing `docker/keycloak/tunelad-realm.json`, with issuer and client properties registered dynamically
-- [ ] 7.2 In that test, get alice's token with the password grant, then assert `GET /api/me` returns "Alice Liddell", an upload with the token records alice as owner, and `/oauth2/authorization/keycloak` redirects to the container's authorization endpoint. Verify it passes
+- [x] 7.1 Add the `testcontainers-keycloak` test dependency (check compatibility with Testcontainers 2.x, or fall back to a `GenericContainer` per design.md) and wire the container into a `KeycloakIntegrationTest` importing `docker/keycloak/tunelad-realm.json`, with issuer and client properties registered dynamically
+- [x] 7.2 In that test, get alice's token with the password grant, then assert `GET /api/me` returns "Alice Liddell", an upload with the token records alice as owner, and `/oauth2/authorization/keycloak` redirects to the container's authorization endpoint. Verify it passes
 
 ## 8. Finish
 
