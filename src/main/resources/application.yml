@@ -20,6 +20,9 @@ spring:
   webflux:
     problemdetails:
       enabled: true
+    multipart:
+      # Uploaded audio files are capped at 100 MB (larger uploads answer 413); the UI checks the same limit
+      max-disk-usage-per-part: 100MB
   security:
     oauth2:
       # Browser login through the local Keycloak realm (docker compose). Its configuration is read from the issuer at

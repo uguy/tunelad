@@ -7,8 +7,11 @@ import reactor.core.publisher.Mono;
 /** Stores audio for other modules. The media module gives the key no meaning of its own. */
 public interface MediaStore {
 
-    /** Stores the audio under the given key; nothing is read until the returned Mono is subscribed. */
-    Mono<Void> store(String key, Publisher<DataBuffer> audio);
+    /**
+     * Stores the audio under the given key, with the content type it is played back with (such as {@code audio/flac});
+     * nothing is read until the returned Mono is subscribed.
+     */
+    Mono<Void> store(String key, Publisher<DataBuffer> audio, String contentType);
 
     /** Deletes the audio stored under the given key; completes normally when there is none. */
     Mono<Void> delete(String key);

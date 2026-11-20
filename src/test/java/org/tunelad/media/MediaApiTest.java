@@ -1,10 +1,15 @@
 package org.tunelad.media;
 
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.tunelad.AbstractApiTest;
+
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 
@@ -58,6 +63,39 @@ class MediaApiTest extends AbstractApiTest {
                 .expectBody(byte[].class).returnResult().getResponseBody();
 
         assertThat(body).isEqualTo(file);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"audio/tune.m4a, audio/mp4", "audio/tune.ogg, audio/ogg", "audio/tune.flac, audio/flac",
+            "audio/tune.wav, audio/wav"})
+    void play_each_supported_format(String fixture, String contentType) throws Exception {
+        var file = new ClassPathResource(fixture).getContentAsByteArray();
+        var id = uploadOk("Tune", "One second of A", fixture).id();
+
+        var whole = play(id, null)
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(contentType)
+                .expectBody(byte[].class).returnResult().getResponseBody();
+        var range = play(id, "bytes=0-")
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT)
+                .expectHeader().contentTypeCompatibleWith(contentType)
+                .expectBody(byte[].class).returnResult().getResponseBody();
+
+        assertThat(whole).isEqualTo(file);
+        assertThat(range).isEqualTo(file);
+    }
+
+    @Test
+    void audio_stored_before_formats_were_recorded() {
+        var id = uploadKneesUp();
+        // Audio stored before this change has no content type in its GridFS metadata
+        mongo.getCollection("fs.files")
+                .flatMap(files -> Mono.from(files.updateMany(new Document("filename", id),
+                        new Document("$unset", new Document("metadata._contentType", "")))))
+                .block();
+
+        play(id).expectStatus().is2xxSuccessful()
+                .expectHeader().contentTypeCompatibleWith("audio/mpeg");
     }
 
     @Test

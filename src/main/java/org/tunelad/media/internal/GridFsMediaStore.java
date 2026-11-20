@@ -1,5 +1,6 @@
 package org.tunelad.media.internal;
 
+import com.mongodb.client.gridfs.model.GridFSFile;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
@@ -23,6 +24,8 @@ import java.nio.ByteBuffer;
 @Component
 public class GridFsMediaStore implements MediaStore {
 
+    private static final String CONTENT_TYPE_KEY = "_contentType";
+
     private final ReactiveMongoOperations mongoOperations;
     private final ReactiveGridFsOperations gridFsOperations;
 
@@ -38,8 +41,8 @@ public class GridFsMediaStore implements MediaStore {
     }
 
     @Override
-    public Mono<Void> store(String key, Publisher<DataBuffer> audio) {
-        return gridFsOperations.store(audio, key).then();
+    public Mono<Void> store(String key, Publisher<DataBuffer> audio, String contentType) {
+        return gridFsOperations.store(audio, key, contentType).then();
     }
 
     @Override
@@ -50,7 +53,15 @@ public class GridFsMediaStore implements MediaStore {
     /** The audio stored under that key, or empty when there is none. */
     public Mono<Media> find(String key) {
         return gridFsOperations.findOne(Query.query(Criteria.where("filename").is(key)))
-                .map(file -> new GridFsMedia(file.getObjectId(), file.getLength(), file.getChunkSize()));
+                .map(file -> new GridFsMedia(file.getObjectId(), file.getLength(), file.getChunkSize(),
+                        contentType(file)));
+    }
+
+    /** Spring Data keeps the content type given to {@code store} in the file's metadata, under "_contentType". */
+    private static String contentType(GridFSFile file) {
+        var metadata = file.getMetadata();
+        var contentType = metadata == null ? null : metadata.getString(CONTENT_TYPE_KEY);
+        return contentType == null || contentType.isBlank() ? Media.DEFAULT_CONTENT_TYPE : contentType;
     }
 
     /**
@@ -62,11 +73,18 @@ public class GridFsMediaStore implements MediaStore {
         private final ObjectId fileId;
         private final long length;
         private final int chunkSize;
+        private final String contentType;
 
-        GridFsMedia(ObjectId fileId, long length, int chunkSize) {
+        GridFsMedia(ObjectId fileId, long length, int chunkSize, String contentType) {
             this.fileId = fileId;
             this.length = length;
             this.chunkSize = chunkSize;
+            this.contentType = contentType;
+        }
+
+        @Override
+        public String contentType() {
+            return contentType;
         }
 
         @Override

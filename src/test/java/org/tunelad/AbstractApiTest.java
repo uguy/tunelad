@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -36,12 +37,12 @@ public abstract class AbstractApiTest {
     protected static final String UPLOADER_TOKEN = TestTokens.bearer("alice", "Alice Liddell");
 
     @LocalServerPort
-    int port;
+    protected int port;
 
     protected WebTestClient client;
 
     @Autowired
-    ReactiveMongoTemplate mongo;
+    protected ReactiveMongoTemplate mongo;
 
     @BeforeEach
     void emptyDatabase() {
@@ -67,11 +68,23 @@ public abstract class AbstractApiTest {
 
     /** Uploads a track with the given bearer token, or anonymously when it is null. */
     protected WebTestClient.ResponseSpec upload(Map<String, String> parts, String fixture, String token) {
+        return uploadFile(parts, fixture == null ? null : new ClassPathResource(fixture), token);
+    }
+
+    /**
+     * Uploads a track with the given file (streamed, so a large temporary file is not held in memory), as alice;
+     * a null file omits the file part. The part's file name is the resource's.
+     */
+    protected WebTestClient.ResponseSpec uploadFile(Map<String, String> parts, Resource file) {
+        return uploadFile(parts, file, UPLOADER_TOKEN);
+    }
+
+    private WebTestClient.ResponseSpec uploadFile(Map<String, String> parts, Resource file, String token) {
         var builder = new MultipartBodyBuilder();
         parts.forEach((name, value) -> {
             if (value != null) builder.part(name, value);
         });
-        if (fixture != null) builder.part("file", new ClassPathResource(fixture));
+        if (file != null) builder.part("file", file);
         return client.post().uri("/api/tracks")
                 .headers(headers -> {
                     if (token != null) headers.setBearerAuth(token);
@@ -81,9 +94,11 @@ public abstract class AbstractApiTest {
                 .exchange();
     }
 
-    protected void uploadOk(String title, String description, String fixture) {
-        upload(Map.of("title", title, "description", description), fixture)
-                .expectStatus().is2xxSuccessful();
+    /** Uploads a track as alice, checks it was created, and returns the stored track from the response. */
+    protected TrackDTO uploadOk(String title, String description, String fixture) {
+        return upload(Map.of("title", title, "description", description), fixture)
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
     }
 
     /** Puts a track edit (a JSON object) with the given bearer token, or anonymously when it is null. */

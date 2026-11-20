@@ -4,9 +4,15 @@ import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
 
 /**
- * Stored audio: its size, and a way to read any slice of it.
+ * Stored audio: its size, its content type, and a way to read any slice of it.
  */
 public interface Media {
+
+    /** The content type audio stored without one is played back with: all audio was mp3 before formats were recorded. */
+    String DEFAULT_CONTENT_TYPE = "audio/mpeg";
+
+    /** The content type the audio was stored with, or {@link #DEFAULT_CONTENT_TYPE} when it was stored without one. */
+    String contentType();
 
     /** Total size of the audio, in bytes. */
     long length();

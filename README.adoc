@@ -57,7 +57,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 == Features
 
 * Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
-* Upload a track with description (requires login or a bearer token); every track shows who uploaded it
+* Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry; every track shows who uploaded it
 * Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
@@ -214,20 +214,25 @@ not migrated: wipe the local data once when upgrading past that change.
 
 === Uploading a track
 
-There is no upload form in the UI yet: upload through the REST API (or Scalar), authenticated with an access token.
-Listing, searching and playing tracks need no login. For example, as alice, with the application and Keycloak running:
+Logged-in users upload from the *Upload* link on the tracks page, which shows the upload's progress and lets them
+cancel it or retry after a failure. Uploads also work through the REST API (or Scalar), authenticated with an access
+token. Listing, searching and playing tracks need no login. For example, as alice, with the application and Keycloak
+running:
 
 [source,bash]
 ----
 TOKEN=$(curl -s -d grant_type=password -d client_id=tunelad -d client_secret=tunelad-dev-secret \
   -d username=alice -d password=alice http://localhost:8180/realms/tunelad/protocol/openid-connect/token \
   | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
-curl -H "Authorization: Bearer $TOKEN" \
+curl -i -H "Authorization: Bearer $TOKEN" \
   -F title="Knees Up" -F description="A reel and a song" -F file=@src/test/resources/mp3/Knees_Up.mp3 \
   http://localhost:8080/api/tracks
 ----
 
-The track is stored with alice as its owner. Without a token, the upload is rejected with 401 Unauthorized.
+The response is `201 Created`, with the stored track as its JSON body and its URL in the `Location` header. The track
+is stored with alice as its owner. The audio format comes from the file name's extension: mp3, m4a, ogg, flac or wav.
+Other files are rejected with 415 Unsupported Media Type, files over 100 MB with 413 Content Too Large, a missing or
+blank title or description with 400 Bad Request, and an upload without a token with 401 Unauthorized.
 
 === Editing and deleting a track
 

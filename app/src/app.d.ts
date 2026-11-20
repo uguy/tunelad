@@ -8,7 +8,10 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			/** The track just uploaded, shown on the tracks page before search finds it. */
+			uploaded?: import('./routes/tracks/Tracks').Track;
+		}
 		// interface Platform {}
 	}
 }

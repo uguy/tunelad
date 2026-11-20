@@ -36,24 +36,29 @@ import java.util.Optional;
 @RequestMapping("api/tracks")
 public class MediaController {
 
-    private static final MediaType AUDIO_MPEG = MediaType.parseMediaType("audio/mpeg");
-
     private final GridFsMediaStore store;
 
-    @GetMapping(value = "{id}/play", produces = {"audio/mpeg", MediaType.APPLICATION_OCTET_STREAM_VALUE})
+    @GetMapping(value = "{id}/play",
+            produces = {"audio/mpeg", "audio/mp4", "audio/ogg", "audio/flac", "audio/wav",
+                    MediaType.APPLICATION_OCTET_STREAM_VALUE})
     @Operation(summary = "Play a track",
-            description = "Streams the track's audio. Honours a single byte range (RFC 9110); "
+            description = "Streams the track's audio, with the content type of its format (`audio/mpeg` for "
+                    + "audio stored before formats were recorded). Honours a single byte range (RFC 9110); "
                     + "malformed or multi-range Range headers are ignored and the whole file is sent.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "whole audio file",
                     headers = @Header(name = HttpHeaders.ACCEPT_RANGES, description = "Always `bytes`"),
-                    content = @Content(mediaType = "audio/mpeg")),
+                    content = {@Content(mediaType = "audio/mpeg"), @Content(mediaType = "audio/mp4"),
+                            @Content(mediaType = "audio/ogg"), @Content(mediaType = "audio/flac"),
+                            @Content(mediaType = "audio/wav")}),
             @ApiResponse(responseCode = "206", description = "requested byte range of the audio file",
                     headers = {
                             @Header(name = HttpHeaders.CONTENT_RANGE, description = "`bytes <first>-<last>/<size>`"),
                             @Header(name = HttpHeaders.ACCEPT_RANGES, description = "Always `bytes`")
                     },
-                    content = @Content(mediaType = "audio/mpeg")),
+                    content = {@Content(mediaType = "audio/mpeg"), @Content(mediaType = "audio/mp4"),
+                            @Content(mediaType = "audio/ogg"), @Content(mediaType = "audio/flac"),
+                            @Content(mediaType = "audio/wav")}),
             @ApiResponse(responseCode = "404", description = "Track not found", content = @Content),
             @ApiResponse(responseCode = "416", description = "Range starts at or past the end of the file",
                     headers = @Header(name = HttpHeaders.CONTENT_RANGE, description = "`bytes */<size>`"),
@@ -82,7 +87,7 @@ public class MediaController {
 
     private static ResponseEntity<Flux<DataBuffer>> wholeFile(Media media) {
         return ResponseEntity.ok()
-                .contentType(AUDIO_MPEG)
+                .contentType(MediaType.parseMediaType(media.contentType()))
                 .contentLength(media.length())
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .body(media.content(0, media.length() - 1));
@@ -99,7 +104,7 @@ public class MediaController {
                     .build();
         }
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
-                .contentType(AUDIO_MPEG)
+                .contentType(MediaType.parseMediaType(media.contentType()))
                 .contentLength(last - first + 1)
                 .header(HttpHeaders.CONTENT_RANGE, "bytes %d-%d/%d".formatted(first, last, length))
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")

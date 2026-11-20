@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.data.mongodb.gridfs.ReactiveGridFsOperations;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.tunelad.TestContainerDefinitions;
 import reactor.core.publisher.Flux;
@@ -24,6 +25,7 @@ class GridFsMediaStoreTest {
     private static final int CHUNK_SIZE = 255 * 1024;
 
     @Autowired GridFsMediaStore store;
+    @Autowired ReactiveGridFsOperations gridFs;
 
     @Test
     void stored_audio_reads_back_whole() throws Exception {
@@ -31,7 +33,7 @@ class GridFsMediaStoreTest {
         var audio = kneesUp();
 
         store.store(key, DataBufferUtils.read(new ClassPathResource("mp3/Knees_Up.mp3"),
-                DefaultDataBufferFactory.sharedInstance, 8192)).block();
+                DefaultDataBufferFactory.sharedInstance, 8192), "audio/mpeg").block();
 
         var media = store.find(key).block();
         assertThat(media).isNotNull();
@@ -44,12 +46,31 @@ class GridFsMediaStoreTest {
         var key = UUID.randomUUID().toString();
         var audio = kneesUp();
         store.store(key, DataBufferUtils.read(new ClassPathResource("mp3/Knees_Up.mp3"),
-                DefaultDataBufferFactory.sharedInstance, 8192)).block();
+                DefaultDataBufferFactory.sharedInstance, 8192), "audio/mpeg").block();
 
         var media = store.find(key).block();
 
         long first = CHUNK_SIZE - 20, last = CHUNK_SIZE + 20;
         assertThat(read(media, first, last)).isEqualTo(Arrays.copyOfRange(audio, (int) first, (int) last + 1));
+    }
+
+    @Test
+    void stored_content_type_reads_back() {
+        var key = UUID.randomUUID().toString();
+        store.store(key, DataBufferUtils.read(new ClassPathResource("mp3/Knees_Up.mp3"),
+                DefaultDataBufferFactory.sharedInstance, 8192), "audio/flac").block();
+
+        assertThat(store.find(key).block().contentType()).isEqualTo("audio/flac");
+    }
+
+    @Test
+    void audio_stored_without_a_content_type_reads_back_as_mpeg() {
+        var key = UUID.randomUUID().toString();
+        // As audio was stored before formats were recorded: no content type in the file's metadata
+        gridFs.store(DataBufferUtils.read(new ClassPathResource("mp3/Knees_Up.mp3"),
+                DefaultDataBufferFactory.sharedInstance, 8192), key).block();
+
+        assertThat(store.find(key).block().contentType()).isEqualTo("audio/mpeg");
     }
 
     @Test
@@ -62,8 +83,8 @@ class GridFsMediaStoreTest {
         var key = UUID.randomUUID().toString();
         var other = UUID.randomUUID().toString();
         var resource = new ClassPathResource("mp3/Knees_Up.mp3");
-        store.store(key, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192)).block();
-        store.store(other, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192)).block();
+        store.store(key, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192), "audio/mpeg").block();
+        store.store(other, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192), "audio/mpeg").block();
 
         store.delete(key).block();
 

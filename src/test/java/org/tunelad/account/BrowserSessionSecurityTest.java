@@ -171,7 +171,7 @@ class BrowserSessionSecurityTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(upload())
                 .exchange()
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
 
         var tracks = client.get().uri("/api/tracks").exchange()
                 .expectBodyList(TrackDTO.class).returnResult().getResponseBody();
@@ -186,7 +186,7 @@ class BrowserSessionSecurityTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(upload())
                 .exchange()
-                .expectStatus().is2xxSuccessful();
+                .expectStatus().isCreated();
     }
 
     @Test

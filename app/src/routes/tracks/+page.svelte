@@ -1,6 +1,7 @@
 <script lang="ts">
 	import TrackList from './component/TrackList.svelte';
 	import { player } from '#lib/player.svelte.js';
+	import { session } from '#lib/session.svelte.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -12,8 +13,13 @@
 
 	const trackService = new TrackService();
 	let query = $state('');
-	// The loaded tracks, replaced locally by searches and by edits the search has not caught up with yet
-	let tracks = $derived(data.tracks);
+	// The loaded tracks, replaced locally by searches and by edits the search has not caught up with yet. A track
+	// just uploaded comes first, until search finds it: the upload page hands it over in the page state.
+	let tracks = $derived(withUploaded(data.tracks, page.state.uploaded));
+
+	function withUploaded(list: Track[], uploaded: Track | undefined): Track[] {
+		return uploaded && !list.some((t) => t.id === uploaded.id) ? [uploaded, ...list] : list;
+	}
 
 	/** Seconds to start at from a `t` query value; anything not a non-negative number starts at 0. */
 	function startTime(t: string | null): number {
@@ -70,6 +76,17 @@
 				href={resolve('/tracks/albums')}
 				class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Albums</a
 			>
+		</div>
+		<div class="shrink-0">
+			{#if session.account}
+				<a
+					href={resolve('/tracks/upload')}
+					class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Upload</a
+				>
+			{:else}
+				<!-- Served by the server, not the SPA router: it lists the login providers -->
+				<a href="/login" rel="external" class="underline text-sm font-medium">Log in to upload</a>
+			{/if}
 		</div>
 	</div>
 	<br />
