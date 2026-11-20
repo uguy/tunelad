@@ -24,6 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Keeps audio in GridFS, one file per key, named after the key, along with its waveform: storing audio leaves a
@@ -57,10 +58,24 @@ public class GridFsMediaStore implements MediaStore {
         this.chunksCollection = bucket + ".chunks";
     }
 
+    /**
+     * When the audio fails half way, its error is held back: the driver writes chunks concurrently, and when its source
+     * fails it deletes them while inserts it already sent may still land, leaving orphan chunks. Ending the audio
+     * there instead lets it finish a truncated file, which is then deleted whole before the error is raised.
+     */
     @Override
     public Mono<Void> store(String key, Publisher<DataBuffer> audio, String contentType) {
-        return gridFsOperations.store(audio, key, contentType)
-                .then(Mono.defer(() -> awaitWaveform(key)));
+        return Mono.defer(() -> {
+            var failure = new AtomicReference<Throwable>();
+            Flux<DataBuffer> untilFailure = Flux.from(audio).onErrorResume(error -> {
+                failure.set(error);
+                return Mono.empty();
+            });
+            return gridFsOperations.store(untilFailure, key, contentType)
+                    .then(Mono.defer(() -> failure.get() == null
+                            ? awaitWaveform(key)
+                            : deleteAudio(key).then(Mono.error(failure.get()))));
+        });
     }
 
     /**
@@ -75,8 +90,11 @@ public class GridFsMediaStore implements MediaStore {
 
     @Override
     public Mono<Void> delete(String key) {
-        return gridFsOperations.delete(Query.query(Criteria.where("filename").is(key)))
-                .then(waveforms.deleteById(key));
+        return deleteAudio(key).then(waveforms.deleteById(key));
+    }
+
+    private Mono<Void> deleteAudio(String key) {
+        return gridFsOperations.delete(Query.query(Criteria.where("filename").is(key)));
     }
 
     /** The audio stored under that key, or empty when there is none. */
