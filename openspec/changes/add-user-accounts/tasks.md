@@ -20,7 +20,7 @@ Commit: `feat(account): add accounts resolved from oidc identities and get /api/
 - [x] 3.2 Add `infrastructure.web.security.SecurityConfig` with the resource server (issuer `http://localhost:8180/realms/tunelad`, audience `tunelad`), `GET /api/me` authenticated, 401 entry point on `/api/**`, and everything else still `permitAll` for now (uploads stay open until group 5). Configure it in `application.yaml`
 - [x] 3.3 Create the `account` module: `package-info.java` (`allowedDependencies = "infrastructure"`), public `CurrentAccount` and `AccountRef`, internal `Account` document (unique `(issuer, subject)` index), reactive `Accounts` repository, `DisplayNames` (name, preferred_username, email, sub) and `DefaultCurrentAccount` (find or register by `(issuer, subject)` from a `Jwt` or `OidcUser`, with an idempotent upsert and a duplicate-key retry). Verify `ModularApplicationTests` passes
 - [x] 3.4 Add `account.web.AccountController` with `GET /api/me` returning `{id, displayName}`, an `Account` OpenAPI tag, and a `bearerAuth` security scheme applied to it with a documented 401. Verify `/v3/api-docs` shows the endpoint and the scheme
-- [x] 3.5 Add test support: a `TestSecurityConfiguration` with a `ReactiveJwtDecoder` on a test-generated RSA key, a `TestTokens.bearer(username, name)` helper, and test properties with explicit provider endpoints (no `issuer-uri`), imported by `AbstractApiTest`. Verify the existing Java tests still pass
+- [x] 3.5 Add test support: a `TestSecurityConfiguration` with a `ReactiveJwtDecoder` on a test-generated RSA key, a `TestTokens.bearer(username, name)` helper, and a test `keycloak` client registration bean with explicit endpoints (no discovery), imported by every test through `TestContainerDefinitions`. Verify the existing Java tests still pass
 - [x] 3.6 Add `AccountApiTest` covering the spec's "Authenticate API calls with a bearer token", "One account per identity", "Current account endpoint" and the bearer side of "Account display name from the identity" (name and username-only cases), plus a `DisplayNames` unit test for the email and sub fallbacks. Verify they pass
 
 ## 4. Browser login, CSRF and logout
@@ -62,7 +62,7 @@ Commit: `test(account): verify login and bearer tokens against a real keycloak`
 
 ## 8. Finish
 
-- [ ] 8.1 Add "Log in with an OpenID Connect provider (Keycloak locally, Google optional)" and "Tracks show who uploaded them; uploading requires login or a bearer token" to README.adoc's Features
+- [x] 8.1 Add "Log in with an OpenID Connect provider (Keycloak locally, Google optional)" and "Tracks show who uploaded them; uploading requires login or a bearer token" to README.adoc's Features
 - [ ] 8.2 Run `./mvnw clean verify` and verify it passes, including `ModularApplicationTests`, the Keycloak test and the Playwright e2e tests
 - [ ] 8.3 Smoke-test the built app with `docker compose up -d`: anonymous browse, search and play, log in as alice, upload with a token, see "Alice Liddell" on the track, log out. Check that the service worker doesn't intercept `/login`
 - [ ] 8.4 Push `feat/user-accounts` and open a PR to `main` titled `feat(account)!: add user accounts with oidc login and track owners`, noting the breaking upload change and the data wipe in the description

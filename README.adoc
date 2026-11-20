@@ -56,7 +56,8 @@ This simple app allows to store an mp3 file with some description and play it vi
 
 == Features
 
-* Upload a track with description
+* Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
+* Upload a track with description (requires login or a bearer token); every track shows who uploaded it
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek)
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)

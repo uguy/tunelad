@@ -59,7 +59,10 @@ GET  /api/me                                                                    
 ```
 
 **Entry points:** `/api/**` answers 401 without redirecting (the resource server's bearer entry point, which adds
-`WWW-Authenticate: Bearer`). Everything else redirects to `/login`.
+`WWW-Authenticate: Bearer`). Everything else redirects to `/login`. This needs an explicit entry point: the defaults
+redirect a `fetch` with `Accept: */*` to `/login`. Spring Security turns off its generated login page when an entry
+point is explicit, so `SecurityConfig` registers `LoginPageGeneratingWebFilter` itself, with one link per client
+registration.
 
 ### 2. Keycloak only, OIDC only (B-lite)
 
@@ -100,8 +103,8 @@ There are two paths into the account, and both are idempotent:
   `infrastructure` never references `account`. It upserts the account and refreshes `displayName` and
   `lastLoginAt`.
 - **Request time.** `CurrentAccount.get()` looks up the account by `(issuer, subject)` and registers it if it's
-  missing. This covers bearer clients who never log in through the browser. It also covers tests using
-  `mockOidcLogin()`, which bypasses the user service, and sessions that outlive a database wipe.
+  missing. This covers bearer clients who never log in through the browser. It also covers sessions that
+  outlive a database wipe, and tests that store a login without going through the user service.
 
 Registration uses an upsert with `$setOnInsert` on the unique index. A concurrent duplicate-key error is retried as
 a lookup.
@@ -123,16 +126,19 @@ package, and `TrackDTO` gains `TrackOwner owner`.
 The display name is a snapshot taken at upload time, and nothing updates it after a rename. That's an accepted
 limitation (see the proposal's Out of scope).
 
-### 5. CSRF: cookie token readable by the SPA, skipped for bearer requests
+### 5. CSRF: cookie token readable by the SPA, only for logged-in sessions
 
 - `CookieServerCsrfTokenRepository.withHttpOnlyFalse()` sets the `XSRF-TOKEN` cookie. A
   `ServerCsrfTokenRequestAttributeHandler` (not the XOR variant) accepts the raw cookie value in `X-XSRF-TOKEN` or
   the `_csrf` form field.
 - WebFlux resolves the token lazily, so a small `WebFilter` subscribes to it on every response. Without it, the
   cookie never gets written for a SPA that never renders a server form.
-- `requireCsrfProtectionMatcher` skips requests carrying an `Authorization: Bearer` header. A bearer token isn't
-  sent automatically by a browser, so CSRF doesn't apply to it. This is set explicitly rather than relying on
-  defaults.
+- `requireCsrfProtectionMatcher` protects a state-changing request only when its web session holds a login (a
+  security context) and it carries no `Authorization: Bearer` header. CSRF only threatens what the browser
+  authenticates on its own, with the session cookie, and a browser never sends a bearer token by itself.
+  - Requests with neither a session login nor a token go on to authorization, which answers 401, as the spec
+    requires for an anonymous upload. The default matcher (every non-bearer POST) would answer 403 before that.
+  - Setting a matcher replaces the bearer exemption the resource server adds by default, so the matcher repeats it.
 - SPA: `api.ts` copies the cookie into `X-XSRF-TOKEN` on non-GET requests. The unused `Token` header parameter is
   removed.
 
@@ -177,15 +183,17 @@ handling.
 | What | How |
 |---|---|
 | API access rules, owner, `/api/me`, accounts | Existing `AbstractApiTest` style (black box, `bindToServer`). A `TestSecurityConfiguration` replaces the `ReactiveJwtDecoder` with one backed by an RSA key generated for the test run, and a `TestTokens.bearer("alice", "Alice Liddell")` helper mints matching JWTs. Upload helpers send a default user's token. No CSRF is needed, because bearer requests skip it. |
-| Session login, CSRF, logout, `/login`, authorization redirect | A dedicated test class binding `WebTestClient` to the application context with `springSecurity()`, using the `mockOidcLogin()` and `csrf()` mutators. |
+| Session login, CSRF, logout, `/login`, authorization redirect | A dedicated test class binding `WebTestClient` to the application context with `springSecurity()`. Each test stores a logged-in session (an OIDC login's security context) in the application's `WebSessionStore` and sends its `SESSION` cookie, with the CSRF cookie and header where needed. `mockOidcLogin()` doesn't go through the session, so it wouldn't exercise the session-aware CSRF rule. |
 | Display-name rules and refresh on login | Unit tests for `DisplayNames` and the `AccountRegistering` decorator. |
-| Real Keycloak | One `KeycloakIntegrationTest` with `testcontainers-keycloak`, importing the shared realm and registering issuer properties dynamically. It gets alice's token with the password grant, calls `/api/me` and uploads a track. It also checks `/oauth2/authorization/keycloak` redirects to the container's authorization endpoint. |
+| Real Keycloak | One `KeycloakIntegrationTest` with a Testcontainers `GenericContainer` on the image docker-compose runs, importing the shared realm and registering issuer properties dynamically. `testcontainers-keycloak` 4.4 supports Testcontainers 2, but it adds the Keycloak admin client (RESTEasy, Jackson 2) to the test classpath and defaults to another Keycloak version. It gets alice's token with the password grant, calls `/api/me` and uploads a track. It also checks `/oauth2/authorization/keycloak` redirects to the container's authorization endpoint. |
 | UI | Playwright mocks `/api/me` (401 or 200) for the header states and the logout form. The track fixture gains `owner`. Existing tests mock `/api/me` as anonymous. |
 | Module boundaries | `ModularApplicationTests`, unchanged. It must keep passing with the new `account` module and the `track -> account` dependency. |
 
-The test `application` properties give the `keycloak` registration explicit `authorization-uri`, `token-uri`,
-`jwk-set-uri` and `user-info-uri`, with no `issuer-uri`. That stops the contexts from trying OIDC discovery against a
-Keycloak that isn't running at startup.
+`TestSecurityConfiguration`, imported by every test through `TestContainerDefinitions`, declares the `keycloak`
+client registration with explicit endpoints as a `ReactiveClientRegistrationRepository` bean. Spring Boot's
+property-based repository then backs off, so no context tries OIDC discovery against a Keycloak that isn't running at
+startup. This includes the `@ApplicationModuleTest` contexts, which also run the security auto-configuration.
+Properties can't do this, because an `issuer-uri` in `application.yml` can't be unset.
 
 ### 10. Reactive throughout
 
@@ -195,10 +203,10 @@ service decorator is the reactive `ReactiveOAuth2UserService`. No blocking calls
 ## Risks / Trade-offs
 
 - [The app can't start without Keycloak, because client registration does OIDC discovery at startup] → Keycloak is
-  part of `docker compose up -d`. The README says so. Tests avoid discovery with explicit endpoints (decision 9).
-- [`testcontainers-keycloak` may lag behind Testcontainers 2.x or the Keycloak image version] → Check compatibility
-  when adding it. The fallback is a `GenericContainer` on the Keycloak image, with `--import-realm` and a wait on
-  `/realms/tunelad`.
+  part of `docker compose up -d`. The README says so. Tests avoid discovery with a test registration bean
+  (decision 9).
+- [`testcontainers-keycloak` may lag behind Testcontainers 2.x or the Keycloak image version] → Settled by using a
+  `GenericContainer` on the Keycloak image, with `--import-realm` and a wait on `/realms/tunelad` (decision 9).
 - [Committed client secret and password grant enabled in the realm] → They only exist in the dev realm, which
   never leaves local Docker. Both the realm file and the README say so.
 - [In-memory sessions, so a restart logs everyone out] → Accepted for a local playground. Spring Session with Mongo
