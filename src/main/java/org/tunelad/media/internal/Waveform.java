@@ -14,7 +14,7 @@ import java.util.List;
 @Document("waveforms")
 public record Waveform(@Id String key, WaveformStatus status, List<Double> peaks, @Nullable Instant computedAt) {
 
-    static Waveform pending(String key) {
+    public static Waveform pending(String key) {
         return new Waveform(key, WaveformStatus.PENDING, List.of(), null);
     }
 }

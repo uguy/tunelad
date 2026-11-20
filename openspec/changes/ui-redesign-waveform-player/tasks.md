@@ -16,9 +16,9 @@
 
 ## 3. Waveform REST endpoint (commit: `feat(api): expose track waveforms`)
 
-- [ ] 3.1 Add `GET /api/tracks/{id}/waveform` to `MediaController` (`READY`/`PENDING`/`FAILED`, 404 for unknown id, cache header on `READY` only) with OpenAPI annotations and a `Waveform` schema; verify with API tests for each status, 404, and anonymous access (allowed in `SecurityConfig`)
-- [ ] 3.2 Add an API test that a track's waveform is 404 after the track is deleted through `DELETE /api/tracks/{id}`, and an end-to-end upload test that polls for `READY` within 10 s for each supported format
-- [ ] 3.3 Verify the generated OpenAPI document (`/v3/api-docs`) contains the waveform operation under the "Media" tag
+- [x] 3.1 Add `GET /api/tracks/{id}/waveform` to `MediaController` (`READY`/`PENDING`/`FAILED`, 404 for unknown id, cache header on `READY` only) with OpenAPI annotations and a `Waveform` schema; verify with API tests for each status, 404, and anonymous access (allowed in `SecurityConfig`)
+- [x] 3.2 Add an API test that a track's waveform is 404 after the track is deleted through `DELETE /api/tracks/{id}`, and an end-to-end upload test that polls for `READY` within 10 s for each supported format
+- [x] 3.3 Verify the generated OpenAPI document (`/v3/api-docs`) contains the waveform operation under the "Media" tag
 
 ## 4. Theme and layout shell (commit: `feat(ui): add the new theme and restyle the header and layout`)
 

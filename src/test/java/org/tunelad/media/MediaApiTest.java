@@ -4,16 +4,27 @@ import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.http.HttpStatus;
 import org.tunelad.AbstractApiTest;
+import org.tunelad.track.TrackDTO;
 
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+import static org.springframework.data.mongodb.core.query.Query.query;
 
 /**
  * Tests for openspec/specs/media (its REST requirements): one test per spec scenario, named after it.
@@ -236,6 +247,20 @@ class MediaApiTest extends AbstractApiTest {
                 .jsonPath("$.paths['/api/tracks/{id}/play'].get.tags[0]").isEqualTo("Media");
     }
 
+    @Test
+    void waveform_is_documented() {
+        client.get().uri("/v3/api-docs").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/api/tracks/{id}/waveform'].get.tags[0]").isEqualTo("Media")
+                .jsonPath("$.paths['/api/tracks/{id}/waveform'].get.responses['200'].content['application/json'].schema['$ref']")
+                .isEqualTo("#/components/schemas/Waveform")
+                .jsonPath("$.paths['/api/tracks/{id}/waveform'].get.responses['404']").exists()
+                .jsonPath("$.components.schemas.Waveform.properties.status.enum").isEqualTo(List.of("PENDING", "READY", "FAILED"))
+                .jsonPath("$.components.schemas.Waveform.properties.peaks.maxItems").isEqualTo(200)
+                .jsonPath("$.components.schemas.Waveform.required").isEqualTo(List.of("peaks", "status"));
+    }
+
     private String uploadKneesUp() {
         uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
         return trackTitled("Knees Up").id();
@@ -243,5 +268,134 @@ class MediaApiTest extends AbstractApiTest {
 
     private static byte[] kneesUpBytes() throws Exception {
         return new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray();
+    }
+
+    // --- Requirement: Get the waveform of a track ------------------------------------------------
+
+    @Test
+    void waveform_of_a_processed_track() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+        awaitWaveform(id, "READY");
+
+        var waveform = getWaveform(id)
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("application/json")
+                .expectHeader().cacheControl(CacheControl.maxAge(Duration.ofHours(1)))
+                .expectBody(WaveformBody.class).returnResult().getResponseBody();
+
+        assertThat(waveform.status()).isEqualTo("READY");
+        assertThat(waveform.peaks()).hasSize(200).allMatch(peak -> peak >= 0 && peak <= 1);
+        assertThat(waveform.peaks()).contains(1.0);
+    }
+
+    @Test
+    void peaks_follow_the_loudness_of_the_audio() {
+        var id = uploadFile(Map.of("title", "Steps", "description", "Silence, then a tone"),
+                named(TestAudio.silenceThenTone(), "steps.wav")).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+
+        var peaks = awaitWaveform(id, "READY").peaks();
+
+        assertThat(peaks.subList(0, 90)).allMatch(peak -> peak < 0.05);
+        assertThat(peaks.subList(110, 200)).allMatch(peak -> peak > 0.5);
+    }
+
+    @Test
+    void waveform_not_computed_yet() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+        awaitWaveform(id, "READY");
+        // As if still being computed
+        mongo.updateFirst(query(where("_id").is(id)),
+                new Update().set("status", "PENDING").set("peaks", List.of()), "waveforms").block();
+
+        var waveform = getWaveform(id)
+                .expectStatus().isOk()
+                .expectBody(WaveformBody.class).returnResult();
+
+        assertThat(waveform.getResponseBody()).isEqualTo(new WaveformBody("PENDING", List.of()));
+        assertThat(waveform.getResponseHeaders().getCacheControl()).doesNotContain("max-age=3600");
+    }
+
+    @Test
+    void waveform_of_an_unknown_track() {
+        getWaveform("no-such-track").expectStatus().isNotFound();
+    }
+
+    // --- Requirement: Compute a track's waveform after upload ------------------------------------
+
+    @Test
+    void waveform_ready_shortly_after_upload() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+
+        assertThat(awaitWaveform(id, "READY").peaks()).hasSize(200);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"audio/tune.m4a", "audio/tune.ogg", "audio/tune.flac", "audio/tune.wav"})
+    void every_supported_format_gets_a_waveform(String fixture) {
+        var id = uploadOk("Tune", "One second of A", fixture).id();
+
+        assertThat(awaitWaveform(id, "READY").peaks()).hasSize(200);
+    }
+
+    @Test
+    void undecodable_audio() {
+        var noise = TestAudio.noise();
+        var id = uploadFile(Map.of("title", "Noise", "description", "Not audio at all"), named(noise, "noise.mp3"))
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+
+        assertThat(awaitWaveform(id, "FAILED").peaks()).isEmpty();
+        assertThat(play(id, null).expectStatus().isOk().expectBody(byte[].class).returnResult().getResponseBody())
+                .isEqualTo(noise);
+    }
+
+    // --- Requirement: Delete a track's waveform with its audio -----------------------------------
+
+    @Test
+    void waveform_gone_after_deleting_the_track() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+        awaitWaveform(id, "READY");
+
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        getWaveform(id).expectStatus().isNotFound();
+    }
+
+    // --- Requirement: Get a waveform without logging in ------------------------------------------
+
+    @Test
+    void anonymous_waveform() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+
+        // getWaveform() sends no session or token
+        assertThat(awaitWaveform(id, "READY").status()).isEqualTo("READY");
+        getWaveform(id).expectStatus().isOk();
+    }
+
+    /** The waveform as a client reads it. */
+    record WaveformBody(String status, List<Double> peaks) {
+    }
+
+    private WebTestClient.ResponseSpec getWaveform(String id) {
+        return client.get().uri("/api/tracks/{id}/waveform", id).exchange();
+    }
+
+    /** Polls the waveform until it has the status, for up to 10 seconds, and returns it. */
+    private WaveformBody awaitWaveform(String id, String status) {
+        return await().atMost(Duration.ofSeconds(10)).until(
+                () -> getWaveform(id).expectStatus().isOk()
+                        .expectBody(WaveformBody.class).returnResult().getResponseBody(),
+                waveform -> status.equals(waveform.status()));
+    }
+
+    /** A file part with the given content and file name. */
+    private static ByteArrayResource named(byte[] content, String filename) {
+        return new ByteArrayResource(content) {
+            @Override
+            public String getFilename() {
+                return filename;
+            }
+        };
     }
 }
