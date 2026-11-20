@@ -65,7 +65,7 @@ Commit: `test(account): verify login and bearer tokens against a real keycloak`
 - [x] 8.1 Add "Log in with an OpenID Connect provider (Keycloak locally, Google optional)" and "Tracks show who uploaded them; uploading requires login or a bearer token" to README.adoc's Features
 - [x] 8.2 Run `./mvnw clean verify` and verify it passes, including `ModularApplicationTests`, the Keycloak test and the Playwright e2e tests
 - [x] 8.3 Smoke-test the built app with `docker compose up -d`: anonymous browse, search and play, log in as alice, upload with a token, see "Alice Liddell" on the track, log out. Check that the service worker doesn't intercept `/login`
-- [ ] 8.4 Push `feat/user-accounts` and open a PR to `main` titled `feat(account)!: add user accounts with oidc login and track owners`, noting the breaking upload change and the data wipe in the description
+- [x] 8.4 Push `feat/user-accounts` and open a PR to `main` titled `feat(account)!: add user accounts with oidc login and track owners`, noting the breaking upload change and the data wipe in the description
 
 ## Workflow follow-up
 
