@@ -1,6 +1,7 @@
 package org.tunelad.track;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.tunelad.AbstractApiTest;
@@ -187,6 +188,189 @@ class TrackApiTest extends AbstractApiTest {
 
         client.get().uri("/api/tracks/{id}", trackTitled("Knees Up").id()).exchange()
                 .expectStatus().isOk();
+    }
+
+    // --- Requirement: Edit a track's metadata -----------------------------------------------------
+
+    private static final String BOB_TOKEN = TestTokens.bearer("bob", "Bob Smith");
+
+    @Test
+    void owner_edits_all_metadata() {
+        upload(Map.of("title", "Knees Up", "description", "A reel and a song", "artist", "Breabach"), KNEES_UP_MP3)
+                .expectStatus().is2xxSuccessful();
+        var before = trackTitled("Knees Up");
+
+        var updated = edit(before.id(), Map.of(
+                "title", "Knees Up (live)",
+                "description", "Recorded at Celtic Connections",
+                "artist", "Breabach",
+                "album", "Live"), UPLOADER_TOKEN)
+                .expectStatus().isOk()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        var expected = new TrackDTO(before.id(), "Knees Up (live)", "Breabach", "Live",
+                "Recorded at Celtic Connections", before.format(), before.owner());
+        assertThat(updated).isEqualTo(expected);
+        assertThat(getTrack(before.id())).isEqualTo(expected);
+    }
+
+    @Test
+    void optional_metadata_omitted() {
+        upload(Map.of("title", "Knees Up", "description", "A reel and a song",
+                "artist", "Breabach", "album", "Frenzy of the Meeting"), KNEES_UP_MP3)
+                .expectStatus().is2xxSuccessful();
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Knees Up", "description", "A reel and a song"), UPLOADER_TOKEN)
+                .expectStatus().isOk();
+
+        var track = getTrack(id);
+        assertThat(track.artist()).isNull();
+        assertThat(track.album()).isNull();
+    }
+
+    @Test
+    void audio_unchanged_after_an_edit() throws Exception {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Knees Up (live)", "description", "Live"), UPLOADER_TOKEN).expectStatus().isOk();
+
+        var body = play(id, null).expectStatus().isOk()
+                .expectBody(byte[].class).returnResult().getResponseBody();
+        assertThat(body).isEqualTo(new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray());
+    }
+
+    @Test
+    void required_field_missing_or_blank() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("description", "A reel and a song"), UPLOADER_TOKEN).expectStatus().isBadRequest();
+        edit(id, Map.of("title", "  ", "description", "A reel and a song"), UPLOADER_TOKEN).expectStatus().isBadRequest();
+        edit(id, Map.of("title", "Knees Up (live)"), UPLOADER_TOKEN).expectStatus().isBadRequest();
+        edit(id, Map.of("title", "Knees Up (live)", "description", ""), UPLOADER_TOKEN).expectStatus().isBadRequest();
+
+        assertThat(getTrack(id).title()).isEqualTo("Knees Up");
+    }
+
+    @Test
+    void edit_an_unknown_track() {
+        edit("no-such-track", Map.of("title", "Knees Up", "description", "A reel and a song"), UPLOADER_TOKEN)
+                .expectStatus().isNotFound();
+    }
+
+    // --- Requirement: Delete a track -----------------------------------------------------------
+
+    @Test
+    void owner_deletes_a_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        uploadOk("Mossy Banks", "Two reels", MOSSY_BANKS_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        assertThat(listTracks()).extracting(TrackDTO::title).containsExactly("Mossy Banks");
+        client.get().uri("/api/tracks/{id}", id).exchange().expectStatus().isNotFound();
+    }
+
+    @Test
+    void deleted_track_can_no_longer_be_played() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        play(id).expectStatus().isNotFound();
+    }
+
+    @Test
+    void delete_an_unknown_track() {
+        delete("no-such-track", UPLOADER_TOKEN).expectStatus().isNotFound();
+    }
+
+    // --- Requirement: Only the owner or an administrator changes a track -----------------------
+
+    @Test
+    void another_user_edits_a_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Bob's now", "description", "Mine"), BOB_TOKEN).expectStatus().isForbidden();
+
+        assertThat(getTrack(id).title()).isEqualTo("Knees Up");
+    }
+
+    @Test
+    void another_user_deletes_a_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, BOB_TOKEN).expectStatus().isForbidden();
+
+        assertThat(listTracks()).extracting(TrackDTO::id).containsExactly(id);
+        play(id).expectStatus().is2xxSuccessful();
+    }
+
+    @Test
+    void administrator_edits_someone_elses_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Knees Up (edited)", "description", "Tidied up"), TestTokens.admin())
+                .expectStatus().isOk();
+
+        var track = getTrack(id);
+        assertThat(track.title()).isEqualTo("Knees Up (edited)");
+        assertThat(track.owner()).isEqualTo(owner(accountOf(UPLOADER_TOKEN)));
+    }
+
+    @Test
+    void administrator_deletes_someone_elses_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, TestTokens.admin()).expectStatus().isNoContent();
+
+        assertThat(listTracks()).isEmpty();
+    }
+
+    @Test
+    void unknown_track_is_not_found_for_another_user_too() {
+        edit("no-such-track", Map.of("title", "Knees Up", "description", "x"), BOB_TOKEN).expectStatus().isNotFound();
+        delete("no-such-track", BOB_TOKEN).expectStatus().isNotFound();
+    }
+
+    // --- Requirement: Changing a track requires authentication ---------------------------------
+
+    @Test
+    void anonymous_edit() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Anonymous", "description", "x"), null)
+                .expectStatus().isUnauthorized()
+                .expectHeader().doesNotExist(HttpHeaders.LOCATION);
+
+        assertThat(getTrack(id).title()).isEqualTo("Knees Up");
+    }
+
+    @Test
+    void anonymous_delete() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, null)
+                .expectStatus().isUnauthorized()
+                .expectHeader().doesNotExist(HttpHeaders.LOCATION);
+
+        assertThat(listTracks()).extracting(TrackDTO::id).containsExactly(id);
+    }
+
+    private TrackDTO getTrack(String id) {
+        return client.get().uri("/api/tracks/{id}", id).exchange()
+                .expectStatus().isOk()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
     }
 
     private static TrackOwner owner(AccountRef account) {

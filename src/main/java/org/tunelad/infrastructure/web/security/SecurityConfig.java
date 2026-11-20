@@ -58,6 +58,8 @@ class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.GET, "/api/me").authenticated()
                         .pathMatchers(HttpMethod.POST, "/api/tracks").authenticated()
+                        .pathMatchers(HttpMethod.PUT, "/api/tracks/*").authenticated()
+                        .pathMatchers(HttpMethod.DELETE, "/api/tracks/*").authenticated()
                         .anyExchange().permitAll())
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))

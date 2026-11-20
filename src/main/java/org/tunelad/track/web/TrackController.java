@@ -15,12 +15,16 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import org.tunelad.account.AccountRef;
 import org.tunelad.account.CurrentAccount;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.DeleteTrackCommand;
+import org.tunelad.track.command.UpdateTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -56,12 +60,54 @@ public class TrackController {
             @RequestPart(name = "artist", required = false) String artist,
             @RequestPart(name = "album", required = false) String album,
             @RequestPart("file") FilePart filePart) {
-        return currentAccount.get()
-                // Security only lets authenticated requests through: this guards against a misconfiguration
-                .switchIfEmpty(Mono.error(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)))
+        return authenticatedAccount()
                 .map(account -> new AddTrackCommand(title, artist, album, description, filePart.content(),
                         TrackFormat.forFile(filePart.filename()), new TrackOwner(account.id(), account.displayName())))
                 .flatMap(service::execute);
+    }
+
+    @PutMapping(value = "{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Edit a track",
+            description = "Replaces the track's title, description, artist and album; an omitted artist or album is "
+                    + "cleared. The audio, format and owner stay unchanged. Only the track's owner or an administrator "
+                    + "may edit it.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Track updated", content = @Content(schema = @Schema(implementation = TrackDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Title or description missing or blank", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Not the track's owner or an administrator, or a browser session request without a valid CSRF token", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
+    })
+    public Mono<TrackDTO> edit(@Parameter(description = "Track ID", required = true) @PathVariable String id,
+                               @Valid @RequestBody TrackEdit edit) {
+        return authenticatedAccount()
+                .map(account -> new UpdateTrackCommand(id, edit.title(), edit.artist(), edit.album(),
+                        edit.description(), account))
+                .flatMap(service::execute);
+    }
+
+    @DeleteMapping(value = "{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a track",
+            description = "Deletes the track and its audio. Only the track's owner or an administrator may delete it.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Track deleted", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Not the track's owner or an administrator, or a browser session request without a valid CSRF token", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
+    })
+    public Mono<Void> delete(@Parameter(description = "Track ID", required = true) @PathVariable String id) {
+        return authenticatedAccount()
+                .map(account -> new DeleteTrackCommand(id, account))
+                .flatMap(service::execute);
+    }
+
+    /** Security only lets authenticated requests through: the error guards against a misconfiguration. */
+    private Mono<AccountRef> authenticatedAccount() {
+        return currentAccount.get()
+                .switchIfEmpty(Mono.error(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)));
     }
 
     @GetMapping(value = "{id}")

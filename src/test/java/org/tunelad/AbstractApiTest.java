@@ -86,6 +86,26 @@ public abstract class AbstractApiTest {
                 .expectStatus().is2xxSuccessful();
     }
 
+    /** Puts a track edit (a JSON object) with the given bearer token, or anonymously when it is null. */
+    protected WebTestClient.ResponseSpec edit(String id, Map<String, ?> body, String token) {
+        return client.put().uri("/api/tracks/{id}", id)
+                .headers(headers -> {
+                    if (token != null) headers.setBearerAuth(token);
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .exchange();
+    }
+
+    /** Deletes a track with the given bearer token, or anonymously when it is null. */
+    protected WebTestClient.ResponseSpec delete(String id, String token) {
+        return client.delete().uri("/api/tracks/{id}", id)
+                .headers(headers -> {
+                    if (token != null) headers.setBearerAuth(token);
+                })
+                .exchange();
+    }
+
     /** Requests playback with "Range: bytes=0-", as a browser audio element does (see design.md). */
     protected WebTestClient.ResponseSpec play(String id) {
         return play(id, "bytes=0-");

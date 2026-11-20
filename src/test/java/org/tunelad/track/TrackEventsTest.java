@@ -7,7 +7,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
 import org.tunelad.AbstractApiTest;
+import org.tunelad.TestTokens;
 import org.tunelad.track.event.NewTrackSaved;
+import org.tunelad.track.event.TrackDeleted;
+import org.tunelad.track.event.TrackUpdated;
 
 import java.util.List;
 import java.util.Map;
@@ -24,10 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TrackEventsTest extends AbstractApiTest {
 
     static final List<NewTrackSaved> saved = new CopyOnWriteArrayList<>();
+    static final List<TrackUpdated> updated = new CopyOnWriteArrayList<>();
+    static final List<TrackDeleted> deleted = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     void forgetEvents() {
         saved.clear();
+        updated.clear();
+        deleted.clear();
     }
 
     @Test
@@ -38,6 +45,41 @@ class TrackEventsTest extends AbstractApiTest {
 
         // Published within the upload, so recorded by the time the response arrives.
         assertThat(saved).extracting(NewTrackSaved::track).containsExactly(trackTitled("Knees Up"));
+    }
+
+    @Test
+    void edit_publishes_track_updated_once_with_the_updated_track() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Knees Up (live)", "description", "Live"), UPLOADER_TOKEN).expectStatus().isOk();
+
+        assertThat(updated).extracting(TrackUpdated::track).containsExactly(trackTitled("Knees Up (live)"));
+    }
+
+    @Test
+    void delete_publishes_track_deleted_once_with_its_id() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        assertThat(deleted).extracting(TrackDeleted::trackId).containsExactly(id);
+    }
+
+    @Test
+    void refused_or_unknown_changes_publish_nothing() {
+        uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+        var bob = TestTokens.bearer("bob", "Bob Smith");
+
+        edit(id, Map.of("title", "Bob's", "description", "x"), bob).expectStatus().isForbidden();
+        delete(id, bob).expectStatus().isForbidden();
+        edit("no-such-track", Map.of("title", "x", "description", "x"), UPLOADER_TOKEN).expectStatus().isNotFound();
+        delete("no-such-track", UPLOADER_TOKEN).expectStatus().isNotFound();
+
+        assertThat(updated).isEmpty();
+        assertThat(deleted).isEmpty();
     }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -54,6 +96,16 @@ class TrackEventsTest extends AbstractApiTest {
         @EventListener
         void on(NewTrackSaved event) {
             saved.add(event);
+        }
+
+        @EventListener
+        void on(TrackUpdated event) {
+            updated.add(event);
+        }
+
+        @EventListener
+        void on(TrackDeleted event) {
+            deleted.add(event);
         }
     }
 }

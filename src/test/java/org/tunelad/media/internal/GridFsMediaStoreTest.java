@@ -57,6 +57,25 @@ class GridFsMediaStoreTest {
         assertThat(store.find(UUID.randomUUID().toString()).blockOptional()).isEmpty();
     }
 
+    @Test
+    void deleted_audio_is_gone() {
+        var key = UUID.randomUUID().toString();
+        var other = UUID.randomUUID().toString();
+        var resource = new ClassPathResource("mp3/Knees_Up.mp3");
+        store.store(key, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192)).block();
+        store.store(other, DataBufferUtils.read(resource, DefaultDataBufferFactory.sharedInstance, 8192)).block();
+
+        store.delete(key).block();
+
+        assertThat(store.find(key).blockOptional()).isEmpty();
+        assertThat(store.find(other).blockOptional()).isPresent();
+    }
+
+    @Test
+    void deleting_a_missing_key_completes() {
+        store.delete(UUID.randomUUID().toString()).block();
+    }
+
     private static byte[] kneesUp() throws Exception {
         return new ClassPathResource("mp3/Knees_Up.mp3").getContentAsByteArray();
     }

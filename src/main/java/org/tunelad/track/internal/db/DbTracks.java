@@ -34,4 +34,9 @@ class DbTracks implements Tracks {
     public Mono<Track> findById(String id) {
         return mongoTrackRepository.findById(id);
     }
+
+    @Override
+    public Mono<Void> delete(Track track) {
+        return mongoTrackRepository.delete(track);
+    }
 }
