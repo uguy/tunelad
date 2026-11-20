@@ -6,8 +6,8 @@ test.use({ serviceWorkers: 'allow' });
 test('service worker registers and controls the page after a reload', async ({ page }) => {
 	const errors = [];
 	page.on('console', (msg) => {
-		if (msg.type() === 'error' && msg.text().includes('SW registration error'))
-			errors.push(msg.text());
+		// ReloadPrompt logs registration errors with console.log
+		if (msg.text().includes('SW registration error')) errors.push(msg.text());
 	});
 	await page.route('**/api/me', (route) => route.fulfill({ status: 401 }));
 
@@ -20,6 +20,13 @@ test('service worker registers and controls the page after a reload', async ({ p
 		.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.state ?? null))
 		.toBe('activated');
 	expect(errors).toEqual([]);
+});
+
+test('offline-ready toast is a polite status, not an alert', async ({ page }) => {
+	await page.route('**/api/me', (route) => route.fulfill({ status: 401 }));
+	await page.goto('/');
+	await expect(page.getByRole('status')).toContainText('App ready to work offline');
+	await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('service worker leaves backend navigations to the server', async ({ page }) => {
