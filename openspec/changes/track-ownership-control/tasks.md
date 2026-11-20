@@ -30,8 +30,8 @@ Commit: `feat(track): let owners and admins edit and delete tracks through the a
 
 Commit: `feat(search): reflect track edits and deletions in search results`
 
-- [ ] 4.1 Add `@ApplicationModuleListener` methods to `SearchProjection` for `TrackUpdated` (save, replacing by id) and `TrackDeleted` (`deleteById`), blocking on the listener thread like the existing one
-- [ ] 4.2 Add `SearchProjectionTest` cases: `TrackUpdated` replaces the copy, `TrackDeleted` removes it, and redelivering `TrackDeleted` for an already-removed track completes without error. Add `TrackSearchApiTest` tests for the spec's "Edited track found by its new title", "Edited track has the track list fields" and "Deleted track disappears from search" (polling up to 5 seconds, like the existing upload test). Verify they pass
+- [x] 4.1 Add `@ApplicationModuleListener` methods to `SearchProjection` for `TrackUpdated` (save, replacing by id) and `TrackDeleted` (`deleteById`), blocking on the listener thread like the existing one
+- [x] 4.2 Add `SearchProjectionTest` cases: `TrackUpdated` replaces the copy, `TrackDeleted` removes it, and redelivering `TrackDeleted` for an already-removed track completes without error. Add `TrackSearchApiTest` tests for the spec's "Edited track found by its new title", "Edited track has the track list fields" and "Deleted track disappears from search" (polling up to 5 seconds, like the existing upload test). Verify they pass
 
 ## 5. Edit and delete from the UI
 

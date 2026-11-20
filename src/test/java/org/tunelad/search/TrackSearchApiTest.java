@@ -129,6 +129,47 @@ class TrackSearchApiTest extends AbstractApiTest {
         assertThat(search("knees")).containsExactly(listed);
     }
 
+    // --- Requirement: Edits and deletions reach search shortly after ----------------------------
+
+    @Test
+    void edited_track_found_by_its_new_title() {
+        uploadSearchable("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Hornpipe Set", "description", "A reel and a song"), UPLOADER_TOKEN)
+                .expectStatus().isOk();
+
+        await().atMost(SEARCHABLE_WITHIN).untilAsserted(() -> {
+            assertThat(search("hornpipe")).extracting(TrackDTO::id, TrackDTO::title)
+                    .containsExactly(org.assertj.core.groups.Tuple.tuple(id, "Hornpipe Set"));
+            assertThat(search("knees")).isEmpty();
+        });
+    }
+
+    @Test
+    void edited_track_has_the_track_list_fields() {
+        uploadSearchable("Knees Up", "A reel and a song", KNEES_UP_MP3);
+        var id = trackTitled("Knees Up").id();
+
+        edit(id, Map.of("title", "Hornpipe Set", "description", "Two hornpipes", "artist", "Breabach",
+                "album", "Frenzy of the Meeting"), UPLOADER_TOKEN)
+                .expectStatus().isOk();
+
+        await().atMost(SEARCHABLE_WITHIN).until(() -> !search("hornpipe").isEmpty());
+        // Records compare every field: id, title, description, artist, album, format and owner
+        assertThat(search("hornpipe")).containsExactly(trackTitled("Hornpipe Set"));
+    }
+
+    @Test
+    void deleted_track_disappears_from_search() {
+        uploadKneesUpAndMossyBanks();
+
+        delete(trackTitled("Knees Up").id(), UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        await().atMost(SEARCHABLE_WITHIN).untilAsserted(() ->
+                assertThat(titles(search(""))).containsExactly("Mossy Banks"));
+    }
+
     // --- Requirement: Search without logging in ------------------------------------------------
 
     @Test
