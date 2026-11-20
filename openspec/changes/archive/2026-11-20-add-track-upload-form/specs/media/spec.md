@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Play a track
-The system SHALL stream the audio file of the track with the given id on `GET /api/tracks/{id}/play`, with the content type of the track's format (`audio/mpeg` for MP3, `audio/mp4` for M4A, `audio/ogg` for OGG, `audio/flac` for FLAC, `audio/wav` for WAV, and `audio/mpeg` for audio stored without a known format), whether or not the request carries a `Range` header, and respond 404 Not Found when no track has that id. A response carrying the whole file SHALL have status 200 and state the file size in `Content-Length`. Every successful response SHALL carry `Accept-Ranges: bytes`.
+The system SHALL stream the audio file of the track with the given id on `GET /api/tracks/{id}/play`, with the content type of the track's format (`audio/mpeg` for audio stored without a known format), whether or not the request carries a `Range` header, and respond 404 Not Found when no track has that id. A response carrying the whole file SHALL have status 200 and state the file size in `Content-Length`. Every successful response SHALL carry `Accept-Ranges: bytes`.
 
 #### Scenario: Play an uploaded track
 - **GIVEN** a track has been uploaded with an mp3 file
@@ -21,7 +21,7 @@ The system SHALL stream the audio file of the track with the given id on `GET /a
 #### Scenario: Play each supported format
 - **GIVEN** tracks have been uploaded with an m4a, an ogg, a flac and a wav file
 - **WHEN** a client requests `GET /api/tracks/{id}/play` for each of them, with and without `Range: bytes=0-`
-- **THEN** the content type is `audio/mp4`, `audio/ogg`, `audio/flac` and `audio/wav` respectively
+- **THEN** the content type is `audio/mp4` (M4A), `audio/ogg` (OGG), `audio/flac` (FLAC) and `audio/wav` (WAV) respectively
 - **AND** each body is byte-for-byte identical to its uploaded file (or the requested range of it)
 
 #### Scenario: Audio stored before formats were recorded
