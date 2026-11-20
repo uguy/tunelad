@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+</script>
+
 <svelte:head>
 	<title>Tune Lad</title>
 </svelte:head>
@@ -7,7 +11,7 @@
 	<p class="font-medium my-5 ml-auto mr-auto">
 		Start listening to some <a
 			class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-			href="tracks">tracks</a
+			href={resolve('/tracks')}>tracks</a
 		> ...
 	</p>
 	<img

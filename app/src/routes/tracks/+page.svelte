@@ -6,11 +6,12 @@
 	import { onMount } from 'svelte';
 
 	import TrackService, { type Track } from './Tracks.js';
+	import type { PageData } from './$types';
 
-	/** @type {import('./$types').PageData} */
-	export let data;
+	export let data: PageData;
 
 	const trackService = new TrackService(fetch);
+	let query = '';
 
 	/** Seconds to start at from a `t` query value; anything not a non-negative number starts at 0. */
 	function startTime(t: string | null): number {
@@ -28,8 +29,7 @@
 	});
 
 	async function refreshTracks() {
-		const q = (document.querySelector('#search-input') as HTMLInputElement).value;
-		data.tracks = await trackService.findAll(q);
+		data.tracks = await trackService.findAll(query);
 	}
 </script>
 
@@ -85,6 +85,7 @@
 					class="block w-full p-3 ps-9 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base shadow-xs placeholder:text-body"
 					type="search"
 					placeholder="search for tracks ..."
+					bind:value={query}
 					on:keydown={(e) => {
 						if (e.key === 'Enter') {
 							refreshTracks();
@@ -131,7 +132,7 @@
 			data.tracks = data.tracks.filter((t: Track) => t.id !== event.detail.trackId);
 		}}
 		on:trackTagClicked={(event) => {
-			document.querySelector('#search-input').value = event.detail.tag;
+			query = event.detail.tag;
 			refreshTracks();
 		}}
 	/>
