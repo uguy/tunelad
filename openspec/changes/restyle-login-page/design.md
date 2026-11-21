@@ -42,6 +42,10 @@ leaves it to Spring. An empty list shows a short message.
 **OpenAPI.** The description gains one operation, `GET /api/login-providers`, with a 200 response (array of
 `LoginProvider`) and no security requirement, annotated like `AccountController`.
 
+**Dev proxy.** `vite.config.ts` proxies `/login` to the backend, for the OAuth callback under it, and `vite preview`
+(used by the Playwright tests) inherits that. A `bypass` keeps exactly `/login` in the SPA and sends only
+`/login/**` to the backend. `AccountMenu`'s link becomes a router link, since the SPA now owns the route.
+
 ## Risks / Trade-offs
 
 - [`/login` 404s on a direct hit or redirect] -> add it to `SpaWebFilter` and cover it with a Playwright test that

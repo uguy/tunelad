@@ -12,10 +12,11 @@
 
 ## 3. Login page in the SPA (`feat(ui)`)
 
-- [ ] 3.1 Add `app/src/routes/login/+page.ts` and `+page.svelte`: fetch the providers through `api.ts`, render a `.card` with a `.btn-accent` `rel="external"` link per provider to `/oauth2/authorization/{id}`, and a short message when the list is empty or the fetch fails
-- [ ] 3.2 Add a vitest test for the page: one button per provider, and the empty message; verify `cd app && npm test` passes
-- [ ] 3.3 Run `npm run format`, `npm run lint` and `npm run check`; verify they pass
-- [ ] 3.4 Commit: `feat(ui): add a login page that matches the app`
+- [x] 3.1 Add `app/src/routes/login/+page.ts` and `+page.svelte`: fetch the providers through `api.ts`, render a `.card` with a `.btn-accent` `rel="external"` link per provider to `/oauth2/authorization/{id}`, and a short message when the list is empty or the fetch fails
+- [x] 3.2 Add a vitest test for the page: one button per provider, and the empty message; verify `cd app && npm test` passes
+- [x] 3.3 Run `npm run format`, `npm run lint` and `npm run check`; verify they pass
+- [x] 3.4 Let the dev and preview proxy in `app/vite.config.ts` leave exactly `/login` to the SPA, while `/login/oauth2/code/...` still goes to the backend, and make `AccountMenu`'s link a router link; verify the vitest and Playwright tests reach `/login`
+- [x] 3.5 Commit: `feat(ui): add a login page that matches the app`
 
 ## 4. Hand `/login` over to the SPA (`refactor(account)`)
 

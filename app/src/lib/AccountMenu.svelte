@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { session } from '#lib/session.svelte.js';
 	import { csrfToken } from '#lib/api.js';
 
@@ -31,6 +32,5 @@
 		</form>
 	</div>
 {:else}
-	<!-- Served by the server, not the SPA router: it lists the login providers -->
-	<a href="/login" rel="external" class={linkClass}>Log in</a>
+	<a href={resolve('/login')} class={linkClass}>Log in</a>
 {/if}
