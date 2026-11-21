@@ -35,8 +35,8 @@
 
 ## 6. Documentation (`docs`)
 
-- [ ] 6.1 Document the local stack in `README.adoc`: what `docker compose up -d` starts, the ports, how to open Grafana, trace and log lookup, and that tests never export; verify each documented command and URL works as written
-- [ ] 6.2 Commit: `docs(deps): describe the local observability stack`
+- [x] 6.1 Document the local stack in `README.adoc`: what `docker compose up -d` starts, the ports, how to open Grafana, trace and log lookup, and that tests never export; verify each documented command and URL works as written
+- [x] 6.2 Commit: `docs(deps): describe the local observability stack`
 
 ## 7. Wrap-up
 
