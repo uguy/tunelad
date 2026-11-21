@@ -38,13 +38,26 @@ test('service worker leaves backend navigations to the server', async ({ page })
 	await page.reload();
 	await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
+	// The provider's callback lands under /login: mocked, so that what the backend would answer (a redirect back
+	// to the login page, which the worker does serve) cannot hide whether the worker let the request through
+	await page.route('**/login/oauth2/code/github', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<p>login callback</p>' })
+	);
+
 	// These must hit the network (here the preview proxy) rather than the precached SPA shell
-	for (const path of ['/login', '/oauth2/authorization/github', '/logout', '/api/tracks']) {
+	for (const path of [
+		'/login/oauth2/code/github',
+		'/oauth2/authorization/github',
+		'/logout',
+		'/api/tracks'
+	]) {
 		const response = await page.goto(path);
 		expect(response?.fromServiceWorker(), path).toBe(false);
 	}
 
-	// Client-side routes are still served from the precached shell
-	const response = await page.goto('/about');
-	expect(response?.fromServiceWorker()).toBe(true);
+	// Client-side routes, the login page among them, are still served from the precached shell
+	for (const path of ['/about', '/login']) {
+		const response = await page.goto(path);
+		expect(response?.fromServiceWorker(), path).toBe(true);
+	}
 });

@@ -22,12 +22,13 @@
 
 - [x] 4.1 Remove `loginPage(...)` and its `addFilterAt` from `SecurityConfig`; add `/login` to `SpaWebFilter`'s paths; verify the OAuth callback `/login/oauth2/code/{provider}` is not rewritten
 - [x] 4.2 Add a Playwright test in `app/e2e/account.test.js`: loading `/login` directly shows the app header and a Keycloak button, and the button starts the Keycloak login; verify `./mvnw verify` runs it green
-- [x] 4.3 Commit: `refactor(account): serve the login page from the app`
+- [x] 4.3 Update `app/e2e/service-worker.test.js` and the worker's denylist for `/login` now being a SPA route: only `/login/**` (the OAuth callback) is left to the server; verify `npx playwright test` passes
+- [x] 4.4 Commit: `refactor(account): serve the login page from the app`
 
 ## 5. Wrap-up
 
 - [ ] 5.1 Run `./mvnw clean verify`; verify it passes
-- [ ] 5.2 Update the README.adoc features list if the login page is mentioned; verify with `grep -n -i login README.adoc`
+- [x] 5.2 Update the README.adoc features list if the login page is mentioned; verify with `grep -n -i login README.adoc`
 - [ ] 5.3 Open a PR titled `feat(ui): restyle the login page in the app`, only after 5.1 passes
 
 ## Workflow follow-up

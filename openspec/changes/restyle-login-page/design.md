@@ -46,6 +46,10 @@ leaves it to Spring. An empty list shows a short message.
 (used by the Playwright tests) inherits that. A `bypass` keeps exactly `/login` in the SPA and sends only
 `/login/**` to the backend. `AccountMenu`'s link becomes a router link, since the SPA now owns the route.
 
+**Service worker.** The PWA's navigation denylist matched `^/login`; it narrows to `^/login/`, so `/login` is served
+from the precached shell like any SPA route while the OAuth callback still reaches the server. The service-worker
+e2e test says the same.
+
 ## Risks / Trade-offs
 
 - [`/login` 404s on a direct hit or redirect] -> add it to `SpaWebFilter` and cover it with a Playwright test that
