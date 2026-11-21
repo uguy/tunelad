@@ -32,6 +32,19 @@ datasources:
         filterBySpanID: false
         customQuery: true
         query: '{service_name="$${__span.tags["service.name"]}"} | trace_id=~"0*$${__trace.traceId}"'
+      # The metrics of a trace's service: the span's service.name is the `application` label of the metrics
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+        tags:
+          - key: service.name
+            value: application
+        queries:
+          - name: Request rate
+            query: 'sum(rate(http_server_requests_seconds_count{$$__tags}[$$__rate_interval]))'
+          - name: Latency, 95th percentile
+            query: 'histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{$$__tags}[$$__rate_interval])))'
 
   - name: Loki
     uid: loki

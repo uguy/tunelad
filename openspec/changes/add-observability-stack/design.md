@@ -57,6 +57,12 @@ drill-downs. They are built and checked against the running pipeline, with no qu
 seen in Prometheus, because the translation of OTel metric and label names cannot be confirmed without running it.
 *Alternative:* repair the old JHipster dashboards. Rejected by the user: they predate the naming and layout wanted.
 
+**Metrics shaped for Prometheus.** Two settings found while building the dashboards, both in `application.yml`: timers
+are exported in seconds (`base-time-unit`; the default of milliseconds gives `*_milliseconds` names and odd units), and
+`http.server.requests` publishes percentile histogram buckets, without which the timer has only a `+Inf` bucket and
+every `histogram_quantile` is `NaN`. Dashboards were checked for NaN-only results as well as empty ones, because a panel
+can return rows and still show nothing.
+
 **Tests never export.** A `src/test/resources/application.properties` turns each signal's export off. Spring Boot
 loads it alongside the main `application.yml`, so it overrides only those keys instead of replacing the file.
 Without it every test would try to reach a collector that is not there and log export failures.

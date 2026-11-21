@@ -110,9 +110,15 @@ management:
       url: http://localhost:4318/v1/metrics
       # The default of a minute makes dashboards wait; a development stack can afford more frequent pushes
       step: 10s
+      # Seconds, the Prometheus and OpenTelemetry convention: timers are exported as *_seconds, not *_milliseconds
+      base-time-unit: seconds
   metrics:
     tags:
       application: "@project.artifactId@"
+    distribution:
+      # Without bucket boundaries a timer has only a +Inf bucket, and histogram_quantile (the dashboards' percentiles) is NaN
+      percentiles-histogram:
+        http.server.requests: true
 
 server:
   compression:

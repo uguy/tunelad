@@ -1,0 +1,11 @@
+apiVersion: 1
+
+# The dashboards next to this file, in a "Tune Lad" folder. They are code: edit the JSON, not the UI.
+providers:
+  - name: tunelad
+    folder: Tune Lad
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards

@@ -29,9 +29,9 @@
 
 ## 5. New dashboards (`feat(deps)`)
 
-- [ ] 5.1 Generate traffic against the running application and note the OpenTelemetry metric and label names that Prometheus actually holds for JVM, HTTP and runtime; verify with the Prometheus API
-- [ ] 5.2 Build and provision the JVM and runtime, HTTP and API, and overview (trace and log drill-downs) dashboards from those names, replacing `docker/grafana/` and its old JSON, and add Tempo's trace-to-metrics link using those names; verify every panel's query returns series through Grafana, and that the old dashboards no longer appear
-- [ ] 5.3 Commit: `feat(deps): replace the grafana dashboards with opentelemetry ones`
+- [x] 5.1 Generate traffic against the running application and note the OpenTelemetry metric and label names that Prometheus actually holds for JVM, HTTP and runtime; verify with the Prometheus API
+- [x] 5.2 Build and provision the JVM and runtime, HTTP and API, and overview (trace and log drill-downs) dashboards from those names, replacing `docker/grafana/` and its old JSON, and add Tempo's trace-to-metrics link using those names; verify every panel's query returns real values (not NaN) through Grafana, look at a screenshot of each dashboard, and check that the old dashboards no longer appear
+- [x] 5.3 Commit: `feat(deps): replace the grafana dashboards with opentelemetry ones`
 
 ## 6. Documentation (`docs`)
 
