@@ -82,13 +82,22 @@ class BrowserSessionSecurityTest {
                         assertThat(location).startsWith(TestSecurityConfiguration.KEYCLOAK.getProviderDetails().getAuthorizationUri()));
     }
 
+    /** The buttons themselves are checked in the browser, by app/e2e/account.test.js: here, the SPA serves the page. */
     @Test
     void provider_list() {
         client.get().uri("/login").accept(MediaType.TEXT_HTML).exchange()
                 .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
                 .expectBody(String.class).value(page -> assertThat(page)
-                        .contains("/oauth2/authorization/keycloak")
-                        .contains("Keycloak"));
+                        .contains("data-sveltekit-preload-data")
+                        .doesNotContain("Please sign in"));
+    }
+
+    @Test
+    void provider_callback_is_not_the_login_page() {
+        client.get().uri("/login/oauth2/code/keycloak?code=x&state=y").accept(MediaType.TEXT_HTML).exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().value(HttpHeaders.LOCATION, location -> assertThat(location).contains("/login?error"));
     }
 
     @Test

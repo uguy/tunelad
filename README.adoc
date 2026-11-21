@@ -186,7 +186,7 @@ docker compose up -d --force-recreate keycloak
 WARNING: The realm is for local development only: the `tunelad` client secret (`tunelad-dev-secret`) is committed, and
 direct access grants are enabled so that curl and tests can get tokens with a username and password.
 
-Log in from the browser at http://localhost:8080/login, which lists the configured providers.
+Log in from the browser at http://localhost:8080/login, which lists the configured providers, also available as JSON from `GET /api/login-providers`.
 
 To also offer Google, create an OAuth client in the Google Cloud console with the authorized redirect URI
 `http://localhost:8080/login/oauth2/code/google`, then run the application with the `google` profile and the client's

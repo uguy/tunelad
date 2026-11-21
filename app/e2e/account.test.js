@@ -65,6 +65,55 @@ test('log out from the header', async ({ page, context }) => {
 	expect(logout.postData()).toContain('_csrf=csrf-123');
 });
 
+// --- Requirement: Log in through an OpenID Connect provider ---------------------------------
+
+const KEYCLOAK = { id: 'keycloak', name: 'Keycloak' };
+
+test('provider list', async ({ page }) => {
+	await page.route('**/api/me', anonymous);
+	await page.route('**/api/login-providers', (route) => route.fulfill({ json: [KEYCLOAK] }));
+	await page.goto('/login');
+
+	// In the application's layout, with its header
+	await expect(page.getByRole('banner').getByRole('link', { name: 'Tracks' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Continue with Keycloak' })).toHaveAttribute(
+		'href',
+		'/oauth2/authorization/keycloak'
+	);
+});
+
+test('start a login from the login page', async ({ page }) => {
+	await page.route('**/api/me', anonymous);
+	await page.route('**/api/login-providers', (route) => route.fulfill({ json: [KEYCLOAK] }));
+	await page.route('**/oauth2/authorization/keycloak', (route) =>
+		route.fulfill({ status: 200, contentType: 'text/html', body: '<p>Keycloak login</p>' })
+	);
+	await page.goto('/login');
+
+	await page.getByRole('link', { name: 'Continue with Keycloak' }).click();
+
+	await expect(page.getByText('Keycloak login')).toBeVisible();
+});
+
+test('no provider configured', async ({ page }) => {
+	await page.route('**/api/me', anonymous);
+	await page.route('**/api/login-providers', (route) => route.fulfill({ json: [] }));
+	await page.goto('/login');
+
+	await expect(page.getByText('No login provider is configured.')).toBeVisible();
+});
+
+test('the header link opens the login page', async ({ page }) => {
+	await page.route('**/api/me', anonymous);
+	await page.route('**/api/login-providers', (route) => route.fulfill({ json: [KEYCLOAK] }));
+	await page.goto('/');
+
+	await page.getByRole('link', { name: 'Log in' }).click();
+
+	await expect(page).toHaveURL(/\/login$/);
+	await expect(page.getByRole('link', { name: 'Continue with Keycloak' })).toBeVisible();
+});
+
 // --- Requirement: Show who uploaded each track (track spec) ----------------------------------
 
 test('uploader shown in the list', async ({ page }) => {

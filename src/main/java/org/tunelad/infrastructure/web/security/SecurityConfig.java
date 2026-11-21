@@ -9,7 +9,6 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.server.resource.web.server.BearerTokenServerAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.server.authentication.ServerBearerTokenAuthenticationConverter;
@@ -25,15 +24,12 @@ import org.springframework.security.web.server.csrf.CookieServerCsrfTokenReposit
 import org.springframework.security.web.server.csrf.CsrfToken;
 import org.springframework.security.web.server.csrf.CsrfWebFilter;
 import org.springframework.security.web.server.csrf.ServerCsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.server.ui.LoginPageGeneratingWebFilter;
 import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher.MatchResult;
 import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Mono;
-
-import java.util.LinkedHashMap;
 
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
@@ -70,7 +66,6 @@ class SecurityConfig {
                         .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
                         .requireCsrfProtectionMatcher(sessionAuthenticatedChange()))
                 .addFilterAfter(csrfCookieWriter(), SecurityWebFiltersOrder.CSRF)
-                .addFilterAt(loginPage(clientRegistrations), SecurityWebFiltersOrder.LOGIN_PAGE_GENERATING)
                 .logout(logout -> logout.logoutSuccessHandler(providerLogout(clientRegistrations)))
                 .build();
     }
@@ -84,7 +79,7 @@ class SecurityConfig {
         return new RolesClaimAuthoritiesMapper();
     }
 
-    /** The API answers 401 without redirecting; browser pages go to the login page, which lists the providers. */
+    /** The API answers 401 without redirecting; browser pages go to the login page, which the SPA serves. */
     private static ServerAuthenticationEntryPoint entryPoint() {
         var entryPoint = new DelegatingServerAuthenticationEntryPoint(
                 new DelegateEntry(pathMatchers("/api/**"), new BearerTokenServerAuthenticationEntryPoint()));
@@ -107,23 +102,6 @@ class SecurityConfig {
                 CsrfWebFilter.DEFAULT_CSRF_MATCHER,
                 new NegatedServerWebExchangeMatcher(bearer),
                 sessionHoldsLogin);
-    }
-
-    /**
-     * Spring Security's generated {@code /login} page, listing a link per configured provider. It only generates it
-     * by itself when the default entry points are kept, and those would redirect anonymous API calls to it.
-     */
-    private static LoginPageGeneratingWebFilter loginPage(ReactiveClientRegistrationRepository clientRegistrations) {
-        var links = new LinkedHashMap<String, String>();
-        if (clientRegistrations instanceof Iterable<?> registrations) {
-            registrations.forEach(registration -> {
-                var client = (ClientRegistration) registration;
-                links.put("/oauth2/authorization/" + client.getRegistrationId(), client.getClientName());
-            });
-        }
-        var loginPage = new LoginPageGeneratingWebFilter();
-        loginPage.setOauth2AuthenticationUrlToClientName(links);
-        return loginPage;
     }
 
     /**

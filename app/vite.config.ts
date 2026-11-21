@@ -98,7 +98,7 @@ export default defineConfig({
 					// node_modules and server/ are the plugin's defaults, which a custom list replaces.
 					globIgnores: ['**/node_modules/**/*', 'server/**', 'prerendered/pages/index.html'],
 					// Navigations the service worker must leave to the server instead of serving the SPA shell
-					navigateFallbackDenylist: [/^\/login/, /^\/oauth2\//, /^\/logout/, /^\/api\//]
+					navigateFallbackDenylist: [/^\/login\//, /^\/oauth2\//, /^\/logout/, /^\/api\//]
 				},
 				injectManifest: {
 					globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
@@ -137,11 +137,15 @@ export default defineConfig({
 		]
 	},
 	server: {
-		// Login and logout are served by the backend too; /login also covers the /login/oauth2/code callback
+		// Login and logout are served by the backend too. The login page itself is a SPA route: only what is below
+		// it, the /login/oauth2/code callback, goes to the backend
 		proxy: {
 			'/api': 'http://localhost:8080',
 			'/actuator': 'http://localhost:8080',
-			'/login': 'http://localhost:8080',
+			'/login': {
+				target: 'http://localhost:8080',
+				bypass: (req) => (req.url === '/login' ? req.url : undefined)
+			},
 			'/oauth2': 'http://localhost:8080',
 			'/logout': 'http://localhost:8080'
 		}

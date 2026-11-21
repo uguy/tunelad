@@ -42,6 +42,27 @@ class AccountApiTest extends AbstractApiTest {
         meRequest("not-a-jwt").expectStatus().isUnauthorized();
     }
 
+    // --- Requirement: Log in through an OpenID Connect provider -------------------------------
+
+    @Test
+    void provider_list_as_json() {
+        client.get().uri("/api/login-providers").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[0].id").isEqualTo("keycloak")
+                .jsonPath("$[0].name").isEqualTo("Keycloak");
+    }
+
+    @Test
+    void provider_list_is_in_the_openapi_description() {
+        client.get().uri("/v3/api-docs").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/api/login-providers'].get.summary").isEqualTo("Login providers")
+                .jsonPath("$.paths['/api/login-providers'].get.security").doesNotExist();
+    }
+
     // --- Requirement: One account per identity -------------------------------------------------
 
     @Test
