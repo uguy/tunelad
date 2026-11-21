@@ -88,17 +88,25 @@ management:
       access: read_only
     info:
       access: read_only
-    prometheus:
-      access: read_only
   endpoints:
     web:
       exposure:
-        include: "health,info,applicationmodules,metrics,prometheus"
+        include: "health,info,applicationmodules,metrics"
     access:
       default: read_only
   tracing:
     sampling.probability: 1.0
-    enabled: true
+  # Traces, metrics and logs all go to the OpenTelemetry Collector of the local stack (docker compose), over OTLP/HTTP
+  opentelemetry:
+    resource-attributes:
+      service.name: "@project.artifactId@"
+    tracing.export.otlp.endpoint: http://localhost:4318/v1/traces
+    logging.export.otlp.endpoint: http://localhost:4318/v1/logs
+  otlp:
+    metrics.export:
+      url: http://localhost:4318/v1/metrics
+      # The default of a minute makes dashboards wait; a development stack can afford more frequent pushes
+      step: 10s
   metrics:
     tags:
       application: "@project.artifactId@"
