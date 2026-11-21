@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- Spring Boot's defaults: the console appender, the pattern from application.yml, the logging.level.* settings -->
+	<include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+	<!-- Also sends every log record, with the trace and span ids of its request, to the OpenTelemetry SDK:
+	     see OpenTelemetryLogging, which connects it -->
+	<appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender"/>
+
+	<root>
+		<appender-ref ref="OTEL"/>
+	</root>
+</configuration>

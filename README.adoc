@@ -68,6 +68,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
 * OpenAPI v3 endpoint
 * Spring boot actuator features (health, info, etc.)
+* Traces, metrics and logs exported with OpenTelemetry, to a local Grafana stack (Tempo, Loki, Prometheus) that `docker compose up -d` starts
 * Mobile friendly
 * PWA support
 * Lighthouse score follow up
@@ -218,6 +219,56 @@ docker compose down -v
 
 NOTE: Every track has an owner since user accounts were added. Tracks stored by an earlier version have none and are
 not migrated: wipe the local data once when upgrading past that change.
+
+=== Observability (traces, metrics, logs)
+
+The application exports its traces, metrics and logs with OpenTelemetry, over OTLP/HTTP to `http://localhost:4318`.
+`docker compose up -d` starts a local stack to look at them, all on the compose network:
+
+[cols="2,3,5"]
+|===
+|Service |Reachable at |Role
+
+|OpenTelemetry Collector
+|OTLP on `localhost:4318` (HTTP) and `localhost:4317` (gRPC)
+|The only door in: the application sends everything here, and it forwards traces to Tempo, logs to Loki and metrics to Prometheus
+
+|Tempo
+|inside the compose network only
+|Traces
+
+|Loki
+|inside the compose network only
+|Logs
+
+|Prometheus
+|http://localhost:9090
+|Metrics, received over OTLP from the collector (nothing is scraped)
+
+|Grafana
+|http://localhost:3000 (`admin` / `admin`)
+|Reads the three, with the dashboards below
+|===
+
+Open Grafana, then _Dashboards_ and the _Tune Lad_ folder: _Overview_ (traffic, latency, resources, then the logs and
+traces behind them), _HTTP and API_ (with MongoDB and repository timings) and _JVM and runtime_. They fill up as the
+application gets requests.
+
+The three are linked. In _Explore_, choose Tempo and search `{resource.service.name="tunelad"}`: open a trace, select a
+span, and _Related logs_, _Request rate_ and _Latency, 95th percentile_ open its logs and the service's metrics. The other
+way round, choose Loki and query `{service_name="tunelad"}`: a log line written while handling a request has an
+_Open trace_ link. The console shows the same ids, as `[Tune Lad,<trace id>,<span id>]`.
+
+NOTE: Tests never export anything, so none of them needs the stack. The stack keeps nothing between recreations.
+
+Without the stack the application works as usual, but logs a warning with a stack trace each time a metrics push
+fails (every 10 seconds). To switch the export off:
+
+[source,bash]
+----
+MANAGEMENT_TRACING_EXPORT_OTLP_ENABLED=false MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED=false \
+MANAGEMENT_LOGGING_EXPORT_OTLP_ENABLED=false ./mvnw spring-boot:run
+----
 
 === Uploading a track
 
