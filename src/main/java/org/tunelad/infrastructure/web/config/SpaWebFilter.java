@@ -10,17 +10,18 @@ import org.springframework.web.server.WebFilterChain;
 
 import java.util.List;
 
-// Refreshing browser while on url /tracks or /about end up with 404 if we don"t redirect to root
+// Refreshing browser while on url /tracks or /about end up with 404 if we don"t redirect to root;
+// /login is the SPA's login page (the OAuth callback below it, /login/oauth2/code/..., is not matched: exact paths only)
 @Slf4j
 @Component
 public class SpaWebFilter implements WebFilter {
 
-    private static final List<String> UI_PATH_PREFIXES =  List.of("/tracks", "/about");
+    private static final List<String> UI_PATH_PREFIXES =  List.of("/tracks", "/about", "/login");
 
     @Override
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		var path = exchange.getRequest().getURI().getPath();
-        // Redirect requests of SPA internal navication to root
+        // Redirect requests of SPA internal navigation to root
         if (UI_PATH_PREFIXES.stream().anyMatch(path::equalsIgnoreCase)) {
             log.debug("Redirect to root from path: {}", path);
             return chain.filter(exchange.mutate().request(exchange.getRequest().mutate().path("/").build()).build());

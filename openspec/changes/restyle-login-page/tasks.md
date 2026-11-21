@@ -20,9 +20,9 @@
 
 ## 4. Hand `/login` over to the SPA (`refactor(account)`)
 
-- [ ] 4.1 Remove `loginPage(...)` and its `addFilterAt` from `SecurityConfig`; add `/login` to `SpaWebFilter`'s paths; verify the OAuth callback `/login/oauth2/code/{provider}` is not rewritten
-- [ ] 4.2 Add a Playwright test in `app/e2e/account.test.js`: loading `/login` directly shows the app header and a Keycloak button, and the button starts the Keycloak login; verify `./mvnw verify` runs it green
-- [ ] 4.3 Commit: `refactor(account): serve the login page from the app`
+- [x] 4.1 Remove `loginPage(...)` and its `addFilterAt` from `SecurityConfig`; add `/login` to `SpaWebFilter`'s paths; verify the OAuth callback `/login/oauth2/code/{provider}` is not rewritten
+- [x] 4.2 Add a Playwright test in `app/e2e/account.test.js`: loading `/login` directly shows the app header and a Keycloak button, and the button starts the Keycloak login; verify `./mvnw verify` runs it green
+- [x] 4.3 Commit: `refactor(account): serve the login page from the app`
 
 ## 5. Wrap-up
 
