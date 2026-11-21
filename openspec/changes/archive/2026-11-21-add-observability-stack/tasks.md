@@ -40,8 +40,8 @@
 
 ## 7. Wrap-up
 
-- [ ] 7.1 Run `./mvnw clean verify` with Modulith's test skipping off (`-Dspring.modulith.test.skip-optimizations=true`); verify it passes
-- [ ] 7.2 Open a PR titled `feat(deps): add opentelemetry with a local grafana stack`, only after 7.1 passes
+- [x] 7.1 Run `./mvnw clean verify` with Modulith's test skipping off (`-Dspring.modulith.test.skip-optimizations=true`); verify it passes
+- [x] 7.2 Open a PR titled `feat(deps): add opentelemetry with a local grafana stack`, only after 7.1 passes
 
 ## Workflow follow-up
 
