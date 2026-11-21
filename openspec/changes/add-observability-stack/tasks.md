@@ -23,14 +23,14 @@
 
 ## 4. Grafana datasources and correlation (`feat(deps)`)
 
-- [ ] 4.1 Provision the Prometheus, Tempo and Loki datasources with explicit uids, linking a trace to its logs and metrics and a log's trace id to Tempo; verify each datasource's health check through Grafana's API
-- [ ] 4.2 Verify the correlation with the running application: a request's trace is found in Tempo, its logs in Loki through the link's query, and the log's trace id resolves back to that trace; record the queries used in the commit message body
-- [ ] 4.3 Commit: `feat(deps): provision grafana datasources with trace log and metric links`
+- [x] 4.1 Provision the Prometheus, Tempo and Loki datasources with explicit uids, linking a trace to its logs and a log's trace id to Tempo (the trace-to-metrics link waits for 5.2, which is when the metric names are known); verify each datasource's health check through Grafana's API
+- [x] 4.2 Verify the correlation with the running application: a request's trace is found in Tempo, its logs in Loki through the link's query, and the log's trace id resolves back to that trace; record the queries used in the commit message body
+- [x] 4.3 Commit: `feat(deps): provision grafana datasources with trace log and metric links`
 
 ## 5. New dashboards (`feat(deps)`)
 
 - [ ] 5.1 Generate traffic against the running application and note the OpenTelemetry metric and label names that Prometheus actually holds for JVM, HTTP and runtime; verify with the Prometheus API
-- [ ] 5.2 Build and provision the JVM and runtime, HTTP and API, and overview (trace and log drill-downs) dashboards from those names, replacing `docker/grafana/` and its old JSON; verify every panel's query returns series through Grafana, and that the old dashboards no longer appear
+- [ ] 5.2 Build and provision the JVM and runtime, HTTP and API, and overview (trace and log drill-downs) dashboards from those names, replacing `docker/grafana/` and its old JSON, and add Tempo's trace-to-metrics link using those names; verify every panel's query returns series through Grafana, and that the old dashboards no longer appear
 - [ ] 5.3 Commit: `feat(deps): replace the grafana dashboards with opentelemetry ones`
 
 ## 6. Documentation (`docs`)
