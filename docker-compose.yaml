@@ -59,31 +59,53 @@ services:
     ports:
       - '8180:8080'
 
-  zipkin:
-     image: openzipkin/zipkin
-     ports:
-       - 9411:9411
+  # Observability: the application pushes traces, metrics and logs over OTLP to the collector (localhost:4318), which
+  # sends traces to Tempo, logs to Loki and metrics to Prometheus; Grafana reads all three. They talk to each other
+  # by service name over the compose network: only the collector's OTLP ports and the UIs are published.
+  otel-collector:
+    image: otel/opentelemetry-collector:0.165.0
+    command: ['--config=/etc/otelcol/config.yml']
+    volumes:
+      - ./docker/observability/otel-collector.yml:/etc/otelcol/config.yml:ro
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+    ports:
+      - '4317:4317' # OTLP/gRPC
+      - '4318:4318' # OTLP/HTTP, what the application uses
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    command: ['-config.file=/etc/tempo/tempo.yml']
+    volumes:
+      - ./docker/observability/tempo.yml:/etc/tempo/tempo.yml:ro
+
+  loki:
+    image: grafana/loki:3.7.10
+    command: ['-config.file=/etc/loki/loki.yml']
+    volumes:
+      - ./docker/observability/loki.yml:/etc/loki/loki.yml:ro
 
   prometheus:
-    image: prom/prometheus:v2.42.0
-    volumes:
-      - ./docker/prometheus/:/etc/prometheus/
+    image: prom/prometheus:v3.16.0
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      # Metrics come in from the collector over OTLP instead of being scraped
+      - '--web.enable-otlp-receiver'
+    volumes:
+      - ./docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - 9090:9090
-    # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
-    # grafana/provisioning/datasources/datasource.yml
+      - '9090:9090'
 
   grafana:
-    image: grafana/grafana:9.4.3
-    volumes:
-      - ./docker/grafana/provisioning/:/etc/grafana/provisioning/
+    image: grafana/grafana:13.3.1
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      GF_SECURITY_ADMIN_PASSWORD: 'admin'
+      GF_USERS_ALLOW_SIGN_UP: 'false'
     ports:
-      - 3000:3000
-    # On MacOS, remove next line and replace localhost by host.docker.internal in prometheus/prometheus.yml and
-    # grafana/provisioning/datasources/datasource.yml
+      - '3000:3000'

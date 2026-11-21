@@ -33,6 +33,11 @@ but installs no logback appender, and its BOM manages no appender version. So th
 added explicitly, with a pinned version and a `logback-spring.xml`. The existing `traceId`/`spanId` pattern stays, so
 console logs remain correlated.
 
+**Trace ids in logs need context propagation.** WebFlux hops threads, and the trace context does not follow by
+itself: the `traceId`/`spanId` of the log pattern, and the ids on exported log records, stay empty even inside a
+request. `spring.reactor.context-propagation: auto` (the `context-propagation` library is already on the classpath)
+carries it across, and was confirmed to put the request's trace id on both the console line and the OTLP record.
+
 **One compose network, the collector as the only published ingest.** Services: `otel-collector`, `tempo`, `loki`,
 `prometheus`, `grafana`. The application runs on the host, so only the collector's OTLP ports (4317, 4318) and
 Grafana (3000) must be reachable from it; Tempo, Loki and Prometheus talk over the compose network by service name,

@@ -14,12 +14,12 @@
 
 ## 3. Local stack: collector and backends (`feat(deps)`)
 
-- [ ] 3.1 Replace the `zipkin`, `prometheus` and `grafana` entries of `docker-compose.yml` with `otel-collector`, `tempo`, `loki`, `prometheus` and `grafana` on one compose network, images pinned to current stable versions that exist (check each tag), publishing only the OTLP ports and Grafana (and Prometheus for debugging); verify `docker compose config` is valid and `docker compose up -d` leaves every service running
-- [ ] 3.2 Add the collector config under `docker/`: an OTLP receiver and pipelines to Tempo (traces), Loki (logs) and Prometheus (metrics), plus a `debug` exporter at first; verify that, with the application running and `GET /api/tracks` called, spans, metrics and log records of the `tunelad` service appear in the collector's output
-- [ ] 3.3 Logs need the OpenTelemetry logback appender (confirmed in 2.1: Boot 4.1.2 builds the log exporter but installs no appender, and its BOM does not manage one): add `opentelemetry-logback-appender-1.0` with a pinned version, a `logback-spring.xml` and the install call so records reach the SDK; verify log records with the request's trace id reach the collector
-- [ ] 3.4 Configure Tempo, Loki and Prometheus (including Prometheus's OTLP receiver flag) and drop the `debug` exporter; verify with their HTTP APIs that the trace, the logs and the metrics of the same request are queryable
-- [ ] 3.5 Delete the old `docker/prometheus/` config and the Zipkin entry's leftovers; verify `git grep -i zipkin` finds nothing outside the archive
-- [ ] 3.6 Commit: `feat(deps): add a local collector, tempo, loki and prometheus stack`
+- [x] 3.1 Replace the `zipkin`, `prometheus` and `grafana` entries of `docker-compose.yml` with `otel-collector`, `tempo`, `loki`, `prometheus` and `grafana` on one compose network, images pinned to current stable versions that exist (check each tag), publishing only the OTLP ports and Grafana (and Prometheus for debugging); verify `docker compose config` is valid and `docker compose up -d` leaves every service running
+- [x] 3.2 Add the collector config under `docker/`: an OTLP receiver and pipelines to Tempo (traces), Loki (logs) and Prometheus (metrics), plus a `debug` exporter at first; verify that, with the application running and `GET /api/tracks` called, spans and metrics appear in the collector's output (log records arrive with 3.3)
+- [x] 3.3 Logs need the OpenTelemetry logback appender (confirmed in 2.1: Boot 4.1.2 builds the log exporter but installs no appender, and its BOM does not manage one): add `opentelemetry-logback-appender-1.0` with a pinned version, a `logback-spring.xml` and the install call so records reach the SDK, and set `spring.reactor.context-propagation: auto` so logs written during a WebFlux request carry its trace id (without it the ids are empty); verify a request's log records reach the collector with that request's trace id
+- [x] 3.4 Configure Tempo, Loki and Prometheus (including Prometheus's OTLP receiver flag) and drop the `debug` exporter; verify with their HTTP APIs that the trace, the logs and the metrics of the same request are queryable
+- [x] 3.5 Delete the old `docker/prometheus/` config and the Zipkin entry's leftovers; verify `git grep -i zipkin` finds nothing outside the archive
+- [x] 3.6 Commit: `feat(deps): add a local collector, tempo, loki and prometheus stack`
 
 ## 4. Grafana datasources and correlation (`feat(deps)`)
 

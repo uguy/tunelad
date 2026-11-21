@@ -14,6 +14,9 @@ springdoc.enable-kotlin: false
 spring:
   application:
     name: Tune Lad
+  reactor:
+    # Carries the trace context across Reactor's thread hops, so that logs written during a request have its trace id
+    context-propagation: auto
   data:
     mongodb:
       auto-index-creation: true

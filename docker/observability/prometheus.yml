@@ -1,0 +1,9 @@
+# Metrics: the collector pushes them in through Prometheus's OTLP receiver (--web.enable-otlp-receiver), so there is
+# nothing of the application to scrape. Prometheus only scrapes itself.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

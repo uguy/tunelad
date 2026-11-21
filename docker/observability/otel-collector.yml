@@ -1,0 +1,40 @@
+# The only door into the observability stack: the application pushes traces, metrics and logs here over OTLP,
+# and the collector fans each signal out to its backend, by service name on the compose network.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  # Traces: Tempo's OTLP/gRPC receiver
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  # Logs: Loki's native OTLP endpoint
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+  # Metrics: Prometheus's OTLP receiver (started with --web.enable-otlp-receiver)
+  otlp_http/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_grpc/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/loki]
