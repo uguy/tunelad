@@ -27,9 +27,9 @@
 
 ## 5. Wrap-up
 
-- [ ] 5.1 Run `./mvnw clean verify`; verify it passes
+- [x] 5.1 Run `./mvnw clean verify`; verify it passes
 - [x] 5.2 Update the README.adoc features list if the login page is mentioned; verify with `grep -n -i login README.adoc`
-- [ ] 5.3 Open a PR titled `feat(ui): restyle the login page in the app`, only after 5.1 passes
+- [x] 5.3 Open a PR titled `feat(ui): restyle the login page in the app`, only after 5.1 passes
 
 ## Workflow follow-up
 
