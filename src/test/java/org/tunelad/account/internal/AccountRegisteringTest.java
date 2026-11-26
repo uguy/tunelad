@@ -4,8 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -14,6 +13,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.tunelad.TestContainerDefinitions;
 import org.tunelad.TestSecurityConfiguration;
 import org.tunelad.TestTokens;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -31,11 +31,11 @@ class AccountRegisteringTest {
     Accounts accounts;
 
     @Autowired
-    ReactiveMongoTemplate mongo;
+    DatabaseClient db;
 
     @BeforeEach
     void emptyAccounts() {
-        mongo.remove(new Query(), Account.class).block();
+        db.sql("DELETE FROM account_accounts").then().block();
     }
 
     @Test
@@ -57,6 +57,18 @@ class AccountRegisteringTest {
         var after = accounts.findOrRegister(alice("Alice Liddell")).block();
         assertThat(after.id()).isEqualTo(before.id());
         assertThat(after.displayName()).isEqualTo("Alice L.");
+    }
+
+    // Spec: the account of an identity is unique, however many first requests race to create it
+    @Test
+    void concurrent_first_requests_end_with_one_account() {
+        var results = Flux.range(0, 10)
+                .flatMap(i -> accounts.findOrRegister(alice("Alice Liddell")), 10)
+                .collectList().block();
+
+        assertThat(results).extracting(Account::id).containsOnly(results.get(0).id());
+        var rows = db.sql("SELECT count(*) AS n FROM account_accounts").map(row -> row.get("n", Long.class)).one().block();
+        assertThat(rows).isEqualTo(1);
     }
 
     private void login(String name) {

@@ -78,7 +78,7 @@ class SearchProjectionTest {
     void track_deleted_removes_the_copy(Scenario scenario) {
         var track = kneesUp(UUID.randomUUID().toString());
         var other = kneesUp(UUID.randomUUID().toString());
-        searchTracks.saveAll(java.util.List.of(SearchTrack.of(track), SearchTrack.of(other))).blockLast();
+        searchTracks.saveAll(java.util.List.of(SearchTrack.of(track), SearchTrack.of(other))).block();
 
         scenario.publish(new TrackDeleted(track.id()))
                 .andWaitForStateChange(() -> searchTracks.existsById(track.id()).block(), exists -> !exists)

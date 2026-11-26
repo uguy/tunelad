@@ -106,7 +106,7 @@ For more details about apache maven, please refer to the https://maven.apache.or
 ==== Tests
 
 `./mvnw clean verify` runs every test: the Java tests (Testcontainers, so Docker must be running), the frontend unit tests (vitest) in the `test` phase, and the Playwright e2e tests in the `integration-test` phase.
-The e2e tests run against the static frontend build with the REST API mocked, so they need neither the backend nor MongoDB.
+The e2e tests run against the static frontend build with the REST API mocked, so they need neither the backend nor PostgreSQL.
 The first build downloads Chromium for Playwright (cached in `~/.cache/ms-playwright`).
 
 Use the usual maven flags to skip tests:
@@ -142,18 +142,18 @@ bun run format
 
 === Prerequisite
 
-The application depends on MongoDB. You can start an instance by running docker compose from the root folder.
+The application depends on PostgreSQL. You can start an instance by running docker compose from the root folder.
 
 [source,bash,subs="attributes"]
 ----
 docker compose up -d
 ----
 
-MongoDB runs as a single-node replica set (`rs0`), because the application uses MongoDB transactions, which
-need one. The replica set is initiated by the container healthcheck on first start; `docker compose up -d --wait`
-returns once it is ready.
+PostgreSQL starts empty and Liquibase creates the schema when the application starts, so there is nothing to
+set up. `docker compose up -d --wait` returns once the database is ready.
 
-Mongo Express (a MongoDB web UI) should be available at http://localhost:8081
+Adminer (a PostgreSQL web UI) should be available at http://localhost:8081 (server `postgres`, user, password and
+database `tunelad`).
 
 === Keycloak (local login)
 
@@ -251,7 +251,7 @@ The application exports its traces, metrics and logs with OpenTelemetry, over OT
 |===
 
 Open Grafana, then _Dashboards_ and the _Tune Lad_ folder: _Overview_ (traffic, latency, resources, then the logs and
-traces behind them), _HTTP and API_ (with MongoDB and repository timings) and _JVM and runtime_. They fill up as the
+traces behind them), _HTTP and API_ (with database connection pool usage) and _JVM and runtime_. They fill up as the
 application gets requests.
 
 The three are linked. In _Explore_, choose Tempo and search `{resource.service.name="tunelad"}`: open a trace, select a
@@ -311,22 +311,27 @@ Search shows the change within a few seconds.
 
 == Configuration
 
-=== MongoDB database
+=== PostgreSQL database
 
-MongoDB configuration lives in the `application.yml` file. `Track` documents are stored in a regular collection named `tracks` by the `track` module. Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in MongoDB GridFS under the track id and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges).
+Database configuration lives in the `application.yml` file. The application reads and writes through R2DBC; JDBC is only used where nothing reactive exists: Liquibase, which creates the schema at startup, and the Spring Modulith Event Publication Registry. There is a single schema; each module owns the tables that carry its prefix, and no foreign key crosses a module: modules refer to each other by id or key only.
 
-Search follows CQRS: the `search` module keeps its own read model, the `search_tracks` collection with a MongoDB full-text index, and fills it from the `NewTrackSaved` events that the `track` module publishes. Events go through the Spring Modulith Event Publication Registry (the `event_publication` collection), and are delivered once the upload's MongoDB transaction has committed.
+The `track` module stores tracks in `track_tracks` (plain columns, tags as a `text[]`). Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in chunks (`media_files` and `media_chunks`) under the track id, in one transaction so that a failed upload leaves nothing behind, and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges). Waveforms are in `media_waveforms`, accounts in `account_accounts`.
+
+Search follows CQRS: the `search` module keeps its own read model, the `search_tracks` table with a PostgreSQL full-text index (English configuration, title weighted above description), and fills it from the `NewTrackSaved` events that the `track` module publishes. Events go through the Spring Modulith Event Publication Registry (the `event_publication` table), and are delivered once the upload's transaction has committed.
+
+The schema lives in `src/main/resources/db/changelog`, one Liquibase changelog per module.
 
 [source, yaml]
 ----
 spring:
-    mongodb:
-    database: 'tunelad'
-    password: 'tunelad'
-    username: 'tunelad'
-    authentication-database: 'admin'
-    host: 'localhost'
-    port: 27017
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/tunelad
+    username: tunelad
+    password: tunelad
+  datasource: # JDBC, for the event registry
+    url: jdbc:postgresql://localhost:5432/tunelad
+    username: tunelad
+    password: tunelad
 ----
 
 == UI

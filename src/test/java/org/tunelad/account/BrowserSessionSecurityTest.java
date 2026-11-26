@@ -7,8 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -55,7 +54,7 @@ class BrowserSessionSecurityTest {
     WebSessionManager sessionManager;
 
     @Autowired
-    ReactiveMongoTemplate mongo;
+    DatabaseClient db;
 
     @Autowired
     GrantedAuthoritiesMapper authoritiesMapper;
@@ -69,7 +68,7 @@ class BrowserSessionSecurityTest {
                 .configureClient()
                 .responseTimeout(Duration.ofSeconds(30))
                 .build();
-        mongo.remove(new Query(), "tracks").block();
+        db.sql("DELETE FROM track_tracks").then().block();
     }
 
     // --- Requirement: Log in through an OpenID Connect provider ------------------------------
@@ -166,7 +165,8 @@ class BrowserSessionSecurityTest {
                 .exchange()
                 .expectStatus().isForbidden();
 
-        assertThat(mongo.count(new Query(), "tracks").block()).isZero();
+        assertThat(db.sql("SELECT count(*) AS n FROM track_tracks").map(row -> row.get("n", Long.class)).one().block())
+                .isZero();
     }
 
     @Test

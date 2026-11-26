@@ -1,12 +1,10 @@
 package org.tunelad.media;
 
-import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -23,8 +21,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Query.query;
 
 /**
  * Tests for openspec/specs/media (its REST requirements): one test per spec scenario, named after it.
@@ -101,11 +97,8 @@ class MediaApiTest extends AbstractApiTest {
     @Test
     void audio_stored_before_formats_were_recorded() {
         var id = uploadKneesUp();
-        // Audio stored before this change has no content type in its GridFS metadata
-        mongo.getCollection("fs.files")
-                .flatMap(files -> Mono.from(files.updateMany(new Document("filename", id),
-                        new Document("$unset", new Document("metadata._contentType", "")))))
-                .block();
+        // Audio stored before formats were recorded has no content type
+        db.sql("UPDATE media_files SET content_type = '' WHERE file_key = :key").bind("key", id).then().block();
 
         play(id).expectStatus().is2xxSuccessful()
                 .expectHeader().contentTypeCompatibleWith("audio/mpeg")
@@ -119,7 +112,7 @@ class MediaApiTest extends AbstractApiTest {
     }
 
     // --- Requirement: Serve a byte range of a track's audio -----------------------------------
-    // Knees_Up.mp3 is 3,315,251 bytes, stored as GridFS chunks of 261,120 bytes.
+    // Knees_Up.mp3 is 3,315,251 bytes, stored as chunks of 261,120 bytes.
 
     @Test
     void range_in_the_middle_of_the_file() throws Exception {
@@ -309,8 +302,8 @@ class MediaApiTest extends AbstractApiTest {
         var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
         awaitWaveform(id, "READY");
         // As if still being computed
-        mongo.updateFirst(query(where("_id").is(id)),
-                new Update().set("status", "PENDING").set("peaks", List.of()), "waveforms").block();
+        db.sql("UPDATE media_waveforms SET status = 'PENDING', peaks = '{}' WHERE file_key = :key")
+                .bind("key", id).then().block();
 
         var waveform = getWaveform(id)
                 .expectStatus().isOk()

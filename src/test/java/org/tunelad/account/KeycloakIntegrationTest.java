@@ -20,7 +20,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
-import org.tunelad.MongoContainerDefinition;
+import org.tunelad.PostgresContainerDefinition;
 import org.tunelad.track.TrackDTO;
 
 import java.time.Duration;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(MongoContainerDefinition.class)
+@Import(PostgresContainerDefinition.class)
 class KeycloakIntegrationTest {
 
     /** The image docker-compose.yaml runs, so tests and local development use the same Keycloak. */

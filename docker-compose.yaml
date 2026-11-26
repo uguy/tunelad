@@ -1,47 +1,28 @@
 services:
-  mongo:
-    container_name: mongo
-    image: mongo:7.0
+  postgres:
+    container_name: postgres
+    image: postgres:17
     environment:
-      MONGO_INITDB_ROOT_USERNAME: 'tunelad'
-      MONGO_INITDB_ROOT_PASSWORD: 'tunelad'
-      MONGO_INITDB_DATABASE: 'tunelad'
-    # Single-node replica set, so the application can use MongoDB transactions.
-    # A replica set with authentication needs a key file; a fresh one is generated on each start.
-    entrypoint:
-      - bash
-      - -c
-      - |
-        head -c 756 /dev/urandom | base64 > /tmp/mongo-keyfile
-        chmod 400 /tmp/mongo-keyfile
-        chown mongodb:mongodb /tmp/mongo-keyfile
-        exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /tmp/mongo-keyfile --bind_ip_all
-    # Initiates the replica set on first start, then reports whether it is up.
+      POSTGRES_USER: 'tunelad'
+      POSTGRES_PASSWORD: 'tunelad'
+      POSTGRES_DB: 'tunelad'
     healthcheck:
-      test: >-
-        mongosh --quiet -u tunelad -p tunelad --authenticationDatabase admin --eval
-        "try { rs.status().ok } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}).ok }"
+      test: ['CMD-SHELL', 'pg_isready -U tunelad -d tunelad']
       interval: 5s
-      timeout: 10s
-      start_period: 10s
-      retries: 30
+      timeout: 5s
+      retries: 20
     ports:
-      - '27017:27017'
+      - '5432:5432'
 
-  mongo-express:
-    container_name: mongo-express
-    image: mongo-express
+  # Web UI for PostgreSQL: server postgres, user/password/database tunelad
+  adminer:
+    container_name: adminer
+    image: adminer
     depends_on:
-      mongo:
+      postgres:
         condition: service_healthy
-    environment:
-      # The replica set member is registered as localhost:27017, which only resolves from the host:
-      # connect directly instead of discovering the set.
-      ME_CONFIG_MONGODB_URL: "mongodb://mongo:27017/?directConnection=true"
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "tunelad"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "tunelad"
     ports:
-      - '8081:8081'
+      - '8081:8080'
 
   # OpenID Connect provider for local login, standing in for Google and friends.
   # Imports the `tunelad` realm (client and test users alice/alice, bob/bob) on start: local development only.
@@ -55,7 +36,7 @@ services:
       KC_HEALTH_ENABLED: 'true'
     volumes:
       - ./docker/keycloak/:/opt/keycloak/data/import/:ro
-    # The app (8080) and Mongo Express (8081) already use the usual ports
+    # The app (8080) and Adminer (8081) already use the usual ports
     ports:
       - '8180:8080'
 

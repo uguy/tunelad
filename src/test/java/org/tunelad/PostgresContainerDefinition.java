@@ -3,21 +3,22 @@ package org.tunelad;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
-import org.testcontainers.mongodb.MongoDBContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-/** MongoDB for application tests. Most tests import it through {@link TestContainerDefinitions}. */
+/**
+ * PostgreSQL for application tests, serving both the R2DBC and the JDBC connection. Most tests import it through
+ * {@link TestContainerDefinitions}.
+ */
 @TestConfiguration(proxyBeanMethods = false)
-public class MongoContainerDefinition {
+public class PostgresContainerDefinition {
 
     @Bean
     @ServiceConnection
-    public MongoDBContainer mongoContainer() {
-        // A replica set, because the application uses MongoDB transactions
-        return new MongoDBContainer("mongo:7.0")
-                .withReplicaSet()
+    public PostgreSQLContainer postgresContainer() {
+        return new PostgreSQLContainer("postgres:17")
                 .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
     }
 }

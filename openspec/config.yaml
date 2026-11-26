@@ -22,7 +22,7 @@ rules:
   tasks:
     - First task creates a feature branch named <type>/<short-kebab-name> from an up-to-date main
     - Each task group is one reviewable commit with a conventional commit message
-    - Every behaviour change has a test in the same task group (Testcontainers for Mongo, Playwright for UI flows)
+    - Every behaviour change has a test in the same task group (Testcontainers for PostgreSQL, Playwright for UI flows)
     - Last tasks are running ./mvnw clean verify, updating README.adoc features if user-visible, then opening a PR
 
 operations:

@@ -11,15 +11,15 @@ import java.util.UUID;
 @Component
 class DbTracks implements Tracks {
 
-    private final MongoTrackRepository mongoTrackRepository;
+    private final R2dbcTrackRepository trackRepository;
 
-    DbTracks(MongoTrackRepository mongoTrackRepository) {
-        this.mongoTrackRepository = mongoTrackRepository;
+    DbTracks(R2dbcTrackRepository trackRepository) {
+        this.trackRepository = trackRepository;
     }
 
     @Override
     public Flux<Track> findAll() {
-        return mongoTrackRepository.findAll();
+        return trackRepository.findAll();
     }
 
     @Override
@@ -27,16 +27,16 @@ class DbTracks implements Tracks {
         if (track.getId() == null || track.getId().isBlank()) {
             track.setId(UUID.randomUUID().toString());
         }
-        return mongoTrackRepository.save(track);
+        return trackRepository.save(track);
     }
 
     @Override
     public Mono<Track> findById(String id) {
-        return mongoTrackRepository.findById(id);
+        return trackRepository.findById(id);
     }
 
     @Override
     public Mono<Void> delete(Track track) {
-        return mongoTrackRepository.delete(track);
+        return trackRepository.delete(track);
     }
 }

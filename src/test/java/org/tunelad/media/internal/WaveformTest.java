@@ -7,8 +7,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
-import org.springframework.data.mongodb.core.ReactiveMongoOperations;
-import org.springframework.data.mongodb.gridfs.ReactiveGridFsOperations;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.tunelad.TestContainerDefinitions;
@@ -26,10 +25,9 @@ import static org.awaitility.Awaitility.await;
 @Import(TestContainerDefinitions.class)
 class WaveformTest {
 
-    @Autowired GridFsMediaStore store;
+    @Autowired ChunkedMediaStore store;
     @Autowired Waveforms waveforms;
-    @Autowired ReactiveGridFsOperations gridFs;
-    @Autowired ReactiveMongoOperations mongo;
+    @Autowired DatabaseClient db;
     @Autowired WaveformBackfill backfill;
 
     @Test
@@ -78,10 +76,10 @@ class WaveformTest {
     @Test
     void without_ffmpeg_the_waveform_stays_pending() {
         var key = UUID.randomUUID().toString();
-        gridFs.store(fixture("audio/tune.wav"), key).block();
-        waveforms.save(Waveform.pending(key)).block();
+        storeWithoutAnnouncing(key, "audio/tune.wav");
+        waveforms.savePending(key).block();
         var withoutFfmpeg = new WaveformComputer(store,
-                new FfmpegPeakExtractor(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30))), mongo);
+                new FfmpegPeakExtractor(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30))), waveforms);
 
         withoutFfmpeg.compute(key).block();
 
@@ -92,7 +90,7 @@ class WaveformTest {
     void computing_the_waveform_of_deleted_audio_does_nothing() {
         var key = UUID.randomUUID().toString();
         var computer = new WaveformComputer(store,
-                new FfmpegPeakExtractor(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30))), mongo);
+                new FfmpegPeakExtractor(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30))), waveforms);
 
         computer.compute(key).block();
 
@@ -102,12 +100,26 @@ class WaveformTest {
     @Test
     void backfill_computes_the_waveform_of_audio_stored_without_one() {
         var key = UUID.randomUUID().toString();
-        // As audio stored before waveforms existed: straight into GridFS, with no waveform
-        gridFs.store(fixture("mp3/Knees_Up.mp3"), key).block();
+        // As audio stored before waveforms existed: straight into the tables, with no waveform
+        storeWithoutAnnouncing(key, "mp3/Knees_Up.mp3");
 
         backfill.run().block();
 
         assertThat(waveforms.findById(key).block().status()).isEqualTo(WaveformStatus.READY);
+    }
+
+    /** Puts audio in the tables as one chunk, without the event and the pending waveform that storing it brings. */
+    private void storeWithoutAnnouncing(String key, String path) {
+        var audio = DataBufferUtils.join(fixture(path)).map(buffer -> {
+            var bytes = new byte[buffer.readableByteCount()];
+            buffer.read(bytes);
+            DataBufferUtils.release(buffer);
+            return bytes;
+        }).block();
+        db.sql("INSERT INTO media_files (file_key, length, chunk_size, content_type) VALUES (:key, :length, :size, 'audio/mpeg')")
+                .bind("key", key).bind("length", (long) audio.length).bind("size", audio.length).then().block();
+        db.sql("INSERT INTO media_chunks (file_key, n, data) VALUES (:key, 0, :data)")
+                .bind("key", key).bind("data", java.nio.ByteBuffer.wrap(audio)).then().block();
     }
 
     private Waveform awaitStatus(String key, WaveformStatus status) {

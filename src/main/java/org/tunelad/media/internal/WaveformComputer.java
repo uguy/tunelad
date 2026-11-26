@@ -1,19 +1,13 @@
 package org.tunelad.media.internal;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.ReactiveMongoOperations;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Query.query;
 
 /**
  * Computes the waveform of stored audio, and saves it as {@link WaveformStatus#READY} or {@link WaveformStatus#FAILED}.
@@ -25,15 +19,15 @@ import static org.springframework.data.mongodb.core.query.Query.query;
 @Component
 public class WaveformComputer {
 
-    private final GridFsMediaStore store;
+    private final ChunkedMediaStore store;
     private final FfmpegPeakExtractor extractor;
-    private final ReactiveMongoOperations mongo;
+    private final Waveforms waveforms;
     private final AtomicBoolean ffmpegMissingReported = new AtomicBoolean();
 
-    WaveformComputer(GridFsMediaStore store, FfmpegPeakExtractor extractor, ReactiveMongoOperations mongo) {
+    WaveformComputer(ChunkedMediaStore store, FfmpegPeakExtractor extractor, Waveforms waveforms) {
         this.store = store;
         this.extractor = extractor;
-        this.mongo = mongo;
+        this.waveforms = waveforms;
     }
 
     /**
@@ -69,7 +63,6 @@ public class WaveformComputer {
     }
 
     private Mono<Void> save(String key, WaveformStatus status, List<Double> peaks) {
-        var update = new Update().set("status", status).set("peaks", peaks).set("computedAt", Instant.now());
-        return mongo.updateFirst(query(where("_id").is(key)), update, Waveform.class).then();
+        return waveforms.complete(key, status, peaks);
     }
 }

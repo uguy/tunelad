@@ -1,12 +1,12 @@
 # Tune Lad
 
 Playground app: upload an mp3 with a description, list/search tracks, play them in the browser.
-Spring Boot (WebFlux, Spring Modulith, MongoDB + GridFS) backend in `src/`, SvelteKit + Tailwind
+Spring Boot (WebFlux, Spring Modulith, R2DBC + PostgreSQL, Liquibase) backend in `src/`, SvelteKit + Tailwind
 frontend in `app/`. The point of the repo is learning these tools, so prefer their idiomatic use.
 
 ## Commands
 
-- `docker compose up -d` - MongoDB (plus Mongo Express, Keycloak, and the observability stack: OpenTelemetry Collector, Tempo, Loki, Prometheus, Grafana) for running the app locally
+- `docker compose up -d` - PostgreSQL (plus Adminer, Keycloak, and the observability stack: OpenTelemetry Collector, Tempo, Loki, Prometheus, Grafana) for running the app locally
 - `./mvnw clean verify` - full build: frontend (incl. `bun run lint` and `bun run check`), backend, all tests (Java, vitest in `test`, Playwright e2e in
   `integration-test`). This is the CI gate; run it before opening a PR. `-DskipITs` skips e2e, `-DskipTests` skips all tests
 - `cd app && bun run dev` - frontend with live reload

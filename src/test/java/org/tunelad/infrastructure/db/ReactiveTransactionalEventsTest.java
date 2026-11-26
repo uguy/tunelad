@@ -1,6 +1,5 @@
 package org.tunelad.infrastructure.db;
 
-import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +8,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.tunelad.TestContainerDefinitions;
 import org.tunelad.infrastructure.ReactiveTransactional;
@@ -29,7 +28,7 @@ import static org.awaitility.Awaitility.await;
 /**
  * Spike turned regression test (openspec change search-read-model, design D1): how Spring Modulith's
  * {@code @ApplicationModuleListener} and Event Publication Registry behave with an event published from a reactive
- * MongoDB transaction.
+ * R2DBC transaction.
  */
 @SpringBootTest
 @Import({TestContainerDefinitions.class, ReactiveTransactionalEventsTest.Spike.class})
@@ -38,11 +37,12 @@ class ReactiveTransactionalEventsTest {
     record SpikeEvent(String id) {}
 
     @Autowired SpikeService service;
-    @Autowired ReactiveMongoTemplate reactiveMongo;
-    @Autowired MongoTemplate mongo;
+    @Autowired DatabaseClient db;
+    @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
     void reset() {
+        db.sql("CREATE TABLE IF NOT EXISTS spike (id TEXT PRIMARY KEY)").then().block();
         SpikeListener.handled.clear();
         SpikeListener.published.clear();
     }
@@ -56,7 +56,7 @@ class ReactiveTransactionalEventsTest {
 
         await().atMost(Duration.ofSeconds(5)).until(() -> SpikeListener.handled.containsKey(id));
         assertThat(SpikeListener.handled.get(id)).doesNotStartWith("reactor-http").doesNotContain("nioEventLoop");
-        assertThat(reactiveMongo.exists(byId(id), "spike").block()).isTrue();
+        assertThat(inserted(id)).isTrue();
     }
 
     // D1 question 1: not delivered on rollback
@@ -71,7 +71,7 @@ class ReactiveTransactionalEventsTest {
         // ...but the transaction rolled back, so neither the document nor the delivery happened.
         await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(2))
                 .until(() -> !SpikeListener.handled.containsKey(id));
-        assertThat(reactiveMongo.exists(byId(id), "spike").block()).isFalse();
+        assertThat(inserted(id)).isFalse();
     }
 
     // D1 question 2: the registry stores the publication with blocking calls, on the publishing thread
@@ -93,26 +93,23 @@ class ReactiveTransactionalEventsTest {
 
         StepVerifier.create(service.saveAndPublish(id, true)).verifyError(IllegalStateException.class);
 
-        var publication = mongo.findOne(
-                org.springframework.data.mongodb.core.query.Query.query(
-                        org.springframework.data.mongodb.core.query.Criteria.where("event._id").is(id)),
-                Document.class, "event_publication");
-        assertThat(publication).isNotNull();
-        assertThat(publication.getString("status")).isEqualTo("PUBLISHED");
-        assertThat(publication.get("completionDate")).isNull();
+        var publication = jdbc.queryForMap(
+                "SELECT status, completion_date FROM event_publication WHERE serialized_event LIKE ?", "%" + id + "%");
+        assertThat(publication.get("status")).isEqualTo("PUBLISHED");
+        assertThat(publication.get("completion_date")).isNull();
     }
 
-    private static org.springframework.data.mongodb.core.query.Query byId(String id) {
-        return org.springframework.data.mongodb.core.query.Query.query(
-                org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
+    private boolean inserted(String id) {
+        return db.sql("SELECT count(*) AS n FROM spike WHERE id = :id").bind("id", id)
+                .map(row -> row.get("n", Long.class)).one().block() > 0;
     }
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Spike {
 
         @Bean
-        SpikeService spikeService(ReactiveMongoTemplate mongo, TransactionalEvents events) {
-            return new SpikeService(mongo, events);
+        SpikeService spikeService(DatabaseClient db, TransactionalEvents events) {
+            return new SpikeService(db, events);
         }
 
         @Bean
@@ -123,17 +120,17 @@ class ReactiveTransactionalEventsTest {
 
     static class SpikeService {
 
-        private final ReactiveMongoTemplate mongo;
+        private final DatabaseClient db;
         private final TransactionalEvents events;
 
-        SpikeService(ReactiveMongoTemplate mongo, TransactionalEvents events) {
-            this.mongo = mongo;
+        SpikeService(DatabaseClient db, TransactionalEvents events) {
+            this.db = db;
             this.events = events;
         }
 
         @ReactiveTransactional
         public Mono<Void> saveAndPublish(String id, boolean failAfterPublishing) {
-            return mongo.insert(new Document("_id", id), "spike")
+            return db.sql("INSERT INTO spike (id) VALUES (:id)").bind("id", id).then()
                     .then(events.publish(new SpikeEvent(id)))
                     .then(failAfterPublishing ? Mono.error(new IllegalStateException("rollback")) : Mono.empty());
         }

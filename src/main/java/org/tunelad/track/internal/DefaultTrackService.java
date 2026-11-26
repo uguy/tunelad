@@ -1,7 +1,6 @@
 package org.tunelad.track.internal;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -56,7 +55,7 @@ class DefaultTrackService implements TrackService {
     public Mono<TrackDTO> execute(AddTrackCommand command) {
         var track = new Track();
         // Known up front, so the audio can be stored under the track's id before the track exists
-        track.setId(new ObjectId().toHexString());
+        track.setId(java.util.UUID.randomUUID().toString());
         track.setTitle(command.title());
         track.setArtist(new Artist(command.artist()));
         track.setAlbum(command.album());

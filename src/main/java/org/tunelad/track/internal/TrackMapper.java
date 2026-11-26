@@ -11,6 +11,7 @@ public interface TrackMapper extends ModelMapper<TrackDTO, Track> {
         return new Artist(value);
     }
     default String map(Artist value){
-        return value.name();
+        // A track without an artist name has no artist: its columns are all null
+        return value == null ? null : value.name();
     }
 }
