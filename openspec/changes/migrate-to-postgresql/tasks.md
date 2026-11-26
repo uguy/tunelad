@@ -15,7 +15,7 @@
 
 ## 4. Track module
 
-- [ ] 4.1 Add `track` changelog (`track_tracks`, `text[]` tags with GIN index), map `Track` with `@Embedded` `Artist`/`TrackOwner` and `@Version`, replace `MongoTrackRepository`/`DbTracks`. Verify: `TrackApiTest`, `FailedUploadTest`, `DefaultTrackServiceUploadTest` pass, plus an optimistic-locking test. Commit `refactor(track): store tracks in postgresql`.
+- [x] 4.1 Add `track` changelog (`track_tracks`, `text[]` tags with GIN index), map `Track` with `@Embedded` `Artist`/`TrackOwner` and `@Version`, replace `MongoTrackRepository`/`DbTracks`. Verify: `TrackApiTest`, `FailedUploadTest`, `DefaultTrackServiceUploadTest` pass, plus an optimistic-locking test. Commit `refactor(track): store tracks in postgresql`.
 
 ## 5. Media module
 

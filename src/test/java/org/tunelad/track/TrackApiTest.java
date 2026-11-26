@@ -176,7 +176,7 @@ class TrackApiTest extends AbstractApiTest {
     }
 
     private long storedAudioFiles() {
-        return mongo.getCollection("fs.files").flatMap(files -> Mono.from(files.countDocuments())).block();
+        return count("media_files", null);
     }
 
     @TempDir

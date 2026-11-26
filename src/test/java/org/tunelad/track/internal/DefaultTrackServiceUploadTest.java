@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * The upload's own cleanup (design.md decision 4). The MongoDB driver already removes the chunks of a GridFS upload
+ * The upload's own cleanup (design.md decision 4). The audio store already rolls back the chunks of a failed upload
  * that fails or is cancelled, so the API tests in {@code FailedUploadTest} pass either way. These check that the
  * service deletes the audio itself, whatever the store does.
  */
@@ -67,7 +67,7 @@ class DefaultTrackServiceUploadTest {
     void failed_cleanup_keeps_the_original_error() {
         when(mediaStore.store(anyString(), any(), anyString()))
                 .thenReturn(Mono.error(new IOException("Simulated storage failure")));
-        when(mediaStore.delete(anyString())).thenReturn(Mono.error(new IllegalStateException("Mongo is gone")));
+        when(mediaStore.delete(anyString())).thenReturn(Mono.error(new IllegalStateException("Storage is gone")));
 
         StepVerifier.create(service.execute(command))
                 .expectError(IOException.class)
