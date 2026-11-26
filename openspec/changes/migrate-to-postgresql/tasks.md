@@ -3,7 +3,7 @@
 ## 1. Branch and build setup
 
 - [x] 1.1 Create branch `refactor/migrate-to-postgresql` from an up-to-date `main`. Verify: `git branch --show-current`.
-- [ ] 1.2 Swap dependencies in `pom.xml` (remove MongoDB starters/Testcontainers Mongo; add R2DBC, r2dbc-postgresql, JDBC driver, Liquibase, `spring-modulith-starter-jdbc`, Testcontainers PostgreSQL) and replace `mongo`/`mongo-express` in `docker-compose.yaml` with Postgres. Verify: `docker compose up -d` brings Postgres up healthy. Commit `build(deps): add postgresql, r2dbc and liquibase`.
+- [x] 1.2 Swap dependencies in `pom.xml` (remove MongoDB starters/Testcontainers Mongo; add R2DBC, r2dbc-postgresql, JDBC driver, Liquibase, `spring-modulith-starter-jdbc`, Testcontainers PostgreSQL) and replace `mongo`/`mongo-express` in `docker-compose.yaml` with Postgres. Verify: `docker compose up -d` brings Postgres up healthy. Commit `build(deps): add postgresql, r2dbc and liquibase`.
 
 ## 2. Datasource, transactions and Liquibase skeleton
 
