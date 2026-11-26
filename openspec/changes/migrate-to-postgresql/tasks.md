@@ -23,7 +23,7 @@
 
 ## 6. Search module
 
-- [ ] 6.1 Add `search` changelog (`search_tracks` with generated `tsvector` and GIN index); rewrite `SearchTracks`/`TrackSearch` with `DatabaseClient` (any-word match via `or`, `ts_rank` ordering, blank query returns all). Verify: search API tests cover every scenario in `openspec/specs/search/spec.md` and pass. Commit `refactor(search): use postgresql full-text search`.
+- [x] 6.1 Add `search` changelog (`search_tracks` with generated `tsvector` and GIN index); rewrite `SearchTracks`/`TrackSearch` with `DatabaseClient` (any-word match via `or`, `ts_rank` ordering, blank query returns all). Verify: search API tests cover every scenario in `openspec/specs/search/spec.md` and pass. Commit `refactor(search): use postgresql full-text search`.
 
 ## 7. Cleanup and docs
 
