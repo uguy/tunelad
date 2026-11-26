@@ -697,7 +697,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(r2dbc_pool_acquired{application=\"$application\"})",
+          "expr": "sum(r2dbc_pool_acquired_connections{application=\"$application\"})",
           "legendFormat": "acquired",
           "refId": "A",
           "editorMode": "code",
@@ -754,7 +754,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(r2dbc_pool_pending{application=\"$application\"})",
+          "expr": "sum(r2dbc_pool_pending_connections{application=\"$application\"})",
           "legendFormat": "pending",
           "refId": "A",
           "editorMode": "code",
