@@ -36,6 +36,7 @@ build/
 # Node
 ######################
 **/node/
+**/bun/
 **/node_tmp/
 **/node_modules/
 **/npm-debug.log.*

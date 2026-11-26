@@ -24,7 +24,7 @@ updates:
       default-days: 7
 
   # Maintain dependencies for node
-  - package-ecosystem: "npm"
+  - package-ecosystem: "bun"
     directory: "/app"
     target-branch: main
     schedule:

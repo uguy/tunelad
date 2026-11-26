@@ -20,13 +20,12 @@
 
 		<!-- Tools versions-->
 		<java.version>25</java.version>
-		<node.version>v26.11.1</node.version>
-		<npm.version>11.20.0</npm.version>
+		<bun.version>v1.4.5</bun.version>
 
 		<!-- Tests: -DskipTests skips Java and frontend tests, -DskipITs skips only the e2e tests -->
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
-		<playwright.install.args>playwright install chromium</playwright.install.args>
+		<playwright.install.args>x playwright install chromium</playwright.install.args>
 
 		<!-- Dependencies versions -->
 		<spring-boot.version>4.1.2</spring-boot.version>
@@ -286,25 +285,27 @@
 				</configuration>
 				<executions>
 					<execution>
-						<id>install-node-and-npm</id>
+						<id>install-bun</id>
 						<goals>
-							<goal>install-node-and-npm</goal>
+							<goal>install-bun</goal>
 						</goals>
 						<configuration>
-							<nodeVersion>${node.version}</nodeVersion>
-							<npmVersion>${npm.version}</npmVersion>
+							<bunVersion>${bun.version}</bunVersion>
 						</configuration>
 					</execution>
 					<execution>
-						<id>npm install</id>
+						<id>bun install</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
+						<configuration>
+							<arguments>install --frozen-lockfile</arguments>
+						</configuration>
 					</execution>
 					<execution>
 						<id>webapp format</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
@@ -314,7 +315,7 @@
 					<execution>
 						<id>webapp lint</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
@@ -324,7 +325,7 @@
 					<execution>
 						<id>webapp check</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
@@ -334,7 +335,7 @@
 					<execution>
 						<id>webapp build</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
@@ -344,7 +345,7 @@
 					<execution>
 						<id>playwright install</id>
 						<goals>
-							<goal>npx</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>generate-test-resources</phase>
 						<configuration>
@@ -355,7 +356,7 @@
 					<execution>
 						<id>webapp unit tests</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>test</phase>
 						<configuration>
@@ -366,7 +367,7 @@
 					<execution>
 						<id>webapp e2e tests</id>
 						<goals>
-							<goal>npm</goal>
+							<goal>bun</goal>
 						</goals>
 						<phase>integration-test</phase>
 						<configuration>
@@ -412,7 +413,7 @@
 				</property>
 			</activation>
 			<properties>
-				<playwright.install.args>playwright install --with-deps chromium</playwright.install.args>
+				<playwright.install.args>x playwright install --with-deps chromium</playwright.install.args>
 			</properties>
 		</profile>
 	</profiles>

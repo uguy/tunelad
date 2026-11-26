@@ -7,10 +7,10 @@ frontend in `app/`. The point of the repo is learning these tools, so prefer the
 ## Commands
 
 - `docker compose up -d` - MongoDB (plus Mongo Express, Keycloak, and the observability stack: OpenTelemetry Collector, Tempo, Loki, Prometheus, Grafana) for running the app locally
-- `./mvnw clean verify` - full build: frontend (incl. `npm run lint` and `npm run check`), backend, all tests (Java, vitest in `test`, Playwright e2e in
+- `./mvnw clean verify` - full build: frontend (incl. `bun run lint` and `bun run check`), backend, all tests (Java, vitest in `test`, Playwright e2e in
   `integration-test`). This is the CI gate; run it before opening a PR. `-DskipITs` skips e2e, `-DskipTests` skips all tests
-- `cd app && npm run dev` - frontend with live reload
-- `cd app && npm run format` - format frontend sources (CI does not do it for you)
+- `cd app && bun run dev` - frontend with live reload
+- `cd app && bun run format` - format frontend sources (CI does not do it for you)
 
 Tests use Testcontainers, so Docker must be running.
 

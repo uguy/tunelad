@@ -81,7 +81,7 @@ This simple app allows to store an mp3 file with some description and play it vi
 - a java (jdk25 or later)
 - maven (optional if you choose to use https://github.com/takari/maven-wrapper[maven wrapper script])
 - Docker and Docker Compose
-- NodeJS v24.11.1 (npm v11.6.2) or later
+- Bun v1.4 or later
 - https://ffmpeg.org[ffmpeg] on the `PATH` (check with `ffmpeg -version`; e.g. `sudo apt install ffmpeg`), to compute
   track waveforms. The backend tests need it. Without it the app still runs, but waveforms stay pending until it is
   installed and the app restarted. Another location can be set with `tunelad.media.ffmpeg.path`.
@@ -117,7 +117,7 @@ Use the usual maven flags to skip tests:
 ./mvnw verify -DskipTests  # skip all Java and frontend tests
 ----
 
-From the `app/` folder, `npm run test:unit` and `npm run test:e2e` run each frontend suite on its own.
+From the `app/` folder, `bun run test:unit` and `bun run test:e2e` run each frontend suite on its own.
 
 ==== Frontend
 
@@ -127,14 +127,14 @@ Svelte frontend is build during maven backend build but if your want livereload 
 
 [source,bash,subs="attributes"]
 ----
-npm run dev -- --open
+bun run dev -- --open
 ----
 
 You should format frontend resource by running the following command (todo: make this a git commit hook).
 
 [source,bash,subs="attributes"]
 ----
-npm run format
+bun run format
 ----
 
 
