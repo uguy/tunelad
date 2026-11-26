@@ -6,12 +6,18 @@
 
 	import PlayerBar from '#lib/PlayerBar.svelte';
 	import { player } from '#lib/player.svelte.js';
+	import { live } from '#lib/live.svelte.js';
+	import { session } from '#lib/session.svelte.js';
+	import { onMount } from 'svelte';
 
 	import { pwaInfo } from 'virtual:pwa-info';
 
 	let { children } = $props();
 
 	const webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
+
+	// One live connection for the tab, opened once it is known who is logged in, and reopened if that changes
+	onMount(() => live.follow(() => (session.loaded ? (session.account?.id ?? null) : undefined)));
 </script>
 
 <svelte:head>

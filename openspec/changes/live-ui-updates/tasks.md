@@ -38,8 +38,8 @@ Commit: `feat(live): stream live updates through nats and server-sent events`
 
 Commit: `feat(ui): keep a live connection to the server`
 
-- [ ] 5.1 Add `app/src/lib/live.svelte.ts` (single `EventSource('/api/live')`, `on(type, handler)` returning an unsubscribe function, a reconnect notification, reopen when the account changes) and start it from `app/src/routes/+layout.svelte`; verify with vitest tests using a fake `EventSource`: one connection across navigation, handlers called by type and removed on unsubscribe, reconnect notification after an error then open, reopen on login and logout
-- [ ] 5.2 Run `cd app && bun run format && bun run lint && bun run check`; verify they pass
+- [x] 5.1 Add `app/src/lib/live.svelte.ts` (single `EventSource('/api/live')`, `on(type, handler)` returning an unsubscribe function, a reconnect notification, reopen when the account changes) and start it from `app/src/routes/+layout.svelte`; verify with vitest tests using a fake `EventSource`: one connection across navigation, handlers called by type and removed on unsubscribe, reconnect notification after an error then open, reopen on login and logout
+- [x] 5.2 Run `cd app && bun run format && bun run lint && bun run check`; verify they pass
 
 ## 6. Live tracks list and waveforms
 
