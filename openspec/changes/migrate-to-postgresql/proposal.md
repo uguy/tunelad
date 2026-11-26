@@ -18,7 +18,7 @@ single relational store, and is a chance to learn Spring Data R2DBC and Liquibas
 - Store audio in chunked tables (`media_files` + `media_chunks`), keeping byte-range reads for HTTP 206.
 - Search uses PostgreSQL full-text search (English configuration, GIN index) with the same observable behaviour.
 - Start from an empty database: **no data migration** from MongoDB.
-- No REST API change, no breaking change, no UI change.
+- No REST API change, no breaking change, no UI redesign (the About page only reads the `r2dbc` health component instead of `mongo`).
 
 ## Capabilities
 
@@ -35,7 +35,7 @@ pure refactor, so the change sets `skip_specs: true`.
 ## Impact
 
 - **Modulith modules**: `track`, `search`, `account`, `media`, plus `infrastructure` (transactions, event
-  registry). REST API: unchanged. UI: unchanged. Breaking REST API changes: none.
+  registry). REST API: unchanged. UI: only the About page database status. Breaking REST API changes: none.
 - **Code**: entities and repositories in each module, `GridFsMediaStore`, `TrackSearch`, `Accounts`,
   `MongoTransactionConfig`, `ReactiveTransactional`, `TransactionalEvents`, `application.yml`.
 - **Dependencies** (`pom.xml`): drop the MongoDB starters and `testcontainers-mongodb`; add
@@ -50,7 +50,7 @@ pure refactor, so the change sets `skip_specs: true`.
 - Migrating existing MongoDB data.
 - JSON/JSONB columns (a possible later learning experiment).
 - Moving audio to object storage or the filesystem.
-- Any REST API, OpenAPI or UI change.
+- Any REST API or OpenAPI change, and any UI change beyond the About page health reading.
 - Sharing the Keycloak database with the app's PostgreSQL instance.
 
 ## PR title

@@ -24,6 +24,10 @@ and Liquibase (runs once at startup, before requests are served).
 *Alternative:* JDBC/JPA everywhere, rejected: breaks the "stay reactive" rule and the learning goal.
 
 ### 2. Transaction managers
+Spring Boot configures no JDBC `DataSource` once an R2DBC `ConnectionFactory` exists, and would leave two transaction
+managers ambiguous, so one `PersistenceConfig` in the root package declares the JDBC pool, both managers and lets a
+Testcontainers `JdbcConnectionDetails` override the properties. It sits in the root package, not in `infrastructure`,
+so that Modulith module tests (which load a single module) get it too.
 `R2dbcTransactionManager` keeps the bean name `reactiveTransactionManager` (so `@ReactiveTransactional` and its
 Javadoc just change from "MongoDB" to "R2DBC"); the blocking `DataSourceTransactionManager` is `@Primary` for the
 registry and `@ApplicationModuleListener`. Replica-set requirements disappear. The registry write still happens on its
@@ -52,8 +56,8 @@ existing row unchanged (no-op update so `RETURNING` yields it); `registerLogin` 
 `last_login_at`. Atomic, so the duplicate-key retry disappears.
 
 ### 6. Audio in chunked tables
-`media_files(key unique, length, chunk_size, content_type)` and `media_chunks(file_id, n, data bytea)`, 256 KiB
-chunks. `store` re-chunks the incoming `DataBuffer` stream and inserts chunks inside one reactive transaction, so a
+`media_files(file_key, length, chunk_size, content_type)` and `media_chunks(file_key, n, data bytea)`, 255 KiB
+chunks (GridFS's size, so range boundaries are unchanged). `store` re-chunks the incoming `DataBuffer` stream and inserts chunks inside one reactive transaction, so a
 failed upload rolls back and the held-back-error / orphan-chunk workaround in `GridFsMediaStore` is removed.
 `Media.content(first, last)` queries only the chunks `n` covering the range and trims the first and last, as today.
 *Alternatives:* a single `bytea` per file (reads whole value), Large Objects (awkward with R2DBC), external storage
@@ -71,9 +75,14 @@ Root changelog `db/changelog/db.changelog-master.yaml` includes `db/changelog/<m
 (plus one for the registry table, copied from the Modulith version's PostgreSQL schema). Spring Boot runs Liquibase on
 the JDBC datasource at startup; Modulith's own schema initialisation is disabled.
 
-### 9. Tests and local run
+### 9. Health and observability
+Spring Boot reports an `r2dbc` health component (and a `db` one for the JDBC pool); the About page reads `r2dbc`
+instead of `mongo` (a small UI change the proposal did not foresee). The Grafana HTTP dashboard's Mongo panels become
+R2DBC and Hikari pool panels.
+
+### 10. Tests and local run
 `PostgreSQLContainer` with `@ServiceConnection` (serves both JDBC and R2DBC) replaces `MongoContainerDefinition`.
-`docker-compose.yaml` swaps `mongo` and `mongo-express` for a `postgres` service (optionally Adminer/pgAdmin).
+`docker-compose.yaml` swaps `mongo` and `mongo-express` for a `postgres` service plus Adminer on port 8081.
 
 ## Risks / Trade-offs
 

@@ -32,5 +32,5 @@
 
 ## 8. Verification and PR
 
-- [ ] 8.1 Run `./mvnw clean verify` and fix failures. Verify: build passes locally.
+- [x] 8.1 Run `./mvnw clean verify` and fix failures. Verify: build passes locally.
 - [ ] 8.2 Push the branch and open a PR titled `refactor(db): migrate persistence from mongodb to postgresql`.
