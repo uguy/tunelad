@@ -36,12 +36,12 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * Tests for the track spec's "A failed upload leaves nothing behind": a storage failure and an aborted upload leave
- * no track, no GridFS file or chunk, and publish no {@link NewTrackSaved}.
+ * no track, no stored audio file or chunk, and publish no {@link NewTrackSaved}.
  */
 @Import(FailedUploadTest.Config.class)
 class FailedUploadTest extends AbstractApiTest {
 
-    /** More than one GridFS chunk (255 KB), so some chunks are written before the failure. */
+    /** More than one audio chunk (255 KB), so some chunks are written before the failure. */
     private static final long FAIL_AFTER_BYTES = 600 * 1024;
 
     static final List<NewTrackSaved> saved = new CopyOnWriteArrayList<>();
@@ -65,8 +65,8 @@ class FailedUploadTest extends AbstractApiTest {
                 .expectStatus().is5xxServerError();
 
         assertThat(listTracks()).extracting(TrackDTO::title).doesNotContain("Broken");
-        assertThat(count("fs.files")).isZero();
-        assertThat(count("fs.chunks")).isZero();
+        assertThat(count("media_files", null)).isZero();
+        assertThat(count("media_chunks", null)).isZero();
         assertThat(saved).isEmpty();
     }
 
@@ -74,11 +74,11 @@ class FailedUploadTest extends AbstractApiTest {
     void client_aborts_during_the_upload() throws IOException {
         sendHalfAnUploadThenClose("Half Way");
 
-        // Nothing appears later either: not in the list, not in GridFS, and not in search within its 5 seconds
+        // Nothing appears later either: not in the list, not in the audio tables, and not in search within its 5 seconds
         await().during(Duration.ofSeconds(5)).atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             assertThat(listTracks()).extracting(TrackDTO::title).doesNotContain("Half Way");
-            assertThat(count("fs.files")).isZero();
-            assertThat(count("fs.chunks")).isZero();
+            assertThat(count("media_files", null)).isZero();
+            assertThat(count("media_chunks", null)).isZero();
             assertThat(search("half")).isEmpty();
         });
         assertThat(saved).isEmpty();
@@ -87,7 +87,7 @@ class FailedUploadTest extends AbstractApiTest {
     /**
      * The server parses the whole multipart body before the controller runs, so an aborted HTTP upload never reaches
      * the audio store. This covers a cancellation while the audio is being written, as when a client goes away
-     * during a slow write: the chunks written so far are deleted.
+     * during a slow write: the chunks written so far are rolled back.
      */
     @Test
     void upload_cancelled_while_the_audio_is_written() {
@@ -103,12 +103,13 @@ class FailedUploadTest extends AbstractApiTest {
                 TrackFormat.MP3, new TrackOwner("account-alice", "Alice Liddell"));
 
         var upload = trackService.execute(command).subscribe();
-        await().atMost(Duration.ofSeconds(10)).until(() -> count("fs.chunks") > 0);
+        // The chunks are written in a transaction, so they are not visible before it commits: wait for the audio instead
+        await().atMost(Duration.ofSeconds(10)).until(() -> sent.get() >= 4 * 256 * 1024);
         upload.dispose();
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            assertThat(count("fs.chunks")).isZero();
-            assertThat(count("fs.files")).isZero();
+            assertThat(count("media_chunks", null)).isZero();
+            assertThat(count("media_files", null)).isZero();
         });
         assertThat(listTracks()).extracting(TrackDTO::title).doesNotContain("Cancelled");
         assertThat(saved).isEmpty();
@@ -136,10 +137,6 @@ class FailedUploadTest extends AbstractApiTest {
             out.write(new byte[1024 * 1024]);
             out.flush();
         }
-    }
-
-    private long count(String collection) {
-        return mongo.getCollection(collection).flatMap(c -> Mono.from(c.countDocuments())).block();
     }
 
     private List<TrackDTO> search(String q) {
@@ -183,8 +180,8 @@ class FailedUploadTest extends AbstractApiTest {
 
         @Bean
         @Primary
-        FailingMediaStore failingMediaStore(@Qualifier("gridFsMediaStore") MediaStore gridFs) {
-            return new FailingMediaStore(gridFs);
+        FailingMediaStore failingMediaStore(@Qualifier("chunkedMediaStore") MediaStore chunked) {
+            return new FailingMediaStore(chunked);
         }
 
         @EventListener

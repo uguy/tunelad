@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.tunelad.infrastructure.NotFoundException;
-import org.tunelad.media.internal.GridFsMediaStore;
+import org.tunelad.media.internal.ChunkedMediaStore;
 import org.tunelad.media.internal.Media;
 import org.tunelad.media.internal.Waveform;
 import org.tunelad.media.internal.WaveformStatus;
@@ -41,7 +41,7 @@ import java.util.Optional;
 @RequestMapping("api/tracks")
 public class MediaController {
 
-    private final GridFsMediaStore store;
+    private final ChunkedMediaStore store;
     private final Waveforms waveforms;
 
     @GetMapping(value = "{id}/play",

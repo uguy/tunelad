@@ -19,7 +19,7 @@
 
 ## 5. Media module
 
-- [ ] 5.1 Add `media` changelog (`media_files`, `media_chunks`, `media_waveforms`); replace `GridFsMediaStore` with a chunked R2DBC store (transactional upload, range reads by chunk), map `Waveform`/`Waveforms`, update `WaveformBackfill`. Verify: `GridFsMediaStoreTest` (renamed), `MediaApiTest`, `WaveformTest` pass, including 200/206/416 range cases and a failed upload leaving no rows. Commit `refactor(media): store audio and waveforms in postgresql`.
+- [x] 5.1 Add `media` changelog (`media_files`, `media_chunks`, `media_waveforms`); replace `GridFsMediaStore` with a chunked R2DBC store (transactional upload, range reads by chunk), map `Waveform`/`Waveforms`, update `WaveformBackfill`. Verify: `GridFsMediaStoreTest` (renamed), `MediaApiTest`, `WaveformTest` pass, including 200/206/416 range cases and a failed upload leaving no rows. Commit `refactor(media): store audio and waveforms in postgresql`.
 
 ## 6. Search module
 
