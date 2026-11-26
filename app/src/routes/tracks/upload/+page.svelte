@@ -83,16 +83,16 @@
 
 <section class="mx-auto flex w-full max-w-2xl flex-col gap-6">
 	<div>
-		<a href={resolve('/tracks')} class="text-sm font-medium text-ink-muted hover:text-ink"
-			>← Tracks</a
-		>
+		<a href={resolve('/tracks')} class="text-sm font-medium text-ink-muted hover:text-ink">
+			← Tracks
+		</a>
 		<h1 class="mt-2 text-3xl font-bold tracking-tight">Upload a track</h1>
 	</div>
 
 	{#if session.account}
 		<form class="card space-y-4 p-6" aria-label="upload a track" onsubmit={submit}>
-			<label class={labelClass}
-				>Audio file (mp3, m4a, ogg, flac or wav, up to 100 MB)
+			<label class={labelClass}>
+				Audio file (mp3, m4a, ogg, flac or wav, up to 100 MB)
 				<input
 					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-accent-strong"
 					name="file"
@@ -100,26 +100,26 @@
 					accept={ACCEPTED_FILES}
 					required
 					bind:files
-				/></label
-			>
-			<label class={labelClass}
-				>Title <input class={inputClass} name="title" required bind:value={title} /></label
-			>
-			<label class={labelClass}
-				>Description <textarea
+				/>
+			</label>
+			<label class={labelClass}>
+				Title <input class={inputClass} name="title" required bind:value={title} />
+			</label>
+			<label class={labelClass}>
+				Description <textarea
 					class={inputClass}
 					rows="3"
 					name="description"
 					required
-					bind:value={description}></textarea></label
-			>
+					bind:value={description}></textarea>
+			</label>
 			<div class="grid gap-4 sm:grid-cols-2">
-				<label class={labelClass}
-					>Artist <input class={inputClass} name="artist" bind:value={artist} /></label
-				>
-				<label class={labelClass}
-					>Album <input class={inputClass} name="album" bind:value={album} /></label
-				>
+				<label class={labelClass}>
+					Artist <input class={inputClass} name="artist" bind:value={artist} />
+				</label>
+				<label class={labelClass}>
+					Album <input class={inputClass} name="album" bind:value={album} />
+				</label>
 			</div>
 
 			{#if status === 'uploading'}
@@ -155,9 +155,9 @@
 	{:else}
 		<p class="card p-6">
 			<!-- Served by the server, not the SPA router: it lists the login providers -->
-			<a href="/login" rel="external" class="font-semibold text-accent-strong hover:underline"
-				>Log in to upload</a
-			> a track.
+			<a href="/login" rel="external" class="font-semibold text-accent-strong hover:underline">
+				Log in to upload
+			</a> a track.
 		</p>
 	{/if}
 </section>

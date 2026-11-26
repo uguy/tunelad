@@ -76,28 +76,33 @@
 				class={iconButton}
 				aria-label="Previous track"
 				disabled={!player.hasPrevious}
-				onclick={() => player.previous()}><Icon name="previous" /></button
+				onclick={() => player.previous()}
 			>
+				<Icon name="previous" />
+			</button>
 			<button
 				type="button"
 				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-strong"
 				aria-label={player.paused ? 'Play' : 'Pause'}
 				onclick={() => player.toggle()}
-				><Icon name={player.paused ? 'play' : 'pause'} class="h-5 w-5" /></button
 			>
+				<Icon name={player.paused ? 'play' : 'pause'} class="h-5 w-5" />
+			</button>
 			<button
 				type="button"
 				class={iconButton}
 				aria-label="Next track"
 				disabled={!player.hasNext}
-				onclick={() => player.next()}><Icon name="next" /></button
+				onclick={() => player.next()}
 			>
+				<Icon name="next" />
+			</button>
 		</div>
 
 		<div class="hidden min-w-0 flex-1 items-center gap-3 sm:flex">
-			<span class="w-12 text-right text-xs tabular-nums text-accent-strong" data-testid="elapsed"
-				>{formatTime(player.currentTime)}</span
-			>
+			<span class="w-12 text-right text-xs tabular-nums text-accent-strong" data-testid="elapsed">
+				{formatTime(player.currentTime)}
+			</span>
 			<input
 				type="range"
 				aria-label="seek"
@@ -109,9 +114,9 @@
 				disabled={!player.duration}
 				oninput={(e) => player.seek(Number(e.currentTarget.value))}
 			/>
-			<span class="w-12 text-xs tabular-nums text-ink-muted" data-testid="duration"
-				>{formatTime(player.duration)}</span
-			>
+			<span class="w-12 text-xs tabular-nums text-ink-muted" data-testid="duration">
+				{formatTime(player.duration)}
+			</span>
 		</div>
 
 		<div class="group hidden items-center md:flex">
@@ -120,8 +125,9 @@
 				class={iconButton}
 				aria-label={player.muted ? 'Unmute' : 'Mute'}
 				onclick={() => player.toggleMute()}
-				><Icon name={player.muted || player.volume === 0 ? 'muted' : 'volume'} /></button
 			>
+				<Icon name={player.muted || player.volume === 0 ? 'muted' : 'volume'} />
+			</button>
 			<input
 				type="range"
 				aria-label="volume"
@@ -155,8 +161,10 @@
 				class={iconButton}
 				aria-label="Copy link at current time"
 				title="Copy link at current time"
-				onclick={copyLinkAtCurrentTime}><Icon name="link" /></button
+				onclick={copyLinkAtCurrentTime}
 			>
+				<Icon name="link" />
+			</button>
 			{#if copy?.status === 'copied'}
 				<span role="status" class="text-xs whitespace-nowrap text-ink-muted">Link copied</span>
 			{/if}

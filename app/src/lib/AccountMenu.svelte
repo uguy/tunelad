@@ -23,8 +23,10 @@
 		<span
 			class={mobile
 				? 'block px-3 py-2 text-base text-white'
-				: 'px-3 py-2 text-sm font-medium text-white'}>{session.account.displayName}</span
+				: 'px-3 py-2 text-sm font-medium text-white'}
 		>
+			{session.account.displayName}
+		</span>
 		<!-- A plain form post: the server ends the session, then redirects through the provider's logout -->
 		<form method="post" action="/logout" onsubmit={addCsrfToken}>
 			<input type="hidden" name="_csrf" value="" />

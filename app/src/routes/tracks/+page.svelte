@@ -75,8 +75,9 @@
 					<a
 						href={resolve(link.path)}
 						class="rounded-full px-3 py-1 text-ink-muted hover:bg-surface hover:text-ink"
-						>{link.label}</a
 					>
+						{link.label}
+					</a>
 				{/each}
 			</nav>
 		</div>
@@ -106,13 +107,14 @@
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
-					><path
+				>
+					<path
 						stroke="currentColor"
 						stroke-linecap="round"
 						stroke-width="2"
 						d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
-					/></svg
-				>
+					/>
+				</svg>
 			</div>
 			<input
 				id="search-input"
@@ -126,8 +128,9 @@
 				aria-label="search-track-btn"
 				type="submit"
 				class="btn-accent absolute end-1 top-1/2 -translate-y-1/2 px-4 py-1.5 text-xs"
-				>Search</button
 			>
+				Search
+			</button>
 		</div>
 	</form>
 

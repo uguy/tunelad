@@ -187,14 +187,18 @@
 									type="button"
 									aria-label="edit track {track.title}"
 									class="rounded-full border border-line px-3 py-1 text-xs font-medium hover:border-ink-muted"
-									onclick={() => startEdit(track)}>Edit</button
+									onclick={() => startEdit(track)}
 								>
+									Edit
+								</button>
 								<button
 									type="button"
 									aria-label="delete track {track.title}"
 									class="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-									onclick={() => deleteTrack(track)}>Delete</button
+									onclick={() => deleteTrack(track)}
 								>
+									Delete
+								</button>
 							</div>
 						{/if}
 					</div>
@@ -213,8 +217,10 @@
 							<button
 								type="button"
 								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-strong"
-								onclick={() => ontagclick?.(tag)}>#{tag}</button
+								onclick={() => ontagclick?.(tag)}
 							>
+								#{tag}
+							</button>
 						{/each}
 						<button
 							type="button"
@@ -259,20 +265,20 @@
 								saveEdit(track);
 							}}
 						>
-							<label class="block text-sm font-medium"
-								>Title <input class={inputClass} required bind:value={form.title} /></label
-							>
-							<label class="block text-sm font-medium"
-								>Description <textarea class={inputClass} required bind:value={form.description}
-								></textarea></label
-							>
+							<label class="block text-sm font-medium">
+								Title <input class={inputClass} required bind:value={form.title} />
+							</label>
+							<label class="block text-sm font-medium">
+								Description <textarea class={inputClass} required bind:value={form.description}
+								></textarea>
+							</label>
 							<div class="grid gap-3 sm:grid-cols-2">
-								<label class="block text-sm font-medium"
-									>Artist <input class={inputClass} bind:value={form.artist} /></label
-								>
-								<label class="block text-sm font-medium"
-									>Album <input class={inputClass} bind:value={form.album} /></label
-								>
+								<label class="block text-sm font-medium">
+									Artist <input class={inputClass} bind:value={form.artist} />
+								</label>
+								<label class="block text-sm font-medium">
+									Album <input class={inputClass} bind:value={form.album} />
+								</label>
 							</div>
 							<div class="flex gap-2">
 								<button type="submit" class="btn-accent" disabled={saving}>Save</button>
