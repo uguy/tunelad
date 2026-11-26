@@ -11,7 +11,7 @@
 
 ## 3. Account module
 
-- [ ] 3.1 Add `account` changelog (`account_accounts`, unique `(issuer, subject)`), map `Account`, and rewrite `Accounts` upserts with `INSERT ... ON CONFLICT ... RETURNING`. Verify: `AccountRegisteringTest`, `KeycloakIntegrationTest`, `BrowserSessionSecurityTest` pass, including concurrent first logins yielding one account. Commit `refactor(account): store accounts in postgresql`.
+- [x] 3.1 Add `account` changelog (`account_accounts`, unique `(issuer, subject)`), map `Account`, and rewrite `Accounts` upserts with `INSERT ... ON CONFLICT ... RETURNING`. Verify: `AccountRegisteringTest`, `KeycloakIntegrationTest`, `BrowserSessionSecurityTest` pass, including concurrent first logins yielding one account. Commit `refactor(account): store accounts in postgresql`.
 
 ## 4. Track module
 
