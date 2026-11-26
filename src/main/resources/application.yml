@@ -17,9 +17,6 @@ spring:
   reactor:
     # Carries the trace context across Reactor's thread hops, so that logs written during a request have its trace id
     context-propagation: auto
-  data:
-    mongodb:
-      auto-index-creation: true
   webflux:
     problemdetails:
       enabled: true
@@ -64,16 +61,20 @@ spring:
       cache:
         cachecontrol:
           max-age: 365d
-  mongodb:
-    # The Modulith Event Publication Registry stores publication ids as UUIDs
-    representation:
-      uuid: standard
-    database: 'tunelad'
-    password: 'tunelad'
-    username: 'tunelad'
-    authentication-database: 'admin'
-    host: 'localhost'
-    port: 27017
+  # The application reads and writes through R2DBC. The JDBC datasource only serves what has no reactive option:
+  # Liquibase (at startup) and the Spring Modulith Event Publication Registry.
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/tunelad
+    username: tunelad
+    password: tunelad
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tunelad
+    username: tunelad
+    password: tunelad
+    hikari:
+      maximum-pool-size: 5
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
 management:
   info:
     build:

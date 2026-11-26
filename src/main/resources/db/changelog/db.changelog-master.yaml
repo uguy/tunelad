@@ -1,0 +1,13 @@
+# One changelog per Modulith module, each owning the tables with its prefix. No foreign key crosses a module prefix:
+# modules refer to each other by id or key only.
+databaseChangeLog:
+  - include:
+      file: db/changelog/infrastructure.sql
+  - include:
+      file: db/changelog/account.sql
+  - include:
+      file: db/changelog/track.sql
+  - include:
+      file: db/changelog/media.sql
+  - include:
+      file: db/changelog/search.sql

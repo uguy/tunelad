@@ -226,6 +226,12 @@
 			<artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
 		</dependency>
+		<dependency>
+			<!-- Lets @ServiceConnection hand the container to R2DBC as well as JDBC -->
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-r2dbc</artifactId>
+            <scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

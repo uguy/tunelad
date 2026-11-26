@@ -1,6 +1,5 @@
 package org.tunelad;
 
-import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,9 +7,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -18,7 +15,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.tunelad.account.AccountRef;
 import org.tunelad.track.TrackDTO;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
@@ -28,7 +24,7 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * Base for black-box REST API tests: the full application on a random port, backed by a
- * Testcontainers MongoDB, emptied before each test.
+ * Testcontainers PostgreSQL, emptied before each test.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestContainerDefinitions.class)
@@ -46,7 +42,7 @@ public abstract class AbstractApiTest {
     protected WebTestClient client;
 
     @Autowired
-    protected ReactiveMongoTemplate mongo;
+    protected DatabaseClient db;
 
     @BeforeEach
     void emptyDatabase() {
@@ -58,16 +54,17 @@ public abstract class AbstractApiTest {
                 .build();
         // Module listeners of the previous test may still be running (computing a waveform takes a moment):
         // emptying the registry under them would make them fail to mark their event completed
-        await().atMost(Duration.ofSeconds(30)).until(() -> mongo.count(
-                Query.query(Criteria.where("completionDate").exists(false)), "event_publication")
-                .block() == 0);
-        // Deletes the documents of every collection, whichever module owns it, but keeps the collections
-        // and their indexes: those are only created at startup, and search relies on its text index.
-        mongo.getCollectionNames()
-                .filter(name -> !name.startsWith("system."))
-                .concatMap(name -> mongo.getCollection(name).flatMap(c -> Mono.from(c.deleteMany(new Document()))))
+        await().atMost(Duration.ofSeconds(30)).until(() -> count("event_publication", "completion_date IS NULL") == 0);
+        // Empties the tables of every module, whichever owns them; the schema stays, as Liquibase only creates it at startup.
+        db.sql("TRUNCATE event_publication, account_accounts, track_tracks, search_tracks, media_files CASCADE")
                 .then()
                 .block(Duration.ofSeconds(30));
+    }
+
+    /** The number of rows of a table, optionally only those matching a condition. */
+    protected long count(String table, String where) {
+        var sql = "SELECT count(*) AS n FROM " + table + (where == null ? "" : " WHERE " + where);
+        return db.sql(sql).map(row -> row.get("n", Long.class)).one().block(Duration.ofSeconds(30));
     }
 
     /** Uploads a track as alice; a null value omits that part, and a null fixture omits the file part. */

@@ -10,7 +10,7 @@ import reactor.core.scheduler.Schedulers;
  * Publishes application events from a reactive transaction, so that transactional listeners (including
  * {@code @ApplicationModuleListener}) run after it commits, and never when it rolls back.
  * <p>
- * The Spring Modulith Event Publication Registry stores each publication with blocking MongoDB calls while the
+ * The Spring Modulith Event Publication Registry stores each publication with blocking JDBC calls while the
  * event is published. Publishing therefore runs on the bounded elastic scheduler, never on an event loop thread.
  */
 @Component

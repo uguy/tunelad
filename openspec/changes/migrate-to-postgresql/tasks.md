@@ -7,7 +7,7 @@
 
 ## 2. Datasource, transactions and Liquibase skeleton
 
-- [ ] 2.1 Configure R2DBC and JDBC datasources and Liquibase in `application.yml`; add root changelog and the `event_publication` changelog; replace `MongoTransactionConfig` with R2DBC and JDBC transaction managers; update `ReactiveTransactional` and `TransactionalEvents` docs. Verify: `ReactiveTransactionalEventsTest` ported to Postgres (new `PostgresContainerDefinition`) passes, and rolled-back transactions publish nothing. Commit `refactor(db): configure r2dbc, jdbc and liquibase`.
+- [x] 2.1 Configure R2DBC and JDBC datasources and Liquibase in `application.yml`; add root changelog and the `event_publication` changelog; replace `MongoTransactionConfig` with R2DBC and JDBC transaction managers; update `ReactiveTransactional` and `TransactionalEvents` docs. Verify: `ReactiveTransactionalEventsTest` ported to Postgres (new `PostgresContainerDefinition`) passes, and rolled-back transactions publish nothing. Commit `refactor(db): configure r2dbc, jdbc and liquibase`.
 
 ## 3. Account module
 
