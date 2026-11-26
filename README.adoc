@@ -65,6 +65,10 @@ This simple app allows to store an mp3 file with some description and play it vi
   mute (remembered between visits)
 * Track waveforms: computed with ffmpeg shortly after upload (and backfilled at startup for older tracks), served on
   `GET /api/tracks/{id}/waveform`, and drawn on each track of the list, where a click seeks within the track
+* Live updates: the track list and the waveforms refresh by themselves when another user uploads, edits or deletes a
+  track and when a waveform is computed, with no reload and no polling. The server streams them as Server-Sent Events
+  (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
+  browsers
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
 * OpenAPI v3 endpoint
 * Spring boot actuator features (health, info, etc.)
@@ -142,7 +146,8 @@ bun run format
 
 === Prerequisite
 
-The application depends on PostgreSQL. You can start an instance by running docker compose from the root folder.
+The application depends on PostgreSQL, and uses NATS for live updates. You can start both by running docker compose
+from the root folder.
 
 [source,bash,subs="attributes"]
 ----
@@ -154,6 +159,13 @@ set up. `docker compose up -d --wait` returns once the database is ready.
 
 Adminer (a PostgreSQL web UI) should be available at http://localhost:8081 (server `postgres`, user, password and
 database `tunelad`).
+
+=== NATS (live updates)
+
+Live updates travel between instances of the application through NATS (core, with no persistence): `docker compose up -d`
+starts it on `nats://localhost:4222`, which is the default of `tunelad.live.nats.url`. Without it the application still
+starts and works, but the track list and waveforms only refresh on reload, until NATS is reachable again (no restart
+needed).
 
 === Keycloak (local login)
 
