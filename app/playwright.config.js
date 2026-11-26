@@ -4,9 +4,9 @@ const CI = !!process.env.CI;
 
 export default defineConfig({
 	webServer: {
-		// The Maven build has already run `npm run build` in generate-resources and sets
+		// The Maven build has already run `bun run build` in generate-resources and sets
 		// E2E_PREBUILT; standalone runs build first so they never test stale output.
-		command: process.env.E2E_PREBUILT ? 'npm run preview' : 'npm run build && npm run preview',
+		command: process.env.E2E_PREBUILT ? 'bun run preview' : 'bun run build && bun run preview',
 		port: 4173,
 		reuseExistingServer: !CI
 	},
