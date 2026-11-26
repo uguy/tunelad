@@ -46,7 +46,7 @@ channel (NATS) and a server-to-browser stream (SSE).
 
 ## Impact
 
-- **Modules**: new `live` (allowed dependencies: `search::event`, `media::event`, `account`, `infrastructure`; it
+- **Modules**: new `live` (allowed dependencies: `search::event`, `media::event`, `account`; it
   listens to the events of the modules that own the state, not to `track` events, see design.md); `media` gains a
   `media::event` named interface; `search` gains a `search::event` named interface. `ModularApplicationTests` must
   keep passing.

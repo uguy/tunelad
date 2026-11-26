@@ -100,7 +100,7 @@ Reacting to `NewTrackSaved` directly would race the projection: the browser coul
 exists. So `search` publishes `TrackIndexed` / `TrackUnindexed` after its write, and `media` publishes
 `WaveformComputed` after saving a `READY` or `FAILED` waveform. Each module exposes its events in a new named
 interface (`search::event`, `media::event`), as `track::event` does, and `live` allows exactly those two plus
-`account` and `infrastructure`. The dependency points from `live` to the domain modules, so they know nothing
+`account` (to know who is connected). The dependency points from `live` to the domain modules, so they know nothing
 about the UI. If the mapping table grows large, the inverse (modules publish a generic `LiveUpdate`) is a mechanical
 refactor.
 
@@ -121,9 +121,13 @@ refactor.
 The bridge listener in `live` catches every exception from the NATS publish, logs it, and returns normally. A
 failure therefore never leaves an incomplete registry publication that the registry would republish at restart
 (republished hints are noise), and never fails the transaction of the publisher. The NATS connection is opened
-asynchronously with unlimited reconnects, so the application starts without NATS and picks it up later (jnats
-`connectAsynchronously` with reconnect-on-connect; to be confirmed against the client version). The reconnect buffer is
-kept at zero or very small: stale hints are worth nothing, so a publish while disconnected is dropped, not queued.
+in the background with unlimited reconnects, so the application starts without NATS and picks it up later: jnats
+`connectAsynchronously(options, true)`, which returns nothing and hands the connection to the connection listener.
+Subscriptions asked for before that are attached when it arrives, and events published before it are dropped.
+(`connectReconnectOnConnect` looks like the same thing but blocks until it connects, which would stop the
+application starting without NATS.) The reconnect buffer is zero: stale hints are worth nothing, so a publish while
+disconnected is dropped, not queued. The client's default error listener logs an error for every failed attempt, one
+per second during an outage, so a quiet one replaces it and connection state changes are logged once.
 NATS publishing is non-blocking in the client, and the listener runs on a task executor thread, never on an event
 loop thread; the subscriber callback does only `tryEmit` on the sink.
 
@@ -172,8 +176,3 @@ loop thread; the subscriber callback does only `tryEmit` on the sink.
 Additive: no data migration and no change to existing endpoints. Deploy order: start NATS, then the application. The
 application starts without NATS (live updates stay off until it is reachable), so the order is not enforced. Rollback
 is removing the `live` module and the two event publications; nothing else depends on them.
-
-## Open Questions
-
-- Which exact jnats API and reconnect options give "start without NATS, no buffering while disconnected"? To be
-  confirmed against the client version when implementing; it does not change the behaviour in the specs.
