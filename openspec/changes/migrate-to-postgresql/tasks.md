@@ -28,7 +28,7 @@
 ## 7. Cleanup and docs
 
 - [x] 7.1 Remove leftover Mongo code, config and test containers; update `README.adoc` (database sections, run instructions), `CLAUDE.md`, the Grafana dashboard Mongo timings, and the Mongo wording in `openspec/config.yaml` rules. Verify: `grep -ril mongo` outside `openspec/changes/archive` finds nothing relevant. Commit `docs(db): replace mongodb with postgresql`.
-- [ ] 7.2 Verify `ModularApplicationTests` still passes and that no foreign key crosses a module prefix (query `information_schema` in a test). Commit with the group it fixes, or `test(db): assert no cross-module foreign keys`.
+- [x] 7.2 Verify `ModularApplicationTests` still passes and that no foreign key crosses a module prefix (query `information_schema` in a test). Commit with the group it fixes, or `test(db): assert no cross-module foreign keys`.
 
 ## 8. Verification and PR
 
