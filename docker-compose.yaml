@@ -24,6 +24,13 @@ services:
     ports:
       - '8081:8080'
 
+  # Carries live UI updates between application instances: core NATS only (no JetStream), nothing is persisted.
+  nats:
+    container_name: nats
+    image: nats:2.11-alpine
+    ports:
+      - '4222:4222'
+
   # OpenID Connect provider for local login, standing in for Google and friends.
   # Imports the `tunelad` realm (client and test users alice/alice, bob/bob) on start: local development only.
   keycloak:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { session } from './session.svelte.js';
+import { Session, session } from './session.svelte.js';
 
 const alice = { id: 'account-alice', displayName: 'Alice Liddell', admin: false };
 
@@ -21,5 +21,20 @@ describe('session.load', () => {
 			throw new TypeError('network down');
 		});
 		expect(session.account).toBeNull();
+	});
+});
+
+describe('session.loaded', () => {
+	it('is set once the server has answered, whatever the answer', async () => {
+		const answered = new Session();
+		expect(answered.loaded).toBe(false);
+		await answered.load(async () => new Response(null, { status: 401 }));
+		expect(answered.loaded).toBe(true);
+
+		const unreachable = new Session();
+		await unreachable.load(async () => {
+			throw new TypeError('network down');
+		});
+		expect(unreachable.loaded).toBe(true);
 	});
 });

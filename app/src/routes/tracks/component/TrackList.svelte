@@ -6,6 +6,7 @@
 	import { canChange } from '#lib/permissions.js';
 	import { player } from '#lib/player.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { live } from '#lib/live.svelte.js';
 	import TrackService, {
 		type Track,
 		type TrackEdit,
@@ -27,27 +28,38 @@
 
 	const trackService = new TrackService();
 
-	/** Polls a pending waveform this often, this many times: a fresh upload gets its waveform within seconds. */
-	const POLL_INTERVAL = 3000;
-	const POLL_ATTEMPTS = 10;
-
 	/** The waveforms fetched so far, by track id. */
 	let waveforms = $state<Record<string, TrackWaveform>>({});
 	/** Tracks whose waveform has been asked for, so each is fetched once. Bookkeeping only: nothing renders it. */
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
 	const requested = new Set<string>();
+	/** The latest fetch of each waveform: an answer to an earlier one must not replace a later answer. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
+	const latest = new Map<string, number>();
 	let alive = true;
 	$effect(() => () => {
 		alive = false;
 	});
 
-	function loadWaveform(trackId: string, attempt = 1) {
+	// A waveform is computed some time after the upload, and the server says when: no polling. Waveforms that were
+	// never asked for are left alone, as their row fetches them when it comes into view.
+	$effect(() => {
+		const stopWaveforms = live.on('waveform.computed', ({ id }) => {
+			if (id && requested.has(id)) loadWaveform(id);
+		});
+		// Events may have been missed while the connection was down
+		const stopReconnect = live.onReconnect(() => requested.forEach((id) => loadWaveform(id)));
+		return () => {
+			stopWaveforms();
+			stopReconnect();
+		};
+	});
+
+	function loadWaveform(trackId: string) {
+		const mine = (latest.get(trackId) ?? 0) + 1;
+		latest.set(trackId, mine);
 		trackService.findWaveform(trackId).then((waveform) => {
-			if (!alive || !waveform) return;
-			waveforms[trackId] = waveform;
-			if (waveform.status === 'PENDING' && attempt < POLL_ATTEMPTS) {
-				setTimeout(() => alive && loadWaveform(trackId, attempt + 1), POLL_INTERVAL);
-			}
+			if (alive && waveform && latest.get(trackId) === mine) waveforms[trackId] = waveform;
 		});
 	}
 
@@ -187,14 +199,18 @@
 									type="button"
 									aria-label="edit track {track.title}"
 									class="rounded-full border border-line px-3 py-1 text-xs font-medium hover:border-ink-muted"
-									onclick={() => startEdit(track)}>Edit</button
+									onclick={() => startEdit(track)}
 								>
+									Edit
+								</button>
 								<button
 									type="button"
 									aria-label="delete track {track.title}"
 									class="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-									onclick={() => deleteTrack(track)}>Delete</button
+									onclick={() => deleteTrack(track)}
 								>
+									Delete
+								</button>
 							</div>
 						{/if}
 					</div>
@@ -213,8 +229,10 @@
 							<button
 								type="button"
 								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-strong"
-								onclick={() => ontagclick?.(tag)}>#{tag}</button
+								onclick={() => ontagclick?.(tag)}
 							>
+								#{tag}
+							</button>
 						{/each}
 						<button
 							type="button"
@@ -259,20 +277,20 @@
 								saveEdit(track);
 							}}
 						>
-							<label class="block text-sm font-medium"
-								>Title <input class={inputClass} required bind:value={form.title} /></label
-							>
-							<label class="block text-sm font-medium"
-								>Description <textarea class={inputClass} required bind:value={form.description}
-								></textarea></label
-							>
+							<label class="block text-sm font-medium">
+								Title <input class={inputClass} required bind:value={form.title} />
+							</label>
+							<label class="block text-sm font-medium">
+								Description <textarea class={inputClass} required bind:value={form.description}
+								></textarea>
+							</label>
 							<div class="grid gap-3 sm:grid-cols-2">
-								<label class="block text-sm font-medium"
-									>Artist <input class={inputClass} bind:value={form.artist} /></label
-								>
-								<label class="block text-sm font-medium"
-									>Album <input class={inputClass} bind:value={form.album} /></label
-								>
+								<label class="block text-sm font-medium">
+									Artist <input class={inputClass} bind:value={form.artist} />
+								</label>
+								<label class="block text-sm font-medium">
+									Album <input class={inputClass} bind:value={form.album} />
+								</label>
 							</div>
 							<div class="flex gap-2">
 								<button type="submit" class="btn-accent" disabled={saving}>Save</button>

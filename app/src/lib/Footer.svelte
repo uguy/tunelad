@@ -8,8 +8,10 @@
 	<p>
 		Tune Lad, a <a
 			class="font-semibold text-accent-strong hover:underline"
-			href="https://svelte.dev/docs/kit">SvelteKit</a
-		> PWA playground
+			href="https://svelte.dev/docs/kit"
+		>
+			SvelteKit
+		</a> PWA playground
 	</p>
 	<p class="mt-1">
 		Last update :

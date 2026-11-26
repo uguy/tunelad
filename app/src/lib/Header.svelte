@@ -90,9 +90,9 @@
 							width="64"
 							height="64"
 						/>
-						<span class="hidden text-lg font-bold tracking-tight text-white md:inline"
-							>Tune Lad</span
-						>
+						<span class="hidden text-lg font-bold tracking-tight text-white md:inline">
+							Tune Lad
+						</span>
 					</a>
 					<div class="hidden sm:ml-8 sm:flex">
 						<div class="flex h-full space-x-1">
@@ -103,8 +103,10 @@
 									class="{current
 										? currentLinkClass
 										: linkClass} flex items-center border-b-2 px-4 text-sm font-semibold transition-colors"
-									aria-current={current ? 'page' : undefined}>{link.label}</a
+									aria-current={current ? 'page' : undefined}
 								>
+									{link.label}
+								</a>
 							{/each}
 						</div>
 					</div>
@@ -125,8 +127,10 @@
 						class="{current
 							? 'bg-white/10 text-white'
 							: 'text-white/70 hover:bg-white/10 hover:text-white'} block px-3 py-2 rounded-md text-base font-medium"
-						aria-current={current ? 'page' : undefined}>{link.label}</a
+						aria-current={current ? 'page' : undefined}
 					>
+						{link.label}
+					</a>
 				{/each}
 				<AccountMenu mobile />
 			</div>

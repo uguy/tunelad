@@ -133,3 +133,8 @@ logging:
     level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
   level:
     org.springframework.modulith.observability.ModuleEntryInterceptor: TRACE
+tunelad:
+  live:
+    nats:
+      # Live UI updates travel between application instances through NATS (docker compose starts one)
+      url: nats://localhost:4222
