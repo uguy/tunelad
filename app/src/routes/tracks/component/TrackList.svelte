@@ -6,6 +6,7 @@
 	import { canChange } from '#lib/permissions.js';
 	import { player } from '#lib/player.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { live } from '#lib/live.svelte.js';
 	import TrackService, {
 		type Track,
 		type TrackEdit,
@@ -27,27 +28,38 @@
 
 	const trackService = new TrackService();
 
-	/** Polls a pending waveform this often, this many times: a fresh upload gets its waveform within seconds. */
-	const POLL_INTERVAL = 3000;
-	const POLL_ATTEMPTS = 10;
-
 	/** The waveforms fetched so far, by track id. */
 	let waveforms = $state<Record<string, TrackWaveform>>({});
 	/** Tracks whose waveform has been asked for, so each is fetched once. Bookkeeping only: nothing renders it. */
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
 	const requested = new Set<string>();
+	/** The latest fetch of each waveform: an answer to an earlier one must not replace a later answer. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
+	const latest = new Map<string, number>();
 	let alive = true;
 	$effect(() => () => {
 		alive = false;
 	});
 
-	function loadWaveform(trackId: string, attempt = 1) {
+	// A waveform is computed some time after the upload, and the server says when: no polling. Waveforms that were
+	// never asked for are left alone, as their row fetches them when it comes into view.
+	$effect(() => {
+		const stopWaveforms = live.on('waveform.computed', ({ id }) => {
+			if (id && requested.has(id)) loadWaveform(id);
+		});
+		// Events may have been missed while the connection was down
+		const stopReconnect = live.onReconnect(() => requested.forEach((id) => loadWaveform(id)));
+		return () => {
+			stopWaveforms();
+			stopReconnect();
+		};
+	});
+
+	function loadWaveform(trackId: string) {
+		const mine = (latest.get(trackId) ?? 0) + 1;
+		latest.set(trackId, mine);
 		trackService.findWaveform(trackId).then((waveform) => {
-			if (!alive || !waveform) return;
-			waveforms[trackId] = waveform;
-			if (waveform.status === 'PENDING' && attempt < POLL_ATTEMPTS) {
-				setTimeout(() => alive && loadWaveform(trackId, attempt + 1), POLL_INTERVAL);
-			}
+			if (alive && waveform && latest.get(trackId) === mine) waveforms[trackId] = waveform;
 		});
 	}
 

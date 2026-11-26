@@ -101,3 +101,33 @@ describe('TrackService.findOne', () => {
 		).toBeNull();
 	});
 });
+
+describe('TrackService.tryFindAll', () => {
+	const KNEES_UP = { id: 'track-1', title: 'Knees Up', description: 'A reel', format: 'MP3' };
+
+	it('searches with the query and returns the tracks', async () => {
+		const requested: string[] = [];
+		const service = new TrackService(async (input) => {
+			requested.push(String(input));
+			return Response.json([KNEES_UP]);
+		});
+
+		expect(await service.tryFindAll('rain & tin')).toEqual([KNEES_UP]);
+		expect(requested).toEqual(['/api/tracks/search?q=rain%20%26%20tin']);
+	});
+
+	it('answers null when the server refuses, where findAll answers no tracks', async () => {
+		const service = new TrackService(async () => new Response(null, { status: 500 }));
+
+		expect(await service.tryFindAll('')).toBeNull();
+		expect(await service.findAll('')).toEqual([]);
+	});
+
+	it('answers null when the server cannot be reached', async () => {
+		const service = new TrackService(async () => {
+			throw new TypeError('network down');
+		});
+
+		expect(await service.tryFindAll('')).toBeNull();
+	});
+});

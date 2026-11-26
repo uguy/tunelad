@@ -31,13 +31,25 @@ When a track's search copy has been removed because the track was deleted, the s
 
 ### Requirement: The UI list follows what becomes searchable
 The tracks list shown in the UI SHALL be refreshed when `track.indexed` or `track.unindexed` is received, using the
-search text currently entered, so that the list always matches what the search would return.
+search text of the results being shown (not text typed and not yet searched), so that the list always matches what
+that search would return. A refresh that fails SHALL leave the list as it is.
 
 #### Scenario: Refresh keeps the active search
 - **GIVEN** the tracks page shows the results for the search text "rain"
 - **WHEN** a track titled "Rain on tin" is indexed
 - **THEN** the list is refetched with the search text "rain"
 - **AND** it now includes "Rain on tin"
+
+#### Scenario: Typed but not searched text is not used
+- **GIVEN** the tracks page shows the results for the search text "rain"
+- **AND** the visitor has typed "sun" in the search box without searching
+- **WHEN** a track titled "Rain on tin" is indexed
+- **THEN** the list is refetched with the search text "rain"
+
+#### Scenario: A failed refresh keeps the list
+- **GIVEN** the tracks page shows tracks
+- **WHEN** a track is indexed and the refetch of the list fails
+- **THEN** the list still shows the same tracks
 
 #### Scenario: Indexed track outside the active search
 - **GIVEN** the tracks page shows the results for the search text "rain"

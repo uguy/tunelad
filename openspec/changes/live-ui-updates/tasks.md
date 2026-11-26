@@ -45,10 +45,10 @@ Commit: `feat(ui): keep a live connection to the server`
 
 Commit: `feat(ui): refresh the tracks list and waveforms from live updates`
 
-- [ ] 6.1 In the tracks page, refetch the list with the search text currently entered on `track.indexed` and `track.unindexed` (debounced about 300 ms) and on reconnect; verify with vitest tests that a burst of events causes one request carrying the active search text, and with a test that the list holds an own uploaded or deleted track exactly once / not at all
-- [ ] 6.2 In `TrackList.svelte`, remove the polling (`POLL_INTERVAL`, `POLL_ATTEMPTS`), refetch a waveform on `waveform.computed` for a track already requested, ignore tracks never requested, and refetch the requested ones on reconnect; verify with vitest tests: placeholder replaced when the event arrives (also minutes later, with fake timers), off-screen track not fetched, no timer-based refetch remains
-- [ ] 6.3 Add Playwright e2e tests in `app/e2e/` that replace `EventSource` with a controllable fake through `page.addInitScript` and mocked API routes: a waveform appears without a reload after `waveform.computed`; another user's new, renamed and deleted track appear, change and disappear after the matching events; the list refetches after a simulated reconnect; verify `cd app && bun run test:e2e` passes
-- [ ] 6.4 Run `cd app && bun run format && bun run lint && bun run check && bun run test:unit -- --run`; verify they pass
+- [x] 6.1 In the tracks page, refetch the list with the search text currently entered on `track.indexed` and `track.unindexed` (debounced about 300 ms) and on reconnect; verify with vitest tests that a burst of events causes one request carrying the active search text, and with a test that the list holds an own uploaded or deleted track exactly once / not at all
+- [x] 6.2 In `TrackList.svelte`, remove the polling (`POLL_INTERVAL`, `POLL_ATTEMPTS`), refetch a waveform on `waveform.computed` for a track already requested, ignore tracks never requested, and refetch the requested ones on reconnect; verify with vitest tests: placeholder replaced when the event arrives (also minutes later, with fake timers), off-screen track not fetched, no timer-based refetch remains
+- [x] 6.3 Add Playwright e2e tests in `app/e2e/` that replace `EventSource` with a controllable fake through `page.addInitScript` and mocked API routes: a waveform appears without a reload after `waveform.computed`; another user's new, renamed and deleted track appear, change and disappear after the matching events; the list refetches after a simulated reconnect; verify `cd app && bun run test:e2e` passes
+- [x] 6.4 Run `cd app && bun run format && bun run lint && bun run check && bun run test:unit -- --run`; verify they pass
 
 ## 7. Wrap up
 

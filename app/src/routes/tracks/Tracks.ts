@@ -132,6 +132,20 @@ export default class TrackService {
 		return await api.get(this.#fetchFunc, `tracks/search?q=${encodeURIComponent(query)}`);
 	}
 
+	/** The tracks matching the query, or null when the search fails, so that a page can keep what it shows. */
+	async tryFindAll(query: string): Promise<Track[] | null> {
+		try {
+			const res = await api.request(
+				this.#fetchFunc,
+				'GET',
+				`tracks/search?q=${encodeURIComponent(query)}`
+			);
+			return res.ok ? await res.json() : null;
+		} catch {
+			return null;
+		}
+	}
+
 	/** The track with that id, or null when there is none or it cannot be fetched. */
 	async findOne(id: string): Promise<Track | null> {
 		try {

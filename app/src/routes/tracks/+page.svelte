@@ -2,6 +2,8 @@
 	import TrackList from './component/TrackList.svelte';
 	import { player } from '#lib/player.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -13,6 +15,8 @@
 
 	const trackService = new TrackService();
 	let query = $state('');
+	// The search text of the tracks shown, which is not the text typed since: live updates refetch with this one
+	let shownQuery = '';
 	// The loaded tracks, replaced locally by searches and by edits the search has not caught up with yet. A track
 	// just uploaded comes first, until search finds it: the upload page hands it over in the page state.
 	let tracks = $derived(withUploaded(data.tracks, page.state.uploaded));
@@ -44,8 +48,26 @@
 	});
 
 	async function refreshTracks() {
+		shownQuery = query;
 		tracks = await trackService.findAll(query);
 	}
+
+	/**
+	 * Refetches the tracks shown as the search finds them now, once live updates say they changed. A failed refetch
+	 * keeps the list, and a track just uploaded stays on top of the unfiltered list until search lists it.
+	 */
+	async function followLiveUpdates() {
+		const searched = shownQuery;
+		const found = await trackService.tryFindAll(searched);
+		if (found && searched === shownQuery) {
+			tracks = searched === '' ? withUploaded(found, page.state.uploaded) : found;
+		}
+	}
+
+	// Other users' uploads, edits and deletions, and what was missed while the live connection was down
+	onMount(() =>
+		refreshOnLive(live, ['track.indexed', 'track.unindexed'], () => void followLiveUpdates())
+	);
 
 	function replaceTrack(track: Track) {
 		// Search catches up a few seconds later: show the server's answer right away
