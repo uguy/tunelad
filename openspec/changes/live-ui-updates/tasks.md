@@ -53,7 +53,7 @@ Commit: `feat(ui): refresh the tracks list and waveforms from live updates`
 ## 7. Wrap up
 
 - [x] 7.1 Update the `== Features` section of `README.adoc` (live updates; NATS in the local setup and the `docker compose` command) ; verify the text matches the delivered behaviour
-- [ ] 7.2 Run `./mvnw clean verify` (frontend lint and check, all Java tests, vitest, Playwright e2e); verify it passes, with Docker running
+- [x] 7.2 Run `./mvnw clean verify` (frontend lint and check, all Java tests, vitest, Playwright e2e); verify it passes, with Docker running
 - [ ] 7.3 Push the branch and open a PR to `main` titled `feat(live): push live ui updates through nats and server-sent events`, only after 7.2 passes; verify the `workflow-pr-title` check passes
 
 ## Workflow follow-up
