@@ -51,8 +51,11 @@ public class Waveforms {
                 .then();
     }
 
-    /** Records the outcome of the computation; does nothing when the key has no waveform, such as after its audio went. */
-    Mono<Void> complete(String key, WaveformStatus status, List<Double> peaks) {
+    /**
+     * Records the outcome of the computation; does nothing when the key has no waveform, such as after its audio went.
+     * Emits how many waveforms it updated, so that callers announce only what they saved.
+     */
+    Mono<Long> complete(String key, WaveformStatus status, List<Double> peaks) {
         return client.sql("""
                         UPDATE media_waveforms SET status = :status, peaks = :peaks, computed_at = :computedAt
                         WHERE file_key = :key""")
@@ -60,7 +63,7 @@ public class Waveforms {
                 .bind("peaks", peaks.toArray(Double[]::new))
                 .bind("computedAt", Instant.now())
                 .bind("key", key)
-                .then();
+                .fetch().rowsUpdated();
     }
 
     /** The keys whose waveform is computed already, or failed to be. */
