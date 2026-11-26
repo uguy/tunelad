@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.tunelad.TestContainerDefinitions;
+import org.tunelad.search.event.TrackIndexed;
+import org.tunelad.search.event.TrackUnindexed;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
@@ -96,6 +98,41 @@ class SearchProjectionTest {
         projection.on(new TrackDeleted(UUID.randomUUID().toString()));
 
         assertThat(searchTracks.count().block()).isEqualTo(1);
+    }
+
+    @Test
+    void a_new_track_is_announced_once_it_can_be_found(Scenario scenario) {
+        var track = kneesUp(UUID.randomUUID().toString());
+
+        scenario.publish(new NewTrackSaved(track))
+                .andWaitForEventOfType(TrackIndexed.class)
+                .matching(event -> event.trackId().equals(track.id()))
+                .toArriveAndVerify(event -> assertThat(searchTracks.findById(track.id()).block()).isNotNull());
+    }
+
+    @Test
+    void an_edited_track_is_announced_once_its_copy_is_replaced(Scenario scenario) {
+        var track = kneesUp(UUID.randomUUID().toString());
+        searchTracks.save(SearchTrack.of(track)).block();
+        var edited = new TrackDTO(track.id(), "Hornpipe Set", null, null, "Two hornpipes", track.format(),
+                track.owner());
+
+        scenario.publish(new TrackUpdated(edited))
+                .andWaitForEventOfType(TrackIndexed.class)
+                .matching(event -> event.trackId().equals(track.id()))
+                .toArriveAndVerify(event -> assertThat(searchTracks.findById(track.id()).block().title())
+                        .isEqualTo("Hornpipe Set"));
+    }
+
+    @Test
+    void a_deleted_track_is_announced_once_its_copy_is_gone(Scenario scenario) {
+        var track = kneesUp(UUID.randomUUID().toString());
+        searchTracks.save(SearchTrack.of(track)).block();
+
+        scenario.publish(new TrackDeleted(track.id()))
+                .andWaitForEventOfType(TrackUnindexed.class)
+                .matching(event -> event.trackId().equals(track.id()))
+                .toArriveAndVerify(event -> assertThat(searchTracks.existsById(track.id()).block()).isFalse());
     }
 
     private static TrackDTO kneesUp(String id) {
