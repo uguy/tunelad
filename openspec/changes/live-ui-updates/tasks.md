@@ -2,16 +2,16 @@
 
 ## 1. Branch
 
-- [ ] 1.1 Create the feature branch `feat/live-ui-updates` from an up-to-date `main`; verify with `git branch --show-current` and that `git log main..HEAD` is empty
+- [x] 1.1 Create the feature branch `feat/live-ui-updates` from an up-to-date `main`; verify with `git branch --show-current` and that `git log main..HEAD` is empty
 
 ## 2. NATS in the build and the tests
 
 Commit: `build(live): add nats to docker compose and the test containers`
 
-- [ ] 2.1 Add the `io.nats:jnats` dependency to `pom.xml`; verify `./mvnw -q compile -DskipTests` succeeds
-- [ ] 2.2 Add a `nats` service (no JetStream, port 4222) to `docker-compose.yaml`; verify `docker compose up -d nats` starts it and `docker compose ps nats` shows it running
-- [ ] 2.3 Add `tunelad.live.nats.url` (default `nats://localhost:4222`) to `application.yml` with a properties class `LiveProperties` (binding to `tunelad.live`); verify the binding in a small test that loads the default and an overridden URL
-- [ ] 2.4 Add `NatsContainerDefinition` (a `GenericContainer` on the NATS image, exposing 4222, registering `tunelad.live.nats.url` from the mapped port) in `src/test/java/org/tunelad/`, next to `PostgresContainerDefinition`, and import it from `TestContainerDefinitions`; verify an existing API test (for example `TrackApiTest`) still starts and passes
+- [x] 2.1 Add the `io.nats:jnats` dependency to `pom.xml`; verify `./mvnw -q compile -DskipTests` succeeds
+- [x] 2.2 Add a `nats` service (no JetStream, port 4222) to `docker-compose.yaml`; verify `docker compose up -d nats` starts it and `docker compose ps nats` shows it running
+- [x] 2.3 Add `tunelad.live.nats.url` (default `nats://localhost:4222`) to `application.yml` with a properties class `LiveProperties` (binding to `tunelad.live`); verify the binding in a small test that loads the default and an overridden URL
+- [x] 2.4 Add `NatsContainerDefinition` (a `GenericContainer` on the NATS image, exposing 4222, registering `tunelad.live.nats.url` from the mapped port) in `src/test/java/org/tunelad/`, next to `PostgresContainerDefinition`, and import it from `TestContainerDefinitions`; verify an existing API test (for example `TrackApiTest`) still starts and passes
 
 ## 3. Events from the modules that own the state
 
