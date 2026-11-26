@@ -54,7 +54,7 @@
 			<div class="stat-panel p-6">
 				<h2 class="mt-4 text-base font-semibold first:mt-0">
 					Database
-					{#if data.health.components.mongo.status === 'UP'}
+					{#if data.health.components.r2dbc.status === 'UP'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
@@ -86,17 +86,11 @@
 						</svg>
 					{/if}
 				</h2>
-				{#if data.health.components.mongo.status === 'UP'}
-					DB Names :
-					<ul class="my-2 list-inside list-disc text-sm text-ink-muted">
-						{#each data.health.components.mongo.details.databases as db (db)}
-							<li>{db}</li>
-						{/each}
-					</ul>
-					maxWireVersion : {data.health.components.mongo.details.maxWireVersion}
+				{#if data.health.components.r2dbc.status === 'UP'}
+					Database : {data.health.components.r2dbc.details.database}
 				{:else}
 					Error reason :
-					<code>{data.health.components.mongo.details.error}</code>
+					<code>{data.health.components.r2dbc.details.error}</code>
 				{/if}
 				<h2 class="mt-4 text-base font-semibold first:mt-0">
 					Disk usage
