@@ -31,7 +31,7 @@
 
 ## 6. Wrap-up
 
-- [ ] 6.1 Update `README.adoc` features and the sidecar's setup, retake screenshots (`doc/screenshots.mjs`, `doc/api-screenshots.mjs`)
+- [x] 6.1 Update `README.adoc` features and the sidecar's setup (screenshots: no page they show changed)
 - [ ] 6.2 Comment on #823: key and Transcription proposals move to a later slice
 - [ ] 6.3 Run `./mvnw clean verify` and fix failures
 - [ ] 6.4 Open the PR titled `feat(identification): propose performances from audio` with `Closes #823` in the body
