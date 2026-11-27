@@ -5,9 +5,12 @@ import org.springframework.stereotype.Service;
 import org.tunelad.account.AccountRef;
 import org.tunelad.infrastructure.BadRequestException;
 import org.tunelad.infrastructure.NotFoundException;
+import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.infrastructure.TransactionalEvents;
 import org.tunelad.tune.DanceType;
 import org.tunelad.tune.TuneCatalog;
 import org.tunelad.tune.TuneDTO;
+import org.tunelad.tune.event.TuneChanged;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,13 +27,16 @@ public class TuneService implements TuneCatalog {
 
 	private final Tunes tunes;
 	private final TuneSource source;
+	private final TransactionalEvents events;
 
-	TuneService(Tunes tunes, TuneSource source) {
+	TuneService(Tunes tunes, TuneSource source, TransactionalEvents events) {
 		this.tunes = tunes;
 		this.source = source;
+		this.events = events;
 	}
 
 	/** Creates a Tune by hand; the name is required and blanks are dropped from the aliases. */
+	@ReactiveTransactional
 	public Mono<TuneDTO> create(AccountRef account, TuneDTO input) {
 		if (input.name() == null || input.name().isBlank() || input.danceType() == null) {
 			return Mono.error(new BadRequestException("A tune needs a name and a dance type."));
@@ -39,31 +45,38 @@ public class TuneService implements TuneCatalog {
 				: input.aliases().stream().filter(a -> a != null && !a.isBlank()).map(String::trim).distinct().toList();
 		var tune = new TuneDTO(null, input.name().trim(), aliases, blankToNull(input.author()), input.danceType(),
 				blankToNull(input.key()), null, blankToNull(input.abc()));
-		return tunes.insert(tune, account.id());
+		return tunes.insert(tune, account.id()).flatMap(this::announced);
 	}
 
 	/**
 	 * The Tune of this thesession.org id: the existing one, or a new one read from thesession.org. Fails with
 	 * {@link NotFoundException} when thesession.org does not know the id.
 	 */
+	@ReactiveTransactional
 	public Mono<Imported> importTune(AccountRef account, int sourceId) {
 		return tunes.findBySourceId(sourceId).map(tune -> new Imported(tune, false))
 				.switchIfEmpty(Mono.defer(() -> source.fetch(sourceId)
 						.switchIfEmpty(Mono.error(() -> new NotFoundException("thesession.org has no tune " + sourceId)))
 						.flatMap(found -> tunes.insert(new TuneDTO(null, found.name(), found.aliases(), found.author(),
 								found.danceType(), found.key(), found.sourceId(), found.abc()), account.id()))
-						.map(tune -> new Imported(tune, true))
+						.flatMap(tune -> announced(tune).map(announcedTune -> new Imported(announcedTune, true)))
 						// two imports of one id at once: the loser's insert did nothing, so read the winner's
 						.switchIfEmpty(Mono.defer(() -> tunes.findBySourceId(sourceId).map(tune -> new Imported(tune, false))))));
 	}
 
 	@Override
+	@ReactiveTransactional
 	public Mono<TuneDTO> findOrImport(AccountRef owner, int sourceId) {
 		return importTune(owner, sourceId).map(Imported::tune)
 				.onErrorResume(error -> {
 					log.warn("Could not find or import thesession.org tune {}: {}", sourceId, error.toString());
 					return Mono.empty();
 				});
+	}
+
+	/** Announces the Tune once the transaction commits. */
+	private Mono<TuneDTO> announced(TuneDTO tune) {
+		return events.publish(new TuneChanged(tune.id())).thenReturn(tune);
 	}
 
 	public Flux<TuneDTO> list(DanceType type, String text) {

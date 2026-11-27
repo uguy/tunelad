@@ -1,9 +1,15 @@
 package org.tunelad.tune.internal;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.infrastructure.TransactionalEvents;
 import org.tunelad.tune.DanceType;
 import org.tunelad.tune.TuneDTO;
+import org.tunelad.tune.event.TuneChanged;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,11 +37,16 @@ public class TuneDumpImport {
 
 	private final TuneDump dump;
 	private final Tunes tunes;
+	private final TransactionalEvents events;
+	private final TransactionalOperator transactionalOperator;
 	private final AtomicReference<Run> run = new AtomicReference<>(new Run(State.idle, 0, 0, null));
 
-	TuneDumpImport(TuneDump dump, Tunes tunes) {
+	TuneDumpImport(TuneDump dump, Tunes tunes, TransactionalEvents events,
+			@Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
 		this.dump = dump;
 		this.tunes = tunes;
+		this.events = events;
+		this.transactionalOperator = TransactionalOperator.create(transactionManager);
 	}
 
 	public Run last() {
@@ -77,7 +88,13 @@ public class TuneDumpImport {
 								.doOnNext(inserted -> add(1, 0))
 								.switchIfEmpty(Mono.fromRunnable(this::skip)),
 						CONCURRENCY)
-				.then();
+				.then(Mono.defer(this::announceCreated));
+	}
+
+	/** One event for the whole run, not one per Tune: a browser refetches its list once. None when nothing was created. */
+	private Mono<Void> announceCreated() {
+		return run.get().created() == 0 ? Mono.empty()
+				: transactionalOperator.transactional(events.publish(new TuneChanged(null)));
 	}
 
 	private void skip() {

@@ -5,8 +5,10 @@ import org.tunelad.account.AccountRef;
 import org.tunelad.infrastructure.BadRequestException;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.infrastructure.TransactionalEvents;
 import org.tunelad.set.SetCatalog;
 import org.tunelad.set.SetDTO;
+import org.tunelad.set.event.SetChanged;
 import org.tunelad.tune.TuneCatalog;
 import org.tunelad.tune.TuneDTO;
 import reactor.core.publisher.Flux;
@@ -29,10 +31,12 @@ public class SetService implements SetCatalog {
 
 	private final Sets sets;
 	private final TuneCatalog tunes;
+	private final TransactionalEvents events;
 
-	SetService(Sets sets, TuneCatalog tunes) {
+	SetService(Sets sets, TuneCatalog tunes, TransactionalEvents events) {
 		this.sets = sets;
 		this.tunes = tunes;
+		this.events = events;
 	}
 
 	/**
@@ -50,7 +54,9 @@ public class SetService implements SetCatalog {
 				.switchIfEmpty(Mono.error(() -> new BadRequestException("Unknown tune in the list.")))
 				.then(sets.insert(list, account.id()))
 				// a racing identical create makes the loser's insert do nothing: it reads the winner's Set
-				.flatMap(created -> sets.findByList(list).flatMap(this::toDto).map(set -> new Created(set, created)));
+				.flatMap(created -> sets.findByList(list).flatMap(this::toDto)
+						.flatMap(set -> (created ? events.publish(new SetChanged(set.id())) : Mono.<Void>empty())
+								.thenReturn(new Created(set, created))));
 	}
 
 	@Override
