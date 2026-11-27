@@ -16,5 +16,5 @@
 
 - [x] 4.1 Run `./mvnw clean verify`
 - [x] 4.2 README.adoc features: no user-visible change, so no update
-- [ ] 4.3 Archive the change on the branch (`/openspec-archive-change`)
+- [x] 4.3 Archive the change on the branch (`/openspec-archive-change`)
 - [ ] 4.4 Open the PR titled `test(track): cover administrator edits of performances`, body ending with `Closes #821`
