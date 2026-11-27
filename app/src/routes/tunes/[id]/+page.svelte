@@ -4,6 +4,8 @@
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
 	import Comments from '#lib/Comments.svelte';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import IdentificationBadge from '../../tracks/IdentificationBadge.svelte';
 	import { formatOffset } from '#lib/offset.js';
 	import TuneService, { type Tune, type TunePerformance } from '../Tunes.js';
@@ -17,14 +19,19 @@
 	const sheets = $derived(performances.filter((p) => p.abc?.trim()));
 	let status = $state<'loading' | 'ready' | 'notfound' | 'error'>('loading');
 
-	onMount(async () => {
+	async function load() {
 		try {
 			[tune, performances] = await Promise.all([service.findOne(id), service.performances(id)]);
 			status = tune ? 'ready' : 'notfound';
 		} catch {
 			status = 'error';
 		}
-	});
+	}
+
+	onMount(load);
+
+	// Performances come from any Track, so any Track's change may concern this Tune; also what was missed offline
+	onMount(() => refreshOnLive(live, ['performance.changed', 'tune.changed'], () => void load()));
 </script>
 
 <svelte:head>

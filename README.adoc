@@ -71,8 +71,8 @@ This simple app allows to store an mp3 file with some description and play it vi
   (`GET /api/tracks/{id}/audio`, announced by the `audio.prepared` live event, and made at startup if ffmpeg was missing)
 * Track waveforms: computed with ffmpeg shortly after upload (and backfilled at startup for older tracks), served on
   `GET /api/tracks/{id}/waveform`, and drawn on each track of the list, where a click seeks within the track
-* Live updates: the track list and the waveforms refresh by themselves when another user uploads, edits or deletes a
-  track and when a waveform or a WMA rendition is computed, and your favourites and playlists follow what you change in your other tabs
+* Live updates: the track list, the waveforms, the tunes and sets lists, and the performances on a tune page refresh by themselves when another user uploads, edits or deletes a
+  track, creates a tune or a set, and when a waveform or a WMA rendition is computed, and your favourites and playlists follow what you change in your other tabs
   and devices (they are private: only your own connections hear of them), with no reload and no polling. The server streams them as Server-Sent Events
   (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
   browsers

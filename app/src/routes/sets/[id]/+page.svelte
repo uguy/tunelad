@@ -3,6 +3,8 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import Comments from '#lib/Comments.svelte';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import SetService, { type TuneSet } from '../Sets.js';
 
 	const service = new SetService();
@@ -11,14 +13,19 @@
 	let set = $state.raw<TuneSet | null>(null);
 	let status = $state<'loading' | 'ready' | 'notfound' | 'error'>('loading');
 
-	onMount(async () => {
+	async function load() {
 		try {
 			set = await service.findOne(id);
 			status = set ? 'ready' : 'notfound';
 		} catch {
 			status = 'error';
 		}
-	});
+	}
+
+	onMount(load);
+
+	// What was missed while the live connection was down; the page updates in place
+	onMount(() => refreshOnLive(live, ['set.changed'], () => void load()));
 </script>
 
 <svelte:head>

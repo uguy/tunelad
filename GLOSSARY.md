@@ -91,7 +91,7 @@ A Track that has no audio yet, only a place on an Album. Audio uploaded later ca
 ### Behaviour
 
 **Live update**:
-A notice to a connected browser that something it displays (a Track, Favourite, Playlist or Comment) has changed.
+A notice to a connected browser that something it displays (a Track, Tune, Set, Performance, Favourite, Playlist or Comment) has changed.
 
 ## Relationships
 

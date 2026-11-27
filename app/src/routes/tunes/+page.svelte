@@ -2,6 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { session } from '#lib/session.svelte.js';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import DumpImport from './DumpImport.svelte';
 	import TuneService, { type Tune } from './Tunes.js';
 
@@ -26,6 +28,9 @@
 		danceTypes = await service.danceTypes();
 		await refresh();
 	});
+
+	// Tunes created or imported elsewhere, and what was missed while the live connection was down
+	onMount(() => refreshOnLive(live, ['tune.changed'], () => void refresh()));
 
 	const inputClass =
 		'mt-1 block w-full rounded-md border-line text-sm focus:border-accent focus:ring-accent';

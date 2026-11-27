@@ -364,3 +364,94 @@ test.describe('favourites and playlists across tabs', () => {
 		await expect(page.getByTestId('track-title')).toHaveText(['Mossy Banks']);
 	});
 });
+
+test.describe('tunes, sets and performances', () => {
+	const COOLEYS = { id: 'tune-1', name: "Cooley's", aliases: [], danceType: 'reel' };
+	const KESH = { id: 'tune-2', name: 'The Kesh', aliases: [], danceType: 'jig' };
+	const performance = (trackTitle) => ({
+		trackId: 'track-1',
+		trackTitle,
+		artist: null,
+		position: 1,
+		startOffsetSeconds: 0,
+		key: null,
+		notes: null,
+		abc: "X:1\nT:Cooley's\nK:Em\nEBBA B2 EB|"
+	});
+
+	/** Mocks the Tunes and Sets API from `server`, and opens the page once its live connection is open. */
+	async function open(page, path, state = {}) {
+		const server = {
+			tunes: [COOLEYS],
+			sets: [{ id: 'set-1', tunes: [COOLEYS] }],
+			performances: [performance('Knees Up')],
+			...state
+		};
+		await fakeLiveStream(page);
+		await page.route('**/api/me', (route) => route.fulfill({ status: 401 }));
+		await page.route('**/api/dance-types', (route) => route.fulfill({ json: ['jig', 'reel'] }));
+		await page.route('**/api/tunes?*', (route) => route.fulfill({ json: server.tunes }));
+		await page.route('**/api/tunes/*/performances', (route) =>
+			route.fulfill({ json: server.performances })
+		);
+		await page.route('**/api/tunes/tune-1', (route) => route.fulfill({ json: COOLEYS }));
+		await page.route('**/api/*/*/comments', (route) => route.fulfill({ json: [] }));
+		await page.route('**/api/sets?*', (route) => route.fulfill({ json: server.sets }));
+		await page.route('**/api/sets/set-1', (route) => route.fulfill({ json: server.sets[0] }));
+		await page.goto(path);
+		await page.waitForFunction(() => window.__live?.opened() === 1);
+		return server;
+	}
+
+	test('the tunes list shows a tune created elsewhere', async ({ page }) => {
+		const server = await open(page, '/tunes');
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's"]);
+
+		server.tunes = [COOLEYS, KESH];
+		await emit(page, 'tune.changed', KESH.id);
+
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's", 'The Kesh']);
+	});
+
+	test('the tunes list shows tunes of a bulk import, announced without an id', async ({ page }) => {
+		const server = await open(page, '/tunes');
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's"]);
+
+		server.tunes = [COOLEYS, KESH];
+		await emit(page, 'tune.changed', undefined);
+
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's", 'The Kesh']);
+	});
+
+	test('the tunes list is fetched again when the connection comes back', async ({ page }) => {
+		const server = await open(page, '/tunes');
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's"]);
+
+		server.tunes = [COOLEYS, KESH];
+		await page.evaluate(() => window.__live.fail());
+		await page.evaluate(() => window.__live.reconnect());
+
+		await expect(page.getByTestId('tune-name')).toHaveText(["Cooley's", 'The Kesh']);
+	});
+
+	test('the sets list shows a set created elsewhere', async ({ page }) => {
+		const server = await open(page, '/sets');
+		await expect(page.getByTestId('set-tunes')).toHaveCount(1);
+
+		server.sets = [...server.sets, { id: 'set-2', tunes: [KESH] }];
+		await emit(page, 'set.changed', 'set-2');
+
+		await expect(page.getByTestId('set-tunes')).toHaveCount(2);
+	});
+
+	test('a tune page lists a performance added elsewhere', async ({ page }) => {
+		const server = await open(page, '/tunes/tune-1');
+		await expect(page.getByRole('heading', { name: /Knees Up/ })).toBeVisible();
+
+		server.performances = [performance('Knees Up'), { ...performance('Mossy Banks'), position: 2 }];
+		await emit(page, 'performance.changed', 'track-2');
+
+		await expect(page.getByRole('heading', { name: /Mossy Banks/ })).toBeVisible();
+		await expect(page.getByRole('heading', { name: /Knees Up/ })).toBeVisible();
+	});
+});

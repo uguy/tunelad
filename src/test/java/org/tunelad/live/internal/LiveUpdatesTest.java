@@ -95,4 +95,36 @@ class LiveUpdatesTest extends AbstractLiveTest {
         await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("track.unindexed").contains(body("track.unindexed", id)));
         assertThat(searchTitles("rain")).isEmpty();
     }
+
+    @Test
+    void a_created_tune_and_set_are_announced_to_anonymous_and_authenticated_clients() {
+        var anonymous = follow(null);
+        var bob = follow(org.tunelad.TestTokens.bearer("bob", "Bob Smith"));
+
+        var tune = client.post().uri("/api/tunes").headers(h -> h.setBearerAuth(UPLOADER_TOKEN))
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("name", "The Kesh", "danceType", "jig")).exchange().expectStatus().isCreated()
+                .expectBody(org.tunelad.tune.TuneDTO.class).returnResult().getResponseBody().id();
+        var set = client.post().uri("/api/sets").headers(h -> h.setBearerAuth(UPLOADER_TOKEN))
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("tuneIds", List.of(tune))).exchange().expectStatus().isCreated()
+                .expectBody(org.tunelad.set.SetDTO.class).returnResult().getResponseBody().id();
+
+        for (var stream : List.of(anonymous, bob)) {
+            await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("tune.changed").contains(body("tune.changed", tune)));
+            await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("set.changed").contains(body("set.changed", set)));
+        }
+    }
+
+    @Test
+    void the_performances_of_a_track_are_announced_when_it_is_added_and_deleted() {
+        var stream = follow(null);
+
+        var id = uploadOk("Rainfall", "Rain on tin", KNEES_UP_MP3).id();
+        await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("performance.changed").contains(body("performance.changed", id)));
+
+        var before = stream.dataOf("performance.changed").size();
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+        await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("performance.changed").size() > before);
+    }
 }

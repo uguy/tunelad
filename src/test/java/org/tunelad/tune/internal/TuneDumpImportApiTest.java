@@ -19,7 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /** Tests for openspec/specs/tune (the bulk import), against a local server answering like the dump's host. */
+@org.springframework.context.annotation.Import(TuneDumpImportApiTest.Recorder.class)
 class TuneDumpImportApiTest extends AbstractApiTest {
+
+	static final java.util.List<org.tunelad.tune.event.TuneChanged> changed = new java.util.concurrent.CopyOnWriteArrayList<>();
 
 	static final AtomicBoolean DOWN = new AtomicBoolean();
 	static final HttpServer SERVER = serve();
@@ -72,6 +75,7 @@ class TuneDumpImportApiTest extends AbstractApiTest {
 	@BeforeEach
 	void reset() {
 		DOWN.set(false);
+		changed.clear();
 		await().atMost(Duration.ofSeconds(10)).until(() -> dumpImport.last().state() != TuneDumpImport.State.running);
 	}
 
@@ -90,6 +94,16 @@ class TuneDumpImportApiTest extends AbstractApiTest {
 		assertThat(count("tune_tunes", null)).isEqualTo(2);
 		assertThat(dumpImport.last().created()).isEqualTo(2);
 		assertThat(dumpImport.last().skipped()).isEqualTo(1);
+	}
+
+	@Test
+	void the_dump_publishes_one_tune_changed_without_id_when_it_created_tunes() {
+		importDump();
+		assertThat(changed).containsExactly(new org.tunelad.tune.event.TuneChanged(null));
+
+		changed.clear();
+		importDump();
+		assertThat(changed).isEmpty();
 	}
 
 	@Test
@@ -136,5 +150,20 @@ class TuneDumpImportApiTest extends AbstractApiTest {
 
 		assertThat(dumpImport.last().state()).isEqualTo(TuneDumpImport.State.failed);
 		assertThat(dumpImport.last().reason()).isNotBlank();
+	}
+
+	@org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods = false)
+	static class Recorder {
+		@org.springframework.context.annotation.Bean
+		RecordingListener dumpRecordingListener() {
+			return new RecordingListener();
+		}
+	}
+
+	static class RecordingListener {
+		@org.springframework.context.event.EventListener
+		void on(org.tunelad.tune.event.TuneChanged event) {
+			changed.add(event);
+		}
 	}
 }

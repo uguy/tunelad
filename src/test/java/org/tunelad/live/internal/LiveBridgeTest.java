@@ -12,6 +12,12 @@ import org.tunelad.media.event.WaveformComputed;
 import org.tunelad.playlist.event.PlaylistChanged;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.tunelad.search.event.TrackIndexed;
+import org.tunelad.set.event.SetChanged;
+import org.tunelad.track.TrackDTO;
+import org.tunelad.track.event.NewTrackSaved;
+import org.tunelad.track.event.TrackDeleted;
+import org.tunelad.track.event.TrackUpdated;
+import org.tunelad.tune.event.TuneChanged;
 import org.tunelad.search.event.TrackUnindexed;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -87,6 +93,42 @@ class LiveBridgeTest extends AbstractLiveTest {
     }
 
     @Test
+    void a_tune_change_goes_out_to_everyone_under_the_id_of_its_tune() throws Exception {
+        var message = publishedAfter(new TuneChanged("12"));
+
+        assertThat(message.subject()).isEqualTo("tunelad.library.tune.changed");
+        assertThat(message.body()).isEqualTo("{\"type\":\"tune.changed\",\"id\":\"12\"}");
+    }
+
+    @Test
+    void a_bulk_import_goes_out_without_an_id() throws Exception {
+        var message = publishedAfter(new TuneChanged(null));
+
+        assertThat(message.subject()).isEqualTo("tunelad.library.tune.changed");
+        assertThat(message.body()).isEqualTo("{\"type\":\"tune.changed\"}");
+    }
+
+    @Test
+    void a_set_change_goes_out_to_everyone_under_the_id_of_its_set() throws Exception {
+        var message = publishedAfter(new SetChanged("7"));
+
+        assertThat(message.subject()).isEqualTo("tunelad.library.set.changed");
+        assertThat(message.body()).isEqualTo("{\"type\":\"set.changed\",\"id\":\"7\"}");
+    }
+
+    @Test
+    void track_events_go_out_as_performance_changes_under_the_id_of_the_track() throws Exception {
+        var track = new TrackDTO("42", "Knees Up", null, null, null, null, null, null, java.util.List.of());
+
+        for (Object event : new Object[] {new NewTrackSaved(track), new TrackUpdated(track), new TrackDeleted("42")}) {
+            var message = publishedAfter(event, "tunelad.library.performance.changed");
+
+            assertThat(message.subject()).isEqualTo("tunelad.library.performance.changed");
+            assertThat(message.body()).isEqualTo("{\"type\":\"performance.changed\",\"id\":\"42\"}");
+        }
+    }
+
+    @Test
     void published_events_are_counted_by_type_only() throws Exception {
         var before = meters.counter("tunelad.live.events.published", "type", "favourite.changed").count();
 
@@ -121,7 +163,12 @@ class LiveBridgeTest extends AbstractLiveTest {
 
     /** Publishes the event in a transaction, as its module does, and returns what reached NATS. */
     private Published publishedAfter(Object event) throws Exception {
-        var subscription = nats().subscribe("tunelad.>");
+        return publishedAfter(event, "tunelad.>");
+    }
+
+    /** As above, listening on one subject only: other modules react to some events too (a saved Track is indexed). */
+    private Published publishedAfter(Object event, String subject) throws Exception {
+        var subscription = nats().subscribe(subject);
         nats().flush(Duration.ofSeconds(5));
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> events.publishEvent(event));
