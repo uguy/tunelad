@@ -105,8 +105,11 @@
 			scroll-behavior: auto !important;
 		}
 	}
+}
 
-	/* Form fields take the theme's colours, not the forms plugin's light ones */
+@layer components {
+	/* Form fields take the theme's colours, not the forms plugin's light ones (components beat the plugin's base) */
+	input:where(:not([type])),
 	[type='text'],
 	[type='search'],
 	[type='email'],
@@ -115,9 +118,7 @@
 	select {
 		@apply border-line bg-surface text-ink placeholder:text-ink-muted;
 	}
-}
 
-@layer components {
 	/* A primary action: the accent, as on the play buttons */
 	.btn-accent {
 		@apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-strong disabled:opacity-50;

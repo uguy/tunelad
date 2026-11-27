@@ -13,7 +13,7 @@
 	<artifactId>tunelad</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Tunelad</name>
-	<description>Tunelad is a simple application to listen to tracks.</description>
+	<description>Tune Lad is a playground app to share tracks, keep favourites, build playlists and listen in the browser.</description>
 	<properties>
 		<!-- Project -->
 		<docker-registry>docker.io</docker-registry>

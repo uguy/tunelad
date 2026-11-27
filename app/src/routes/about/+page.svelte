@@ -40,7 +40,7 @@
 							xmlns="http://www.w3.org/2000/svg"
 							viewBox="0 0 24 24"
 							fill="currentColor"
-							class="inline h-5 w-5 text-red-700"
+							class="inline h-5 w-5 text-danger"
 						>
 							<path
 								fill-rule="evenodd"
@@ -61,7 +61,7 @@
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-6 h-6 text-green-600 inline"
+							class="w-6 h-6 text-success inline"
 						>
 							<path
 								stroke-linecap="round"
@@ -76,7 +76,7 @@
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-6 h-6 text-red-700 inline"
+							class="w-6 h-6 text-danger inline"
 						>
 							<path
 								stroke-linecap="round"
@@ -101,7 +101,7 @@
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-6 h-6 text-green-600 inline"
+							class="w-6 h-6 text-success inline"
 						>
 							<path
 								stroke-linecap="round"
@@ -116,7 +116,7 @@
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-6 h-6 text-red-700 inline"
+							class="w-6 h-6 text-danger inline"
 						>
 							<path
 								stroke-linecap="round"
@@ -195,9 +195,3 @@
 		</div>
 	</div>
 </section>
-
-<style>
-	.stat-panel {
-		color: white;
-	}
-</style>

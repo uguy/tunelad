@@ -93,7 +93,7 @@
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">Tracks</h1>
 			<nav aria-label="collections" class="mt-3 flex gap-1 text-sm font-medium">
-				{#each [{ path: '/tracks/favourites', label: 'Favourites' }, { path: '/tracks/playlists', label: 'Playlists' }, { path: '/tracks/albums', label: 'Albums' }] as const as link (link.path)}
+				{#each [{ path: '/tracks/favourites', label: 'Favourites' }, { path: '/tracks/playlists', label: 'Playlists' }] as const as link (link.path)}
 					<a
 						href={resolve(link.path)}
 						class="rounded-full px-3 py-1 text-ink-muted hover:bg-surface hover:text-ink"

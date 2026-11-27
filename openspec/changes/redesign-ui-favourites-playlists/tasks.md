@@ -16,10 +16,10 @@
 
 ## 3. Page redesign
 
-- [ ] 3.1 Restyle `TrackList.svelte` and the Tracks page (search, track rows or cards, tags, owner, empty and loading states) keeping accessible names stable; verify with the existing `TrackList`, `Tracks` and e2e tests passing unchanged
-- [ ] 3.2 Restyle the home, upload, login and about pages (refresh the About page text to match the app); delete `app/src/routes/tracks/albums/` and the Albums link in `routes/tracks/+page.svelte`; verify with their existing vitest and Playwright tests, a Playwright test that the collections nav has only Favourites and Playlists and `/tracks/albums` shows the not-found page, and a grep gate showing no raw colour utilities (`bg-white`, `text-gray-*`, hex colours) and no `albums` reference left in `app/src`
-- [ ] 3.3 Add a Playwright test that opens every page in dark mode and asserts the page background is dark (no light panel), at desktop and 360 px widths
-- [ ] 3.4 Run `bun run format`, then commit: `feat(ui): redesign tracks, home, upload, login and about pages`
+- [x] 3.1 Restyle `TrackList.svelte` and the Tracks page (search, track rows or cards, tags, owner, empty and loading states) keeping accessible names stable; verify with the existing `TrackList`, `Tracks` and e2e tests passing unchanged
+- [x] 3.2 Restyle the home, upload, login and about pages (refresh the About page text to match the app); delete `app/src/routes/tracks/albums/` and the Albums link in `routes/tracks/+page.svelte`; verify with their existing vitest and Playwright tests, a Playwright test that the collections nav has only Favourites and Playlists and `/tracks/albums` shows the not-found page, and a grep gate showing no raw colour utilities (`bg-white`, `text-gray-*`, hex colours) and no `albums` reference left in `app/src`
+- [x] 3.3 Add a Playwright test that opens every page in dark mode and asserts the page background is dark (no light panel), at desktop and 360 px widths
+- [x] 3.4 Run `bun run format`, then commit: `feat(ui): redesign tracks, home, upload, login and about pages`
 
 ## 4. Favourites backend
 
