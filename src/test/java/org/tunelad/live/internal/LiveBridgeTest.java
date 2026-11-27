@@ -121,7 +121,7 @@ class LiveBridgeTest extends AbstractLiveTest {
         var track = new TrackDTO("42", "Knees Up", null, null, null, null, null, null, java.util.List.of());
 
         for (Object event : new Object[] {new NewTrackSaved(track), new TrackUpdated(track), new TrackDeleted("42")}) {
-            var message = publishedAfter(event);
+            var message = publishedAfter(event, "tunelad.library.performance.changed");
 
             assertThat(message.subject()).isEqualTo("tunelad.library.performance.changed");
             assertThat(message.body()).isEqualTo("{\"type\":\"performance.changed\",\"id\":\"42\"}");
@@ -163,7 +163,12 @@ class LiveBridgeTest extends AbstractLiveTest {
 
     /** Publishes the event in a transaction, as its module does, and returns what reached NATS. */
     private Published publishedAfter(Object event) throws Exception {
-        var subscription = nats().subscribe("tunelad.>");
+        return publishedAfter(event, "tunelad.>");
+    }
+
+    /** As above, listening on one subject only: other modules react to some events too (a saved Track is indexed). */
+    private Published publishedAfter(Object event, String subject) throws Exception {
+        var subscription = nats().subscribe(subject);
         nats().flush(Duration.ofSeconds(5));
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> events.publishEvent(event));

@@ -59,7 +59,9 @@ public class SetService implements SetCatalog {
 								.thenReturn(new Created(set, created))));
 	}
 
+	/** Transactional here too: called through the catalog, {@link #create} is not reached through its proxy. */
 	@Override
+	@ReactiveTransactional
 	public Mono<SetDTO> findOrCreate(AccountRef creator, List<String> tuneIds) {
 		return create(creator, tuneIds).map(Created::set);
 	}
