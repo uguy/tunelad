@@ -12,6 +12,7 @@ rules:
     - Flag breaking REST API changes explicitly
     - Always include an explicit Out of scope section
     - Propose the conventional commit type and scope to use as the PR title
+    - When the change implements a roadmap slice, start proposal.md with `Issue: #<n>` and use GLOSSARY.md terms verbatim
   specs:
     - One capability per Modulith module (specs/track, specs/search); use a sub-path only when a module grows several distinct capabilities
     - Describe behaviour observable through the REST API or the UI, never internal classes
@@ -24,6 +25,7 @@ rules:
     - Each task group is one reviewable commit with a conventional commit message
     - Every behaviour change has a test in the same task group (Testcontainers for PostgreSQL, Playwright for UI flows)
     - Last tasks are running ./mvnw clean verify, updating README.adoc features if user-visible, then opening a PR
+    - If a GLOSSARY.md term changes, update it in the same change; when the proposal names an issue, the PR body says `Closes #<n>`
 
 operations:
   apply:

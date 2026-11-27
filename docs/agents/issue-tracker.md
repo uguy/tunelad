@@ -44,3 +44,11 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+
+## Project board
+
+Issues are tracked on the GitHub Project `uguy/projects/1` ("Tunelad"; owner `uguy`, number `1`). New issues are added automatically.
+
+- **Status**: `Backlog` → `Ready` (specified, label `ready-for-agent`/`ready-for-human`) → `In progress` (an OpenSpec change exists) → `In review` (PR open) → `Done`. Other fields: `Priority`, `Size`, `Iteration`.
+- **Move a card**: `gh project item-list 1 --owner uguy --format json` for the item id, `gh project field-list 1 --owner uguy --format json` for the Status field id and option ids, then `gh project item-edit --project-id <id> --id <item> --field-id <field> --single-select-option-id <option>` (`gh project view 1 --owner uguy --format json --jq .id` gives the project id). Needs the `project` token scope.
+- **Roadmap**: slices of a large feature are sub-issues of an issue labelled `roadmap`, ordered by native *blocked by* links. `/next-slice` picks the next unblocked one and starts its OpenSpec change.

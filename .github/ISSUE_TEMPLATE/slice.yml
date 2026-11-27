@@ -1,0 +1,39 @@
+name: Slice
+description: A thin, shippable vertical slice of the domain model (becomes one OpenSpec change)
+labels: ["needs-triage"]
+body:
+  - type: input
+    id: parent
+    attributes:
+      label: Roadmap issue
+      description: The parent roadmap issue, e.g. #814
+  - type: textarea
+    id: terms
+    attributes:
+      label: Glossary terms
+      description: Terms from GLOSSARY.md this slice introduces or changes. Use them verbatim.
+    validations:
+      required: true
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: User-visible behaviour
+      description: What can be done through the REST API or the UI once this ships.
+    validations:
+      required: true
+  - type: input
+    id: modules
+    attributes:
+      label: Modulith modules touched
+      description: e.g. track, tune (new)
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Suggested PR title
+      description: A valid conventional commit, e.g. `feat(tune): add tunes with dance types`
