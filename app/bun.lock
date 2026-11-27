@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "tunelad",
+      "dependencies": {
+        "abcjs": "^6.7.3",
+      },
       "devDependencies": {
         "@eslint/compat": "^2.0.0",
         "@eslint/js": "^10.0.1",
@@ -242,6 +245,8 @@
     "@vitest/ui": ["@vitest/ui@5.1.2", "", { "dependencies": { "@vitest/utils": "5.1.2", "fflate": "^0.8.3", "flatted": "^3.4.4", "pathe": "^2.0.3", "sirv": "^3.0.2", "tinyrainbow": "^3.2.0" }, "peerDependencies": { "vitest": "5.1.2" } }, "sha512-BLWlcNBuk8vb8RyJYU3ccizWsCRjB5vcuIKMSLK46ClZOR0d1z6PyyfmJ6bJHgWdJSDHTUjCIncni0Tlp2bkhw=="],
 
     "@vitest/utils": ["@vitest/utils@5.1.2", "", { "dependencies": { "@vitest/pretty-format": "5.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.2.0" } }, "sha512-SledZ6XVTrtJlEs3ecDbuFWddjmc4QFCs1biOOaLjZGn6EHRwZuTJxgRN8KjHEb6a79XRIEdH9BtbFFXVelQKQ=="],
+
+    "abcjs": ["abcjs@6.7.3", "", {}, "sha512-yAf6kPrhwJuH4Amy1ZynX01rH74wWXJRULPpn4KpBur5aUr+NzZP9OZCNsN6thfH83NXJS00WB2mrg9hXNesbQ=="],
 
     "acorn": ["acorn@8.19.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw=="],
 
