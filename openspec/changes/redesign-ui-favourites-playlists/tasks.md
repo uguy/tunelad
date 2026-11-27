@@ -56,10 +56,10 @@
 
 ## 9. Live updates and metrics
 
-- [ ] 9.1 Add `favourite.changed` and `playlist.changed` to `LiveBridge` (listening to `favourite::event` and `playlist::event`, publishing on the account subject), add the two event packages to `live`'s `allowedDependencies`; verify with Testcontainers and NATS tests: both tabs of the account receive it, another account and an anonymous client do not, the body holds only `type` and `id`, a track deletion raises one event per affected account, and an upload still succeeds with NATS down
-- [ ] 9.2 Add the `tunelad.live.connections` gauge and the `tunelad.live.events.published` and `tunelad.live.events.delivered` counters tagged by event type only; verify with a test that opens two streams and reads the gauge and counters by name from the `MeterRegistry`
-- [ ] 9.3 Make the favourites store, favourites page, playlists list, playlist page and account counts refetch on `favourite.changed`, `playlist.changed` and reconnect with `refreshOnLive`; verify with vitest (the store converges after an event) and a Playwright test with two pages of the same user: favourite in one appears in the other, a reorder in one shows in the other, deleting a playlist in one shows not-found in the other
-- [ ] 9.4 Run `ModularApplicationTests`, then commit: `feat(live): push favourite and playlist changes to the owner's tabs`
+- [x] 9.1 Add `favourite.changed` and `playlist.changed` to `LiveBridge` (listening to `favourite::event` and `playlist::event`, publishing on the account subject), add the two event packages to `live`'s `allowedDependencies`; verify with Testcontainers and NATS tests: both tabs of the account receive it, another account and an anonymous client do not, the body holds only `type` and `id`, a track deletion raises one event per affected account, and an upload still succeeds with NATS down
+- [x] 9.2 Add the `tunelad.live.connections` gauge and the `tunelad.live.events.published` and `tunelad.live.events.delivered` counters tagged by event type only; verify with a test that opens two streams and reads the gauge and counters by name from the `MeterRegistry`
+- [x] 9.3 Make the favourites store, favourites page, playlists list, playlist page and account counts refetch on `favourite.changed`, `playlist.changed` and reconnect with `refreshOnLive`; verify with vitest (the store converges after an event) and a Playwright test with two pages of the same user: favourite in one appears in the other, a reorder in one shows in the other, deleting a playlist in one shows not-found in the other
+- [x] 9.4 Run `ModularApplicationTests`, then commit: `feat(live): push favourite and playlist changes to the owner's tabs`
 
 ## 10. Docs, screenshots and dashboards
 

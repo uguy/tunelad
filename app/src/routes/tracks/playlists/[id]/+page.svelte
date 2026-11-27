@@ -2,7 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import Icon from '#lib/Icon.svelte';
 	import PlaylistTracks from '#lib/PlaylistTracks.svelte';
 	import EmptyState from '#lib/ui/EmptyState.svelte';
@@ -42,6 +44,13 @@
 		void id;
 		if (session.loaded && session.account) untrack(() => void load());
 	});
+
+	// Another tab changed this playlist (or one the list shows): fetch it again, unless the user is editing its name
+	onMount(() =>
+		refreshOnLive(live, ['playlist.changed'], () => {
+			if (session.account && !renaming) void load();
+		})
+	);
 
 	function startRename() {
 		if (!playlist) return;

@@ -8,6 +8,7 @@
 	import Toast from '#lib/ui/Toast.svelte';
 	import { player } from '#lib/player.svelte.js';
 	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import { session } from '#lib/session.svelte.js';
 	import { favourites } from '#lib/favourites.svelte.js';
 	import { playlists } from '#lib/playlists.svelte.js';
@@ -36,6 +37,19 @@
 	});
 
 	// One live connection for the tab, opened once it is known who is logged in, and reopened if that changes
+	// What this account's other tabs and devices change in the favourites and playlists, and what was missed meanwhile.
+	// The server only sends these events to the connections of the account they concern.
+	onMount(() => {
+		const stops = [
+			refreshOnLive(live, ['favourite.changed'], () => {
+				if (session.account) void favourites.load();
+			}),
+			refreshOnLive(live, ['playlist.changed'], () => {
+				if (session.account) void playlists.load();
+			})
+		];
+		return () => stops.forEach((stop) => stop());
+	});
 	onMount(() => live.follow(() => (session.loaded ? (session.account?.id ?? null) : undefined)));
 </script>
 

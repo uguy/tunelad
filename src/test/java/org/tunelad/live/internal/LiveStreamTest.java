@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.tunelad.TestTokens;
 
 import java.time.Duration;
@@ -13,6 +15,8 @@ import static org.awaitility.Awaitility.await;
 
 /** {@code GET /api/live}: who receives what. Events are published on NATS as another instance would. */
 class LiveStreamTest extends AbstractLiveTest {
+
+    @Autowired MeterRegistry meters;
 
     private static final String ALICE = UPLOADER_TOKEN;
     private static final String BOB = TestTokens.bearer("bob", "Bob Smith");
@@ -167,5 +171,35 @@ class LiveStreamTest extends AbstractLiveTest {
                 .expectBody()
                 .jsonPath("$.paths['/api/live'].get.tags[0]").isEqualTo("Live")
                 .jsonPath("$.paths['/api/live'].get.responses['200'].content['text/event-stream']").exists();
+    }
+
+    // --- Metrics ---------------------------------------------------------------------------------
+
+    @Test
+    void open_connections_are_gauged_and_events_delivered_are_counted() throws Exception {
+        var aliceId = accountOf(ALICE).id();
+        var before = meters.counter("tunelad.live.events.delivered", "type", "playlist.changed").count();
+        var stream = follow(ALICE);
+        await().atMost(Duration.ofSeconds(5)).until(() -> meters.get("tunelad.live.connections").gauge().value() >= 1);
+
+        publishRaw(LiveSubjects.account(aliceId, "playlist.changed"), body("playlist.changed", "p1"));
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> stream.names().contains("playlist.changed"));
+        assertThat(meters.counter("tunelad.live.events.delivered", "type", "playlist.changed").count())
+                .isEqualTo(before + 1);
+
+        stream.close();
+        await().atMost(Duration.ofSeconds(10)).until(() -> meters.get("tunelad.live.connections").gauge().value() == 0);
+    }
+
+    @Test
+    void an_unknown_type_is_counted_as_other_so_the_series_stay_bounded() throws Exception {
+        var stream = follow(null);
+
+        publishRaw(LiveSubjects.library("made.up.type"), body("made.up.type", "1"));
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> !stream.events().isEmpty());
+        assertThat(meters.find("tunelad.live.events.delivered").tag("type", "made.up.type").counter()).isNull();
+        assertThat(meters.counter("tunelad.live.events.delivered", "type", "other").count()).isPositive();
     }
 }

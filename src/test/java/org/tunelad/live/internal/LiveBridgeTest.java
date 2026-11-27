@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.tunelad.favourite.event.FavouriteChanged;
 import org.tunelad.media.event.WaveformComputed;
+import org.tunelad.playlist.event.PlaylistChanged;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.tunelad.search.event.TrackIndexed;
 import org.tunelad.search.event.TrackUnindexed;
 import tools.jackson.databind.json.JsonMapper;
@@ -22,6 +25,7 @@ class LiveBridgeTest extends AbstractLiveTest {
     @Autowired ApplicationEventPublisher events;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JsonMapper json;
+    @Autowired MeterRegistry meters;
 
     @Test
     void a_track_that_became_searchable_goes_out_to_everyone() throws Exception {
@@ -49,6 +53,34 @@ class LiveBridgeTest extends AbstractLiveTest {
     }
 
     @Test
+    void a_favourite_change_goes_out_on_the_subject_of_its_account() throws Exception {
+        var message = publishedAfter(new FavouriteChanged("acc-1", "42"));
+
+        assertThat(message.subject()).isEqualTo(LiveSubjects.account("acc-1", "favourite.changed"));
+        assertThat(message.body()).isEqualTo("{\"type\":\"favourite.changed\",\"id\":\"42\"}");
+    }
+
+    @Test
+    void a_playlist_change_goes_out_on_the_subject_of_its_owner() throws Exception {
+        var message = publishedAfter(new PlaylistChanged("acc-1", "p-9"));
+
+        assertThat(message.subject()).isEqualTo(LiveSubjects.account("acc-1", "playlist.changed"));
+        assertThat(message.body()).isEqualTo("{\"type\":\"playlist.changed\",\"id\":\"p-9\"}");
+    }
+
+    @Test
+    void published_events_are_counted_by_type_only() throws Exception {
+        var before = meters.counter("tunelad.live.events.published", "type", "favourite.changed").count();
+
+        publishedAfter(new FavouriteChanged("acc-1", "42"));
+
+        assertThat(meters.counter("tunelad.live.events.published", "type", "favourite.changed").count())
+                .isEqualTo(before + 1);
+        assertThat(meters.find("tunelad.live.events.published").meters())
+                .allSatisfy(m -> assertThat(m.getId().getTags()).extracting(t -> t.getKey()).contains("type").doesNotContain("id", "account", "track", "playlist"));
+    }
+
+    @Test
     void an_id_with_quotes_and_backslashes_stays_valid_json() throws Exception {
         var id = "a\"b\\c d";
 
@@ -71,7 +103,7 @@ class LiveBridgeTest extends AbstractLiveTest {
 
     /** Publishes the event in a transaction, as its module does, and returns what reached NATS. */
     private Published publishedAfter(Object event) throws Exception {
-        var subscription = nats().subscribe("tunelad.library.>");
+        var subscription = nats().subscribe("tunelad.>");
         nats().flush(Duration.ofSeconds(5));
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> events.publishEvent(event));
