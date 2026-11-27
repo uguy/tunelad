@@ -23,8 +23,32 @@ const KESH = {
 	abc: null
 };
 
-async function mockApi(page, { loggedIn = true } = {}) {
+const PERFORMANCES = [
+	{
+		trackId: 'track-1',
+		trackTitle: 'Knees Up',
+		artist: 'Altan',
+		position: 1,
+		startOffsetSeconds: 95.5,
+		key: 'Em',
+		notes: 'plays the B part twice',
+		abc: "X:1\nT:Cooley's\nK:Em\nEBBA B2 EB|"
+	},
+	{
+		trackId: 'track-2',
+		trackTitle: 'Mossy Banks',
+		artist: null,
+		position: 2,
+		startOffsetSeconds: 0,
+		key: null,
+		notes: null,
+		abc: null
+	}
+];
+
+async function mockApi(page, { loggedIn = true, performances = [] } = {}) {
 	const state = { imported: [] };
+	await page.route('**/api/tunes/*/performances', (route) => route.fulfill({ json: performances }));
 	await page.route('**/api/me', (route) =>
 		loggedIn ? route.fulfill({ json: ALICE }) : route.fulfill({ status: 401 })
 	);
@@ -95,6 +119,31 @@ test('no transcription', async ({ page }) => {
 	await expect(page.getByText('no transcription')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Play' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'ABC text' })).toHaveCount(0);
+});
+
+// --- Requirement: Tune view shows each Performance's sheet ------------------------------------
+
+test('a sheet for each performance with a transcription', async ({ page }) => {
+	await mockApi(page, { performances: PERFORMANCES });
+	await page.goto('/tunes/tune-1');
+
+	await expect(page.getByRole('heading', { name: /Knees Up/ })).toBeVisible();
+	await expect(
+		page.getByRole('img', { name: /Sheet music of Cooley's as played in Knees Up/ })
+	).toBeVisible();
+	await expect(page.getByRole('heading', { name: /Mossy Banks/ })).toHaveCount(0);
+	await expect(page.getByRole('img', { name: /Sheet music of Cooley's\. / })).toHaveCount(0);
+	await expect(page.getByRole('link', { name: /Play from 1:35.5/ })).toHaveAttribute(
+		'href',
+		'/tracks?play=track-1&t=95.5'
+	);
+});
+
+test('the reference transcription when no performance has one', async ({ page }) => {
+	await mockApi(page, { performances: [PERFORMANCES[1]] });
+	await page.goto('/tunes/tune-1');
+
+	await expect(page.getByRole('img', { name: /Sheet music of Cooley's\. / })).toBeVisible();
 });
 
 // --- Requirement: Play a Reference transcription ---------------------------------------------

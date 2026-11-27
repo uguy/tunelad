@@ -9,8 +9,8 @@
 
 ## 3. UI
 
-- [ ] 3.1 Add an ABC textarea (monospace, limit shown) to `PerformanceFields.svelte`, with `abc` in `Performances.ts` (`checkPerformance`, `toInput`); vitest in `Performances.test.ts` and a Playwright flow mocking the API with `page.route`. Commit `feat(ui): edit a performance's transcription`.
-- [ ] 3.2 Fetch performances in `Tunes.ts` and render a sheet per Performance on `tunes/[id]/+page.svelte` with Reference transcription fallback; vitest plus Playwright covering sheets, fallback and none. Commit `feat(ui): show transcriptions on the tune view`.
+- [x] 3.1 Add an ABC textarea (monospace, limit shown) to `PerformanceFields.svelte`, with `abc` in `Performances.ts` (`checkPerformance`, `toInput`); vitest in `Performances.test.ts` and a Playwright flow mocking the API with `page.route`. Commit `feat(ui): edit a performance's transcription`.
+- [x] 3.2 Fetch performances in `Tunes.ts` and render a sheet per Performance on `tunes/[id]/+page.svelte` with Reference transcription fallback; vitest plus Playwright covering sheets, fallback and none. Commit `feat(ui): show transcriptions on the tune view`.
 
 ## 4. Docs and delivery
 

@@ -3,17 +3,21 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
-	import TuneService, { type Tune } from '../Tunes.js';
+	import { formatOffset } from '#lib/offset.js';
+	import TuneService, { type Tune, type TunePerformance } from '../Tunes.js';
 
 	const service = new TuneService();
 	const id = $derived(page.params.id ?? '');
 
 	let tune = $state.raw<Tune | null>(null);
+	let performances = $state.raw<TunePerformance[]>([]);
+	/** Only Performances with a Transcription draw a sheet. */
+	const sheets = $derived(performances.filter((p) => p.abc?.trim()));
 	let status = $state<'loading' | 'ready' | 'notfound' | 'error'>('loading');
 
 	onMount(async () => {
 		try {
-			tune = await service.findOne(id);
+			[tune, performances] = await Promise.all([service.findOne(id), service.performances(id)]);
 			status = tune ? 'ready' : 'notfound';
 		} catch {
 			status = 'error';
@@ -72,7 +76,41 @@
 				{/if}
 			</dl>
 		</div>
-		<h2 class="sr-only">Reference transcription</h2>
-		<AbcViewer abc={tune.abc} title={tune.name} />
+		{#if sheets.length > 0}
+			{#each sheets as performance (`${performance.trackId}-${performance.position}`)}
+				<section class="flex flex-col gap-2">
+					<h2 class="text-lg font-semibold">
+						{performance.trackTitle}{#if performance.artist}<span
+								class="font-normal text-ink-muted"
+							>
+								by {performance.artist}
+							</span>{/if}
+					</h2>
+					<p class="text-sm text-ink-muted">
+						{#if performance.key}Key {performance.key} ·
+						{/if}<a
+							class="underline hover:text-ink"
+							href={resolve(
+								`/tracks?play=${encodeURIComponent(performance.trackId)}&t=${performance.startOffsetSeconds}`
+							)}
+						>
+							Play from {formatOffset(performance.startOffsetSeconds)}<span class="sr-only">
+								in {performance.trackTitle}
+							</span>
+						</a>
+					</p>
+					{#if performance.notes}
+						<p class="text-sm whitespace-pre-line text-ink-muted">{performance.notes}</p>
+					{/if}
+					<AbcViewer
+						abc={performance.abc}
+						title="{tune.name} as played in {performance.trackTitle}"
+					/>
+				</section>
+			{/each}
+		{:else}
+			<h2 class="sr-only">Reference transcription</h2>
+			<AbcViewer abc={tune.abc} title={tune.name} />
+		{/if}
 	{/if}
 </section>
