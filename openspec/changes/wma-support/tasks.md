@@ -18,10 +18,10 @@ Commit: `feat(track): accept wma uploads`
 
 Commit: `feat(media): store a playable rendition state for audio browsers cannot play`
 
-- [ ] 3.1 Add a Liquibase changeset for `media_renditions` to `src/main/resources/db/changelog/media.sql`, with a rollback; verify the app starts against Testcontainers PostgreSQL.
-- [ ] 3.2 Add the `Playable` rule and a `Renditions` repository (find, save pending, ensure pending, complete, pending keys) in `media::internal`; verify with a repository test.
-- [ ] 3.3 In `ChunkedMediaStore`, save a `PENDING` rendition row in the transaction that saves the pending waveform when the content type needs one, exclude `*:play` keys from `keys()`, and delete `<key>:play` in `delete(key)`; verify in `ChunkedMediaStoreTest` that deleting a key removes the rendition, its state and its chunks, and that `keys()` omits renditions.
-- [ ] 3.4 Add `media::event.AudioPrepared(String key)` with its package documentation; verify `ModularApplicationTests` still passes.
+- [x] 3.1 Add a Liquibase changeset for `media_renditions` to `src/main/resources/db/changelog/media.sql`, with a rollback; verify the app starts against Testcontainers PostgreSQL.
+- [x] 3.2 Add the `Playable` rule and a `Renditions` repository (find, save pending, ensure pending, complete, pending keys) in `media::internal`; verify with a repository test.
+- [x] 3.3 In `ChunkedMediaStore`, save a `PENDING` rendition row in the transaction that saves the pending waveform when the content type needs one, exclude `*:play` keys from `keys()`, and delete `<key>:play` in `delete(key)`; verify in `ChunkedMediaStoreTest` that deleting a key removes the rendition, its state and its chunks, and that `keys()` omits renditions.
+- [x] 3.4 Add `media::event.AudioPrepared(String key)` with its package documentation; verify `ModularApplicationTests` still passes.
 
 ## 4. Making the rendition
 
