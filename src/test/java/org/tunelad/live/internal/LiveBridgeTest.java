@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.tunelad.comment.event.CommentChanged;
 import org.tunelad.favourite.event.FavouriteChanged;
 import org.tunelad.media.event.AudioPrepared;
 import org.tunelad.media.event.WaveformComputed;
@@ -75,6 +76,14 @@ class LiveBridgeTest extends AbstractLiveTest {
 
         assertThat(message.subject()).isEqualTo(LiveSubjects.account("acc-1", "playlist.changed"));
         assertThat(message.body()).isEqualTo("{\"type\":\"playlist.changed\",\"id\":\"p-9\"}");
+    }
+
+    @Test
+    void a_comment_change_goes_out_to_everyone_under_the_id_of_its_subject() throws Exception {
+        var message = publishedAfter(new CommentChanged("42"));
+
+        assertThat(message.subject()).isEqualTo("tunelad.library.comment.changed");
+        assertThat(message.body()).isEqualTo("{\"type\":\"comment.changed\",\"id\":\"42\"}");
     }
 
     @Test
