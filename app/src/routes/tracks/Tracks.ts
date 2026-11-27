@@ -40,6 +40,14 @@ export interface Waveform {
 	peaks: number[];
 }
 
+/** Whether a track's audio can be played: `PENDING` while the server converts it, `FAILED` when it could not. */
+export interface Audio {
+	status: 'PENDING' | 'READY' | 'FAILED';
+}
+
+/** Formats a browser cannot play as they are uploaded: the server converts them, and says when they are ready. */
+export const CONVERTED_FORMATS = ['WMA'];
+
 /** A track's metadata as an edit replaces it: an omitted artist or album is cleared. */
 export interface TrackEdit {
 	title: string;
@@ -192,6 +200,20 @@ export default class TrackService {
 				this.#fetchFunc,
 				'GET',
 				`tracks/${encodeURIComponent(id)}/waveform`
+			);
+			return res.ok ? await res.json() : null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** The state of the track's audio, or null when the track does not exist or it cannot be fetched. */
+	async findAudio(id: string): Promise<Audio | null> {
+		try {
+			const res = await api.request(
+				this.#fetchFunc,
+				'GET',
+				`tracks/${encodeURIComponent(id)}/audio`
 			);
 			return res.ok ? await res.json() : null;
 		} catch {

@@ -21,6 +21,10 @@
 			: ''
 	);
 
+	/** The source the browser could not load, such as audio the server is still converting. */
+	let failedSource = $state.raw<MediaSource | null>(null);
+	const unplayable = $derived(player.source !== null && failedSource === player.source);
+
 	const title = $derived(player.track?.title ?? 'Loading…');
 	const owner = $derived(player.track?.owner?.displayName);
 
@@ -56,6 +60,9 @@
 	bind:muted={player.muted}
 	onloadedmetadata={(e) => player.metadataLoaded(e.currentTarget.duration)}
 	onended={() => player.ended()}
+	onerror={() => {
+		if (player.source) failedSource = player.source;
+	}}
 ></audio>
 
 <section
@@ -152,6 +159,11 @@
 					<p class="truncate text-xs text-ink-muted" data-testid="player-owner">{owner}</p>
 				{/if}
 				<p class="truncate text-sm font-medium" data-testid="player-title">{title}</p>
+				{#if unplayable}
+					<p role="status" class="truncate text-xs text-danger" data-testid="player-unplayable">
+						This audio cannot be played yet.
+					</p>
+				{/if}
 			</div>
 		</div>
 

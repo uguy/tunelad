@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.tunelad.favourite.event.FavouriteChanged;
+import org.tunelad.media.event.AudioPrepared;
 import org.tunelad.media.event.WaveformComputed;
 import org.tunelad.playlist.event.PlaylistChanged;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -50,6 +51,14 @@ class LiveBridgeTest extends AbstractLiveTest {
 
         assertThat(message.subject()).isEqualTo("tunelad.library.waveform.computed");
         assertThat(message.body()).isEqualTo("{\"type\":\"waveform.computed\",\"id\":\"42\"}");
+    }
+
+    @Test
+    void prepared_audio_goes_out_under_the_id_of_its_track() throws Exception {
+        var message = publishedAfter(new AudioPrepared("42"));
+
+        assertThat(message.subject()).isEqualTo("tunelad.library.audio.prepared");
+        assertThat(message.body()).isEqualTo("{\"type\":\"audio.prepared\",\"id\":\"42\"}");
     }
 
     @Test

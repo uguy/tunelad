@@ -44,10 +44,10 @@ Commit: `feat(media): play the rendition and expose the audio state`
 
 Commit: `feat(ui): show wma audio being prepared and play it when ready`
 
-- [ ] 6.1 In `LiveBridge`, publish `audio.prepared` to everyone with the track id on `AudioPrepared`; verify in `LiveBridgeTest` and with a live API test that an anonymous and an authenticated client both receive it, and that no event is raised for an mp3 upload.
-- [ ] 6.2 Add the audio state call to the track service in `Tracks.ts`, called only for tracks whose format is `WMA`; verify in `Tracks.test.ts`.
-- [ ] 6.3 In `TrackList.svelte` and `PlayerBar.svelte`, show "Preparing audio" or "Audio could not be prepared" as text next to a disabled play control, with theme tokens only and a `role="status"` announcement, and refetch the state on `audio.prepared` with no polling; verify with component tests that the status is replaced by a play action when the event arrives, that a failed track has no play action but keeps edit and delete, and `cd app && bun run lint && bun run check && bun run format`.
-- [ ] 6.4 Add a Playwright e2e test in `integration-test` that mocks the API with `page.route`: upload `tune.wma`, see "Preparing audio", then emit `audio.prepared` and see the play control; verify with `./mvnw verify -Dit.test=<new test>` or the project's e2e command.
+- [x] 6.1 In `LiveBridge`, publish `audio.prepared` to everyone with the track id on `AudioPrepared`; verify in `LiveBridgeTest` and with a live API test that an anonymous and an authenticated client both receive it, and that no event is raised for an mp3 upload.
+- [x] 6.2 Add the audio state call to the track service in `Tracks.ts`, called only for tracks whose format is `WMA`; verify in `Tracks.test.ts`.
+- [x] 6.3 In `TrackList.svelte`, show "Preparing audio" or "Audio could not be prepared" as text next to a disabled play control, with theme tokens only and a `role="status"` announcement, refetch the state on `audio.prepared` with no polling, and have `PlayerBar.svelte` say "This audio cannot be played yet" when the browser cannot load the loaded track; verify with component tests that the status is replaced by a play action when the event arrives, that a failed track has no play action but keeps edit and delete, and `cd app && bun run lint && bun run check && bun run format`.
+- [x] 6.4 Add a Playwright e2e test in `app/e2e` that mocks the API with `page.route`: upload `tune.wma`, see "Preparing audio", then emit `audio.prepared` and see the play control; verify with `npx playwright test e2e/wma-audio.test.js` in `app` (or `./mvnw verify`).
 
 ## 7. Documentation and final checks
 

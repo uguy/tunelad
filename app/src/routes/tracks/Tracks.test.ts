@@ -92,6 +92,30 @@ describe('TrackService.findWaveform', () => {
 	});
 });
 
+describe('TrackService.findAudio', () => {
+	it('returns the state of the track audio', async () => {
+		let url = '';
+		const service = new TrackService(async (input) => {
+			url = String(input);
+			return Response.json({ status: 'PENDING' });
+		});
+
+		expect(await service.findAudio('track 1')).toEqual({ status: 'PENDING' });
+		expect(url).toBe('/api/tracks/track%201/audio');
+	});
+
+	it('returns null for an unknown track or a failed request', async () => {
+		expect(
+			await new TrackService(async () => new Response(null, { status: 404 })).findAudio('x')
+		).toBeNull();
+		expect(
+			await new TrackService(async () => {
+				throw new TypeError('network down');
+			}).findAudio('x')
+		).toBeNull();
+	});
+});
+
 describe('TrackService.findOne', () => {
 	it('returns the track, or null when there is none', async () => {
 		const track = { id: 'track-1', title: 'Knees Up' };

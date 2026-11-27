@@ -47,6 +47,31 @@ class LiveUpdatesTest extends AbstractLiveTest {
     }
 
     @Test
+    void prepared_audio_is_announced_once_it_can_be_played() {
+        var stream = follow(null);
+
+        var id = uploadFile(Map.of("title", "Rainfall", "description", "Rain on tin"),
+                named("rain.wma", org.tunelad.media.TestAudio.wma()))
+                .expectStatus().isCreated().expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+
+        await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("audio.prepared").contains(body("audio.prepared", id)));
+        client.get().uri("/api/tracks/{id}/audio", id).exchange()
+                .expectStatus().isOk()
+                .expectBody().jsonPath("$.status").isEqualTo("READY");
+    }
+
+    @Test
+    void audio_browsers_play_is_not_announced() {
+        var stream = follow(null);
+
+        var id = uploadOk("Rainfall", "Rain on tin", KNEES_UP_MP3).id();
+
+        // The waveform arrives on the same stream, once the audio has been through its listeners
+        await().atMost(Duration.ofSeconds(15)).until(() -> stream.dataOf("waveform.computed").contains(body("waveform.computed", id)));
+        assertThat(stream.dataOf("audio.prepared")).isEmpty();
+    }
+
+    @Test
     void an_edit_is_announced_once_a_search_finds_the_new_title() {
         var id = uploadOk("Rainfall", "Rain on tin", KNEES_UP_MP3).id();
         await().atMost(Duration.ofSeconds(15)).until(() -> searchTitles("rain").contains("Rainfall"));

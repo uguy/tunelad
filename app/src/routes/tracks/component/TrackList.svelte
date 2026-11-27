@@ -15,6 +15,8 @@
 	import PerformanceFields from '../PerformanceFields.svelte';
 	import { checkPerformance, toInput, type PerformanceForm } from '../Performances.js';
 	import TrackService, {
+		CONVERTED_FORMATS,
+		type Audio,
 		type Track,
 		type TrackEdit,
 		type Waveform as TrackWaveform
@@ -61,6 +63,43 @@
 			stopReconnect();
 		};
 	});
+
+	/** The state of the audio of the tracks the server converts, by track id: known once fetched. */
+	let audios = $state<Record<string, Audio['status']>>({});
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately not reactive
+	const audioRequested = new Set<string>();
+
+	function loadAudio(trackId: string) {
+		trackService.findAudio(trackId).then((audio) => {
+			if (alive && audio) audios[trackId] = audio.status;
+		});
+	}
+
+	// Only tracks in a converted format ask: the others play as they are. The server says when the conversion ends,
+	// so there is no polling.
+	$effect(() => {
+		for (const track of tracks) {
+			if (CONVERTED_FORMATS.includes(track.format) && !audioRequested.has(track.id)) {
+				audioRequested.add(track.id);
+				loadAudio(track.id);
+			}
+		}
+	});
+	$effect(() => {
+		const stopPrepared = live.on('audio.prepared', ({ id }) => {
+			if (id && audioRequested.has(id)) loadAudio(id);
+		});
+		const stopReconnect = live.onReconnect(() => audioRequested.forEach(loadAudio));
+		return () => {
+			stopPrepared();
+			stopReconnect();
+		};
+	});
+
+	/** Whether the track can be played now: a converted format waits for the server to say so. */
+	function playable(track: Track): boolean {
+		return !CONVERTED_FORMATS.includes(track.format) || audios[track.id] === 'READY';
+	}
 
 	// Identification proposes performances some time after the upload; the track is indexed again when it does. Details
 	// that were never opened are left alone.
@@ -109,6 +148,7 @@
 
 	/** Plays the track, or pauses and resumes it when loaded; `fraction` starts or seeks it at that share. */
 	function play(index: number, fraction?: number) {
+		if (!playable(tracks[index])) return;
 		player.playFrom(tracks, index, fraction);
 	}
 
@@ -245,7 +285,8 @@
 							id="play-track-{track.id}-btn"
 							type="button"
 							aria-label="{playing ? 'pause' : 'play'} track {track.title} button"
-							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent shadow-sm transition-colors hover:bg-accent-strong"
+							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent shadow-sm transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+							disabled={!playable(track)}
 							onclick={() => play(index)}
 						>
 							<Icon name={playing ? 'pause' : 'play'} class="h-6 w-6" />
@@ -263,6 +304,15 @@
 							>
 								{track.title}
 							</h2>
+							{#if audios[track.id] === 'PENDING'}
+								<p role="status" class="text-xs text-ink-muted" data-testid="audio-status">
+									Preparing audio…
+								</p>
+							{:else if audios[track.id] === 'FAILED'}
+								<p role="status" class="text-xs text-danger" data-testid="audio-status">
+									Audio could not be prepared.
+								</p>
+							{/if}
 						</div>
 
 						<FavouriteButton trackId={track.id} title={track.title} />
