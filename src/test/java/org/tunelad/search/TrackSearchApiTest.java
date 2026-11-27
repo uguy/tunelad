@@ -183,6 +183,17 @@ class TrackSearchApiTest extends AbstractApiTest {
                 .expectBody(String.class).value(body -> assertThat(body).contains("Knees Up"));
     }
 
+    @Test
+    void artist_of_a_searchable_track_is_the_shared_artists_name() {
+        upload(Map.of("title", "Knees Up", "description", "A reel", "artist", "Altan"), KNEES_UP_MP3)
+                .expectStatus().isCreated();
+        upload(Map.of("title", "Mossy Banks", "description", "Two reels", "artist", " altan"), MOSSY_BANKS_MP3)
+                .expectStatus().isCreated();
+
+        await().atMost(SEARCHABLE_WITHIN).until(() -> search("").size() == 2);
+        assertThat(search("")).extracting(TrackDTO::artist).containsExactly("Altan", "Altan");
+    }
+
     // --- helpers -----------------------------------------------------------------------------
 
     /** How soon an uploaded track must be searchable, per the spec. */

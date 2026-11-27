@@ -18,6 +18,9 @@ class TrackVersioningTest {
     @Autowired
     Tracks tracks;
 
+    @Autowired
+    Artists artists;
+
     @Test
     void saving_a_stale_copy_fails() {
         var track = new Track();
@@ -39,13 +42,13 @@ class TrackVersioningTest {
     void artist_and_owner_survive_a_round_trip() {
         var track = new Track();
         track.setTitle("Reel");
-        track.setArtist(new Artist("Alice"));
+        track.setArtist(artists.findOrCreate("Alice").block());
         track.setOwner(new org.tunelad.track.TrackOwner("account-alice", "Alice Liddell"));
         track.setTags(java.util.List.of("reel", "fiddle"));
 
         var loaded = tracks.findById(tracks.save(track).block().getId()).block();
 
-        assertThat(loaded.getArtist()).isEqualTo(new Artist("Alice"));
+        assertThat(loaded.getArtist().name()).isEqualTo("Alice");
         assertThat(loaded.getOwner()).isEqualTo(new org.tunelad.track.TrackOwner("account-alice", "Alice Liddell"));
         assertThat(loaded.getTags()).containsExactly("reel", "fiddle");
     }

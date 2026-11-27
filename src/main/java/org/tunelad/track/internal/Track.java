@@ -30,7 +30,11 @@ public class Track {
     private String title;
     private String description;
 
-    @Embedded.Nullable(prefix = "artist_")
+    /** The Artist's id, set from {@link #artist} when the track is stored. */
+    private String artistId;
+
+    /** Not a column: loaded from the artist table, and stored through {@link #artistId}. */
+    @Transient
     private Artist artist;
     private String album;
     private String artUrl;

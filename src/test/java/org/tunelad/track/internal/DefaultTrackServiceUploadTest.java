@@ -32,12 +32,18 @@ import static org.mockito.Mockito.when;
 class DefaultTrackServiceUploadTest {
 
     private final Tracks tracks = mock(Tracks.class);
+    private final Artists artists = mock(Artists.class);
     private final MediaStore mediaStore = mock(MediaStore.class);
-    private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, mediaStore,
+    private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, artists, mediaStore,
             mock(TransactionalEvents.class), mock(ReactiveTransactionManager.class));
 
     private final AddTrackCommand command = new AddTrackCommand("Knees Up", null, null, "A reel and a song",
             Flux.empty(), TrackFormat.FLAC, new TrackOwner("account-alice", "Alice Liddell"));
+
+    @org.junit.jupiter.api.BeforeEach
+    void noArtist() {
+        when(artists.findOrCreate(any())).thenReturn(Mono.empty());
+    }
 
     @Test
     void audio_is_stored_with_the_format_content_type_under_a_new_id() {
