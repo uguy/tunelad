@@ -139,6 +139,13 @@ test('a sheet for each performance with a transcription', async ({ page }) => {
 	);
 });
 
+test('a performance says where it stands in identification', async ({ page }) => {
+	await mockApi(page, { performances: [{ ...PERFORMANCES[0], identification: 'identified' }] });
+	await page.goto('/tunes/tune-1');
+
+	await expect(page.getByText('Identified from the audio')).toBeVisible();
+});
+
 test('the reference transcription when no performance has one', async ({ page }) => {
 	await mockApi(page, { performances: [PERFORMANCES[1]] });
 	await page.goto('/tunes/tune-1');

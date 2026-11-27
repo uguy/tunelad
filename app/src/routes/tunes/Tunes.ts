@@ -1,4 +1,5 @@
 import { request } from '#lib/api.js';
+import type { IdentificationState } from '../tracks/Tracks.js';
 
 /** A tune as the API returns it. */
 export interface Tune {
@@ -22,6 +23,7 @@ export interface TunePerformance {
 	key?: string | null;
 	notes?: string | null;
 	abc?: string | null;
+	identification?: IdentificationState;
 }
 
 /** A new tune as the form sends it: an empty optional field is left out. */

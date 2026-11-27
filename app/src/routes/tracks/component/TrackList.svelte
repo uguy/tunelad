@@ -11,6 +11,7 @@
 	import { session } from '#lib/session.svelte.js';
 	import { live } from '#lib/live.svelte.js';
 	import { formatOffset } from '#lib/offset.js';
+	import IdentificationBadge from '../IdentificationBadge.svelte';
 	import PerformanceFields from '../PerformanceFields.svelte';
 	import { checkPerformance, toInput, type PerformanceForm } from '../Performances.js';
 	import TrackService, {
@@ -57,6 +58,20 @@
 		const stopReconnect = live.onReconnect(() => requested.forEach((id) => loadWaveform(id)));
 		return () => {
 			stopWaveforms();
+			stopReconnect();
+		};
+	});
+
+	// Identification proposes performances some time after the upload; the track is indexed again when it does. Details
+	// that were never opened are left alone.
+	$effect(() => {
+		const refreshDetail = (id?: string) => {
+			if (id && details[id]) loadDetail(id);
+		};
+		const stopIndexed = live.on('track.indexed', ({ id }) => refreshDetail(id));
+		const stopReconnect = live.onReconnect(() => Object.keys(details).forEach(refreshDetail));
+		return () => {
+			stopIndexed();
 			stopReconnect();
 		};
 	});
@@ -120,6 +135,8 @@
 	/** The performance fields of the track being edited, one per tune of its set. */
 	let performanceForms = $state<PerformanceForm[]>([]);
 	let saving = $state(false);
+	/** Tracks whose identification was just asked for again, by id. */
+	let identifying = $state<Record<string, boolean>>({});
 	/** Error message per track id, for the last refused change. */
 	let errors = $state<Record<string, string>>({});
 
@@ -128,7 +145,8 @@
 			start: performance.startOffsetSeconds > 0 ? formatOffset(performance.startOffsetSeconds) : '',
 			key: performance.key ?? '',
 			notes: performance.notes ?? '',
-			abc: performance.abc ?? ''
+			abc: performance.abc ?? '',
+			identification: performance.identification
 		}));
 	}
 
@@ -174,6 +192,16 @@
 			errors[track.id] = (e as Error).message;
 		} finally {
 			saving = false;
+		}
+	}
+
+	async function identifyAgain(track: Track) {
+		errors[track.id] = '';
+		try {
+			await trackService.identify(track.id);
+			identifying[track.id] = true;
+		} catch (e) {
+			errors[track.id] = (e as Error).message;
 		}
 	}
 
@@ -319,12 +347,30 @@
 												</span>{#if performance.key}
 													· key {performance.key}{/if}
 											</span>
+											<IdentificationBadge state={performance.identification} />
 											{#if performance.notes}
 												<p class="ml-5 whitespace-pre-line text-ink-muted">{performance.notes}</p>
 											{/if}
 										</li>
 									{/each}
 								</ol>
+								{#if canChange(session.account, track)}
+									<div class="mt-2 flex flex-wrap items-center gap-2">
+										<button
+											type="button"
+											class="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+											aria-label="identify the tunes of {track.title} again"
+											onclick={() => identifyAgain(track)}
+										>
+											Identify again
+										</button>
+										{#if identifying[track.id]}
+											<p role="status" class="text-xs text-ink-muted">
+												Listening to the track. Proposed starts appear here when it is done.
+											</p>
+										{/if}
+									</div>
+								{/if}
 							{/if}
 						</div>
 					{/if}

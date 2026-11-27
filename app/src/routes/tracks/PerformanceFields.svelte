@@ -1,4 +1,5 @@
 <script lang="ts">
+	import IdentificationBadge from './IdentificationBadge.svelte';
 	import { MAX_ABC, MAX_KEY, MAX_NOTES, type PerformanceForm } from './Performances.js';
 
 	interface Props {
@@ -20,6 +21,7 @@
 			<legend class="px-1 text-sm font-semibold">
 				<span class="text-ink-muted tabular-nums">{i + 1}.</span>
 				{name}
+				<IdentificationBadge state={values[i].identification} />
 			</legend>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<label class="block text-sm font-medium">

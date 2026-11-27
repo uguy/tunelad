@@ -26,8 +26,8 @@
 
 ## 5. UI
 
-- [ ] 5.1 State badge and re-run button on the tune view; theme tokens, accessible text; `bun run format`, `lint`, `check`
-- [ ] 5.2 vitest/Playwright tests with `page.route` mocks. Commit `feat(ui): show identification state of performances`
+- [x] 5.1 State badge and re-run button on the tune view; theme tokens, accessible text; `bun run format`, `lint`, `check`
+- [x] 5.2 vitest/Playwright tests with `page.route` mocks. Commit `feat(ui): show identification state of performances`
 
 ## 6. Wrap-up
 

@@ -269,6 +269,7 @@ class TrackPerformancesTest extends AbstractApiTest {
         assertThat(performances).extracting(TunePerformanceDTO::position).containsOnly(2);
         assertThat(performances.get(1).key()).isEqualTo("G");
         assertThat(performances.get(1).abc()).isEqualTo("X:1");
+        assertThat(performances).extracting(TunePerformanceDTO::identification).containsOnly(IdentificationState.PENDING);
         assertThat(performancesOf(cooleys)).hasSize(2);
     }
 
