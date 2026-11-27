@@ -66,10 +66,13 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Play track from browser (streaming bytes with range support, so the player can seek), in a player bar that stays
   at the bottom of the screen across pages: play/pause, previous/next through the track list, seeking, volume and
   mute (remembered between visits)
+* WMA: browsers cannot play it, so the upload keeps the original and ffmpeg makes an AAC rendition in the background
+  (`GET /api/tracks/{id}/play` streams that, with range support); the track shows "Preparing audio" until it is ready
+  (`GET /api/tracks/{id}/audio`, announced by the `audio.prepared` live event, and made at startup if ffmpeg was missing)
 * Track waveforms: computed with ffmpeg shortly after upload (and backfilled at startup for older tracks), served on
   `GET /api/tracks/{id}/waveform`, and drawn on each track of the list, where a click seeks within the track
 * Live updates: the track list and the waveforms refresh by themselves when another user uploads, edits or deletes a
-  track and when a waveform is computed, and your favourites and playlists follow what you change in your other tabs
+  track and when a waveform or a WMA rendition is computed, and your favourites and playlists follow what you change in your other tabs
   and devices (they are private: only your own connections hear of them), with no reload and no polling. The server streams them as Server-Sent Events
   (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
   browsers
@@ -108,8 +111,8 @@ This simple app allows to store an mp3 file with some description and play it vi
 - Docker and Docker Compose
 - Bun v1.4 or later
 - https://ffmpeg.org[ffmpeg] on the `PATH` (check with `ffmpeg -version`; e.g. `sudo apt install ffmpeg`), to compute
-  track waveforms. The backend tests need it. Without it the app still runs, but waveforms stay pending until it is
-  installed and the app restarted. Another location can be set with `tunelad.media.ffmpeg.path`.
+  track waveforms and to convert WMA for playback. The backend tests need it. Without it the app still runs, but
+  waveforms and WMA renditions stay pending until it is installed and the app restarted. Another location can be set with `tunelad.media.ffmpeg.path`.
 
 === Building
 
@@ -367,7 +370,7 @@ Search shows the change within a few seconds.
 
 Database configuration lives in the `application.yml` file. The application reads and writes through R2DBC; JDBC is only used where nothing reactive exists: Liquibase, which creates the schema at startup, and the Spring Modulith Event Publication Registry. There is a single schema; each module owns the tables that carry its prefix, and no foreign key crosses a module: modules refer to each other by id or key only.
 
-The `track` module stores tracks in `track_tracks` (plain columns, tags as a `text[]`). Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in chunks (`media_files` and `media_chunks`) under the track id, in one transaction so that a failed upload leaves nothing behind, and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges). Waveforms are in `media_waveforms`, accounts in `account_accounts`.
+The `track` module stores tracks in `track_tracks` (plain columns, tags as a `text[]`). Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in chunks (`media_files` and `media_chunks`) under the track id, in one transaction so that a failed upload leaves nothing behind, and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges). Waveforms are in `media_waveforms`. Audio a browser cannot play (WMA) gets an AAC rendition, stored as a second `media_files` row under `<track id>:play`, with its state in `media_renditions`. Accounts in `account_accounts`.
 
 Favourites and playlists are private to their owner and belong to two more modules. `favourite` keeps one row per account and track in `favourite_favourites`. `playlist` keeps `playlist_playlists` (owner, name, description) and `playlist_items` (the tracks of a playlist, with their position; a unique, deferrable `(playlist_id, position)` lets a reorder swap positions inside one transaction). Both refer to accounts and tracks by id only, so they follow the rule of no foreign key across modules; a deleted track disappears from both through the `TrackDeleted` event. Their own events (`FavouriteChanged`, `PlaylistChanged`, carrying ids only) feed the live updates.
 
