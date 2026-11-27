@@ -14,10 +14,10 @@
 
 ## 4. UI
 
-- [ ] 4.1 `Comments.svelte` (list, post form, own edit/delete, Administrator delete, sign-in invitation, `refreshOnLive`) on the Track, Tune and Set detail pages, with vitest component tests and Playwright e2e (API mocked with `page.route`) for anonymous, post, own-actions scenarios. Verify: `bun run lint`, `bun run check`, vitest and e2e pass; contrast and keyboard use checked. Commit `feat(ui): comments on tracks, tunes and sets`.
+- [x] 4.1 `Comments.svelte` (list, post form, own edit/delete, Administrator delete, sign-in invitation, live refetch) on the Tune and Set detail pages and in the expanded track of the tracks list (Tracks have no detail page), with vitest component tests and Playwright e2e (API mocked with `page.route`) for anonymous, post, own-actions scenarios. Verify: `bun run lint`, `bun run check`, vitest and e2e pass; contrast and keyboard use checked. Commit `feat(ui): comments on tracks, tunes and sets`.
 
 ## 5. Docs and delivery
 
-- [ ] 5.1 Update `GLOSSARY.md` (`Comment`: flat plain text, author or Administrator edits/deletes, public; `Live update` mentions Comments) and README.adoc features. Verify: terms match the specs. Commit `docs(comment): describe comments`.
+- [x] 5.1 Update `GLOSSARY.md` (`Comment`: flat plain text, author or Administrator edits/deletes, public; `Live update` mentions Comments) and README.adoc features. Verify: terms match the specs. Commit `docs(comment): describe comments`.
 - [ ] 5.2 Run `./mvnw clean verify`; it must pass. Verify: exit code 0.
 - [ ] 5.3 Push and open the PR titled `feat(comment): comment on tracks, tunes and sets`, body ending with `Closes #844`. Verify: PR exists and `workflow-pr-title` passes.

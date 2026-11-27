@@ -35,7 +35,10 @@ beforeEach(() => {
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async (input: RequestInfo | URL) => {
-			const id = new URL(String(input), 'http://localhost').pathname.split('/')[3];
+			const path = new URL(String(input), 'http://localhost').pathname;
+			// The comments of an opened track are not what these tests count
+			if (path.endsWith('/comments')) return Response.json([]);
+			const id = path.split('/')[3];
 			asked.push(id);
 			return Response.json(await answer(id));
 		})

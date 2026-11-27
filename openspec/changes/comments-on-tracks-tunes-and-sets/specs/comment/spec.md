@@ -79,7 +79,7 @@ The system SHALL delete every Comment on a Track when that Track is deleted.
 - **THEN** its Comments no longer exist
 
 ### Requirement: Comments in the UI
-The UI SHALL show, on the Track, Tune and Set detail pages, the Comments of the subject with author and date, oldest
+The UI SHALL show, on the Tune and Set detail pages and in a Track's expanded details in the tracks list, the Comments of the subject with author and date, oldest
 first. A signed-in Account SHALL see a form to post, and edit and delete actions on its own Comments (all Comments
 for an Administrator); an anonymous visitor SHALL see the Comments and an invitation to sign in. The section SHALL be
 keyboard operable and labelled for assistive technology, and use theme tokens.
@@ -90,7 +90,7 @@ keyboard operable and labelled for assistive technology, and use theme tokens.
 - **THEN** the Comment is shown, there is no post form, and a sign-in link is offered
 
 #### Scenario: Posting
-- **GIVEN** alice is signed in on a Track page
+- **GIVEN** alice is signed in and has expanded a Track in the tracks list
 - **WHEN** she types "Lovely flute" and submits
 - **THEN** the Comment appears in the list and the form is cleared
 

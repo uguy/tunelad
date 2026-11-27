@@ -74,7 +74,7 @@ The Tunes an Account says it plays. Visible to every Account, so that others can
 _Avoid_: Tunebook
 
 **Comment**:
-A remark an Account leaves on a Track, a Tune or a Set.
+A remark an Account leaves on a Track, a Tune or a Set: flat plain text, readable by anyone, posted by an Account. Only its author or an Administrator edits or deletes it. It goes with its Track (a Set's or Tune's Comments will go with them once they can be deleted).
 _Avoid_: Review, note
 
 **Account's sets**:
@@ -91,7 +91,7 @@ A Track that has no audio yet, only a place on an Album. Audio uploaded later ca
 ### Behaviour
 
 **Live update**:
-A notice to a connected browser that something it displays (a Track, Favourite or Playlist) has changed.
+A notice to a connected browser that something it displays (a Track, Favourite, Playlist or Comment) has changed.
 
 ## Relationships
 
