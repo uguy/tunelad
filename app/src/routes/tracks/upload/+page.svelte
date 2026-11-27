@@ -1,7 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { onMount, untrack } from 'svelte';
 	import { session } from '#lib/session.svelte.js';
+	import type { Tune } from '../../tunes/Tunes.js';
+	import SetBuilder from '../../sets/SetBuilder.svelte';
+	import SetService, { SetError, setTitle, type TuneSet } from '../../sets/Sets.js';
+	import PerformanceFields from '../PerformanceFields.svelte';
+	import {
+		checkPerformance,
+		emptyPerformances,
+		toInput,
+		type PerformanceForm
+	} from '../Performances.js';
 	import TrackService, {
 		ACCEPTED_FILES,
 		checkFile,
@@ -10,6 +21,10 @@
 	} from '../Tracks.js';
 
 	const trackService = new TrackService();
+	const setService = new SetService();
+
+	/** The value of the set field that stands for building a new set. */
+	const NEW_SET = 'new';
 
 	// The form's values. They stay as they are after a failed or cancelled upload, file included (the input is
 	// never unmounted), so submitting again retries the same upload.
@@ -18,6 +33,43 @@
 	let artist = $state('');
 	let album = $state('');
 	let files = $state<FileList | null>(null);
+
+	/** The sets to choose from. */
+	let sets = $state.raw<TuneSet[]>([]);
+	/** The set field: empty, an existing set's id, or {@link NEW_SET}. */
+	let setChoice = $state('');
+	/** The tunes of the new set being built. */
+	let chosen = $state.raw<Tune[]>([]);
+	/** The performance fields, one per tune of the set. */
+	let performances = $state<PerformanceForm[]>([]);
+
+	onMount(async () => {
+		try {
+			sets = await setService.findAll();
+		} catch {
+			sets = [];
+		}
+	});
+
+	/** The names of the tunes of the chosen set, in order: one group of performance fields each. */
+	const tuneNames = $derived(
+		setChoice === NEW_SET
+			? chosen.map((tune) => tune.name)
+			: (sets.find((set) => set.id === setChoice)?.tunes.map((tune) => tune.name) ?? [])
+	);
+
+	// One form per tune: a changed set starts from empty fields, an added or removed tune keeps the others
+	$effect(() => {
+		const count = tuneNames.length;
+		untrack(() => {
+			if (performances.length !== count)
+				performances = [...performances, ...emptyPerformances(count)].slice(0, count);
+		});
+	});
+
+	function chooseSet() {
+		performances = emptyPerformances(tuneNames.length);
+	}
 
 	let status = $state<'editing' | 'uploading' | 'cancelled' | 'failed'>('editing');
 	/** The share of the file sent so far, from 0 to 1. */
@@ -37,13 +89,36 @@
 			return;
 		}
 
+		if (!setChoice || (setChoice === NEW_SET && chosen.length === 0)) {
+			fail('Choose a set, or build one from its tunes.', null);
+			return;
+		}
+		const invalid = performances.map(checkPerformance).find(Boolean);
+		if (invalid) {
+			fail(invalid, null);
+			return;
+		}
+
 		status = 'uploading';
 		progress = 0;
 		message = '';
 		controller = new AbortController();
 		try {
+			// A new set is created first: the same list always gives the same set, so a retry finds it again
+			const setId =
+				setChoice === NEW_SET
+					? (await setService.create(chosen.map((tune) => tune.id))).set.id
+					: setChoice;
 			const track = await trackService.upload(
-				{ title, description, artist, album, file },
+				{
+					title,
+					description,
+					artist,
+					album,
+					setId,
+					performances: performances.map(toInput),
+					file
+				},
 				{ onProgress: (fraction) => (progress = fraction), signal: controller.signal }
 			);
 			// The tracks page shows it at once: search only finds a new track a few seconds later
@@ -52,6 +127,8 @@
 			if (e instanceof DOMException && e.name === 'AbortError') {
 				status = 'cancelled';
 				message = 'The upload was cancelled. Your input is kept: submit again to retry.';
+			} else if (e instanceof SetError) {
+				fail(e.message, e.status);
 			} else if (e instanceof TrackUploadError) {
 				fail(e.message, e.status);
 			} else {
@@ -113,6 +190,28 @@
 					required
 					bind:value={description}></textarea>
 			</label>
+			<label class={labelClass}>
+				Set
+				<select class={inputClass} name="set" required bind:value={setChoice} onchange={chooseSet}>
+					<option value="">Choose a set</option>
+					{#each sets as set (set.id)}
+						<option value={set.id}>{setTitle(set)}</option>
+					{/each}
+					<option value={NEW_SET}>Build a new set…</option>
+				</select>
+			</label>
+			{#if setChoice === NEW_SET}
+				<SetBuilder bind:chosen headingLevel={2} />
+			{/if}
+			{#if tuneNames.length > 0}
+				<div class="space-y-3">
+					<h2 class="text-lg font-semibold">Performances</h2>
+					<p class="text-sm text-ink-muted">
+						All optional: where each tune starts, its key and notes.
+					</p>
+					<PerformanceFields names={tuneNames} bind:values={performances} />
+				</div>
+			{/if}
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class={labelClass}>
 					Artist <input class={inputClass} name="artist" bind:value={artist} />

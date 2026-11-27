@@ -11,13 +11,13 @@
 
 ## 3. UI
 
-- [ ] 3.1 Extract `SetBuilder.svelte` from `sets/new` (behaviour unchanged, existing tests still pass); upload page with Set select or builder, per-Tune Performance fields, `m:ss` helper in `lib` with a vitest test
-- [ ] 3.2 Track page shows the Set and Performances; track edit form edits the Performances; types in `lib/api.ts`
-- [ ] 3.3 Playwright e2e (API mocked with `page.route`): upload with existing Set, upload with a new Set, missing Set, Performance fields follow the Set, track page, edit; update existing upload e2e tests. `bun run format`. Commit `feat(ui)!: choose a set and performances when uploading`
+- [x] 3.1 Extract `SetBuilder.svelte` from `sets/new` (behaviour unchanged, existing tests still pass); upload page with Set select or builder, per-Tune Performance fields, `m:ss` helper in `lib` with a vitest test
+- [x] 3.2 Track page shows the Set and Performances; track edit form edits the Performances; types in `lib/api.ts`
+- [x] 3.3 Playwright e2e (API mocked with `page.route`): upload with existing Set, upload with a new Set, missing Set, Performance fields follow the Set, track page, edit; update existing upload e2e tests. `bun run format`. Commit `feat(ui)!: choose a set and performances when uploading`
 
 ## 4. Docs, verification, PR
 
-- [ ] 4.1 Check `GLOSSARY.md` against the change (Track, Performance, Set; note that Tracks from before have no Set if the wording needs it) and update it if a term changed; add Performances to the README.adoc features; retake screenshots if the UI or Scalar view changed (`node doc/screenshots.mjs`, `node doc/api-screenshots.mjs`). Commit `docs(track): document sets and performances`
+- [x] 4.1 Check `GLOSSARY.md` against the change (Track, Performance, Set; note that Tracks from before have no Set if the wording needs it) and update it if a term changed; add Performances to the README.adoc features; retake screenshots if the UI or Scalar view changed (`node doc/screenshots.mjs`, `node doc/api-screenshots.mjs`). Commit `docs(track): document sets and performances`
 - [ ] 4.2 Run `./mvnw clean verify`
 - [ ] 4.3 Archive the change on the feature branch (`/openspec-archive-change track-is-a-recording-of-a-set-with-performances`). Commit `docs(openspec): archive track-is-a-recording-of-a-set-with-performances`
 - [ ] 4.4 Push and open the PR titled `feat(track)!: record tracks as sets with performances`, body including `Closes #819`

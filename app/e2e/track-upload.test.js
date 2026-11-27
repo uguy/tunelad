@@ -24,6 +24,9 @@ const KNEES_UP = {
 	tags: [],
 	owner: { id: ALICE.id, displayName: ALICE.displayName }
 };
+const COOLEYS = { id: 'tune-1', name: "Cooley's", aliases: [], danceType: 'reel' };
+const KESH = { id: 'tune-2', name: 'The Kesh', aliases: [], danceType: 'jig' };
+const REEL_AND_JIG = { id: 'set-1', tunes: [COOLEYS, KESH] };
 const KNEES_UP_FILE = {
 	name: 'knees-up.mp3',
 	mimeType: 'audio/mpeg',
@@ -43,6 +46,27 @@ async function mockApi(page, context, account) {
 		account ? route.fulfill({ json: account }) : route.fulfill({ status: 401 })
 	);
 	await page.route('**/api/tracks/search*', (route) => route.fulfill({ json: [MOSSY_BANKS] }));
+	// The sets to choose from, and the tunes and set creation of the set builder
+	await page.route('**/api/sets?*', (route) => route.fulfill({ json: [REEL_AND_JIG] }));
+	await page.route('**/api/tunes?*', (route) => route.fulfill({ json: [COOLEYS, KESH] }));
+	await page.route('**/api/sets', (route) => {
+		const ids = route.request().postDataJSON().tuneIds;
+		const tunes = ids.map((id) => [COOLEYS, KESH].find((tune) => tune.id === id));
+		return route.fulfill({ status: 201, json: { id: 'set-new', tunes } });
+	});
+}
+
+const setField = (page) => page.getByRole('combobox', { name: 'Set' });
+
+/** The parts of a recorded multipart upload, by name. */
+function partsOf(request) {
+	const body = request.postDataBuffer().toString('latin1');
+	const parts = {};
+	for (const match of body.matchAll(
+		/name="(\w+)"(?:; filename="[^"]*")?\r\n(?:[^\r]+\r\n)*\r\n([^\r]*)/g
+	))
+		parts[match[1]] = match[2];
+	return parts;
 }
 
 /** Records every upload and answers it with `respond`, which may be called once per upload. */
@@ -63,6 +87,7 @@ async function fillUploadForm(page, context, file = KNEES_UP_FILE) {
 	await page.getByLabel('Title').fill('Knees Up');
 	await page.getByLabel('Description').fill('A reel and a song');
 	await page.getByLabel('Artist').fill('Breabach');
+	await setField(page).selectOption({ label: "Cooley's, The Kesh" });
 	await page.getByLabel(/Audio file/).setInputFiles(file);
 }
 
@@ -139,6 +164,79 @@ test('successful upload', async ({ page, context }) => {
 	expect(body).toMatch(/name="artist"\r\n\r\nBreabach\r\n/);
 	expect(body).not.toContain('name="album"');
 	expect(body).toContain('name="file"; filename="knees-up.mp3"');
+	expect(body).toMatch(/name="setId"\r\n\r\nset-1\r\n/);
+});
+
+test('successful upload with an existing set and performances', async ({ page, context }) => {
+	const requests = await recordUploads(page, (route) =>
+		route.fulfill({ status: 201, json: KNEES_UP })
+	);
+	await fillUploadForm(page, context);
+	const second = page.getByRole('group', { name: /The Kesh/ });
+	await page
+		.getByRole('group', { name: /Cooley's/ })
+		.getByLabel('Key')
+		.fill('Em');
+	await second.getByLabel(/Starts at/).fill('1:35.5');
+	await second.getByLabel('Key').fill('G');
+	await second.getByLabel('Notes').fill('plays the B part twice');
+
+	await uploadButton(page).click();
+
+	await expect(page).toHaveURL('/tracks');
+	const parts = partsOf(requests[0]);
+	expect(parts.setId).toBe('set-1');
+	expect(JSON.parse(parts.performances)).toEqual([
+		{ key: 'Em' },
+		{ startOffsetSeconds: 95.5, key: 'G', notes: 'plays the B part twice' }
+	]);
+});
+
+test('upload with a new set', async ({ page, context }) => {
+	const created = [];
+	const requests = await recordUploads(page, (route) =>
+		route.fulfill({ status: 201, json: KNEES_UP })
+	);
+	await fillUploadForm(page, context);
+	page.on('request', (request) => {
+		if (request.url().endsWith('/api/sets') && request.method() === 'POST')
+			created.push(request.postDataJSON());
+	});
+	await setField(page).selectOption({ label: 'Build a new set…' });
+	await page.getByRole('button', { name: 'Add The Kesh' }).click();
+	await page.getByRole('button', { name: "Add Cooley's" }).click();
+	await page.getByRole('button', { name: "Move Cooley's up" }).click();
+
+	await uploadButton(page).click();
+
+	await expect(page).toHaveURL('/tracks');
+	expect(created).toEqual([{ tuneIds: ['tune-1', 'tune-2'] }]);
+	expect(partsOf(requests[0]).setId).toBe('set-new');
+});
+
+test('performance fields follow the set', async ({ page, context }) => {
+	await mockApi(page, context, ALICE);
+	await page.goto('/tracks/upload');
+	await expect(page.getByRole('group')).toHaveCount(0);
+
+	await setField(page).selectOption({ label: "Cooley's, The Kesh" });
+
+	await expect(page.getByRole('group')).toHaveCount(2);
+	await expect(page.getByRole('group').first()).toContainText("Cooley's");
+	await expect(page.getByRole('group').nth(1)).toContainText('The Kesh');
+});
+
+test('set left empty', async ({ page, context }) => {
+	const requests = await recordUploads(page, (route) =>
+		route.fulfill({ status: 201, json: KNEES_UP })
+	);
+	await fillUploadForm(page, context);
+	await setField(page).selectOption('');
+
+	await uploadButton(page).click();
+
+	expect(await setField(page).evaluate((select) => select.validity.valueMissing)).toBe(true);
+	expect(requests).toHaveLength(0);
 });
 
 test('required field left empty', async ({ page, context }) => {
@@ -200,7 +298,7 @@ test('cancel an upload', async ({ page, context }) => {
 const refusals = [
 	[413, 'This file is larger than the 100 MB limit.'],
 	[415, "This file type isn't supported: choose an mp3, m4a, ogg, flac or wav file."],
-	[400, 'A track needs a title, a description and an audio file.'],
+	[400, 'A track needs a title, a description, a set and an audio file, and valid performances.'],
 	[401, 'Your session has expired. Log in again, then upload the track again.'],
 	[403, 'You may not upload this track. Reload the page and try again.'],
 	[500, 'The server could not store the track (500). Try again.']

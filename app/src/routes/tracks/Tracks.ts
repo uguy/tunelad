@@ -1,4 +1,6 @@
 import * as api from '#lib/api.js';
+import type { TuneSet } from '../sets/Sets.js';
+import type { PerformanceInput } from './Performances.js';
 
 /** A track as the API returns it. */
 export interface Track {
@@ -10,6 +12,21 @@ export interface Track {
 	format: string;
 	owner?: { id: string; displayName: string } | null;
 	tags?: string[];
+	/** The set the track records: absent from search results and from tracks stored before sets existed. */
+	set?: TuneSet | null;
+	/** One performance per tune of the set, in order: absent from search results. */
+	performances?: Performance[];
+}
+
+/** One tune as played in a track. */
+export interface Performance {
+	position: number;
+	tuneId: string;
+	tuneName: string;
+	danceType: string;
+	startOffsetSeconds: number;
+	key?: string | null;
+	notes?: string | null;
 }
 
 /** The waveform of a track's audio: its peaks, from 0 to 1, once `READY`; none while `PENDING` or when `FAILED`. */
@@ -24,6 +41,8 @@ export interface TrackEdit {
 	description: string;
 	artist?: string | null;
 	album?: string | null;
+	/** One entry per performance, in order; omitted leaves them unchanged. */
+	performances?: PerformanceInput[];
 }
 
 /** The server refused a change to a track; `status` is its HTTP status. */
@@ -35,7 +54,7 @@ export class TrackChangeError extends Error {
 				: status === 404
 					? 'This track no longer exists.'
 					: status === 400
-						? 'A track needs a title and a description.'
+						? 'A track needs a title and a description, and performances that fit.'
 						: `The server refused the change (${status}).`
 		);
 	}
@@ -47,6 +66,10 @@ export interface TrackUpload {
 	description: string;
 	artist?: string | null;
 	album?: string | null;
+	/** The id of the set the track records. */
+	setId: string;
+	/** One entry per tune of the set, in order. */
+	performances?: PerformanceInput[];
 	file: File;
 }
 
@@ -75,7 +98,7 @@ export function uploadErrorMessage(status: number): string {
 		case 0:
 			return 'The connection was lost. Your file is still selected: try again.';
 		case 400:
-			return 'A track needs a title, a description and an audio file.';
+			return 'A track needs a title, a description, a set and an audio file, and valid performances.';
 		case 401:
 			return 'Your session has expired. Log in again, then upload the track again.';
 		case 403:
@@ -205,6 +228,9 @@ export default class TrackService {
 			signal?.addEventListener('abort', () => xhr.abort(), { once: true });
 
 			const form = new FormData();
+			form.append('setId', upload.setId);
+			if (upload.performances?.length)
+				form.append('performances', JSON.stringify(upload.performances));
 			form.append('title', upload.title);
 			form.append('description', upload.description);
 			if (upload.artist) form.append('artist', upload.artist);
