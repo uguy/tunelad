@@ -297,7 +297,7 @@ test('cancel an upload', async ({ page, context }) => {
 
 const refusals = [
 	[413, 'This file is larger than the 100 MB limit.'],
-	[415, "This file type isn't supported: choose an mp3, m4a, ogg, flac or wav file."],
+	[415, "This file type isn't supported: choose an mp3, m4a, ogg, flac, wav or wma file."],
 	[400, 'A track needs a title, a description, a set and an audio file, and valid performances.'],
 	[401, 'Your session has expired. Log in again, then upload the track again.'],
 	[403, 'You may not upload this track. Reload the page and try again.'],

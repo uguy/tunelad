@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import org.tunelad.favourite.event.FavouriteChanged;
+import org.tunelad.media.event.AudioPrepared;
 import org.tunelad.media.event.WaveformComputed;
 import org.tunelad.playlist.event.PlaylistChanged;
 import org.tunelad.search.event.TrackIndexed;
@@ -46,6 +47,12 @@ class LiveBridge {
     @ApplicationModuleListener
     void on(WaveformComputed event) {
         publishToEveryone("waveform.computed", event.key());
+    }
+
+    /** The audio's key is the id of the track it belongs to: the browser refetches whether it can be played. */
+    @ApplicationModuleListener
+    void on(AudioPrepared event) {
+        publishToEveryone("audio.prepared", event.key());
     }
 
     /** The track's id: the browser refetches the favourites, which only the account's own connections hear of. */

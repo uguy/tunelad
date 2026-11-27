@@ -12,6 +12,8 @@ public enum TrackFormat {
 	OGG("audio/ogg", "ogg"),
 	FLAC("audio/flac", "flac"),
 	WAV("audio/wav", "wav"),
+	/** Browsers cannot play it: the media module plays an AAC rendition instead (see openspec/specs/media). */
+	WMA("audio/x-ms-wma", "wma"),
 	/** Only for reading tracks stored before unsupported files were refused: never given to a new upload. */
 	UNSUPPORTED("audio/mpeg");
 

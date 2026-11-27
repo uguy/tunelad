@@ -16,6 +16,8 @@ class TrackFormatTest {
             "tune.ogg, OGG, audio/ogg",
             "tune.flac, FLAC, audio/flac",
             "tune.wav, WAV, audio/wav",
+            "tune.wma, WMA, audio/x-ms-wma",
+            "TUNE.WMA, WMA, audio/x-ms-wma",
             "TUNE.FLAC, FLAC, audio/flac",
             "my.live.tune.Mp3, MP3, audio/mpeg"
     })

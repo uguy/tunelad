@@ -79,6 +79,18 @@ class LiveStreamTest extends AbstractLiveTest {
         assertThat(alice.dataOf("track.indexed")).containsExactly(body("track.indexed", "42"));
     }
 
+    @Test
+    void anonymous_and_authenticated_clients_both_receive_an_audio_event() throws Exception {
+        var anonymous = follow(null);
+        var alice = follow(ALICE);
+
+        publishRaw(LiveSubjects.library("audio.prepared"), body("audio.prepared", "42"));
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> !anonymous.events().isEmpty() && !alice.events().isEmpty());
+        assertThat(anonymous.dataOf("audio.prepared")).containsExactly(body("audio.prepared", "42"));
+        assertThat(alice.dataOf("audio.prepared")).containsExactly(body("audio.prepared", "42"));
+    }
+
     // --- Requirement: Account events reach only that account -------------------------------------
 
     @Test

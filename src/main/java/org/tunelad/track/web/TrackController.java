@@ -62,7 +62,7 @@ public class TrackController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload a track",
             description = "Stores a track with its audio, owned by the authenticated user, and returns it. The audio "
-                    + "format is told by the file name's extension: mp3, m4a, ogg, flac or wav. Files over 100 MB are "
+                    + "format is told by the file name's extension: mp3, m4a, ogg, flac, wav or wma. Files over 100 MB are "
                     + "refused. BREAKING: the track records an existing set, given as `setId`, and gets one performance "
                     + "per tune of that set. The optional `performances` part is a JSON array with one object per tune, in "
                     + "the set's order, each with optional `startOffsetSeconds` (0 to 86400, default 0), `key` (at most 30 "
@@ -76,7 +76,7 @@ public class TrackController {
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
             @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content),
             @ApiResponse(responseCode = "413", description = "The audio file is larger than 100 MB", content = @Content),
-            @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac or wav file", content = @Content)
+            @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac, wav or wma file", content = @Content)
     })
     public Mono<ResponseEntity<TrackDTO>> create(
             @RequestPart("title") String title,
@@ -100,7 +100,7 @@ public class TrackController {
         var format = TrackFormat.forFile(filePart.filename());
         if (format.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                    "Supported audio formats are mp3, m4a, ogg, flac and wav."));
+                    "Supported audio formats are mp3, m4a, ogg, flac, wav and wma."));
         }
         return authenticatedAccount()
                 .map(account -> new AddTrackCommand(title, artist, album, description, setId.trim(), inputs, filePart.content(),

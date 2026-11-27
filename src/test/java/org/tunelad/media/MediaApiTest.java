@@ -241,7 +241,21 @@ class MediaApiTest extends AbstractApiTest {
                 .jsonPath("$.paths['/api/tracks/{id}/play'].get.parameters[?(@.name == 'Range')].required").isEqualTo(false)
                 .jsonPath("$.paths['/api/tracks/{id}/play'].get.responses['206'].headers['Content-Range']").exists()
                 .jsonPath("$.paths['/api/tracks/{id}/play'].get.responses['416'].headers['Content-Range']").exists()
+                .jsonPath("$.paths['/api/tracks/{id}/play'].get.responses['503'].headers['Retry-After']").exists()
+                .jsonPath("$.paths['/api/tracks/{id}/play'].get.responses['422']").exists()
                 .jsonPath("$.paths['/api/tracks/{id}/play'].get.tags[0]").isEqualTo("Media");
+    }
+
+    @Test
+    void audio_is_documented() {
+        client.get().uri("/v3/api-docs").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/api/tracks/{id}/audio'].get.tags[0]").isEqualTo("Media")
+                .jsonPath("$.paths['/api/tracks/{id}/audio'].get.responses['200'].content['application/json'].schema['$ref']")
+                .isEqualTo("#/components/schemas/Audio")
+                .jsonPath("$.paths['/api/tracks/{id}/audio'].get.responses['404']").exists()
+                .jsonPath("$.components.schemas.Audio.properties.status.enum").isEqualTo(List.of("PENDING", "READY", "FAILED"));
     }
 
     @Test
@@ -368,6 +382,148 @@ class MediaApiTest extends AbstractApiTest {
         // getWaveform() sends no session or token
         assertThat(awaitWaveform(id, "READY").status()).isEqualTo("READY");
         getWaveform(id).expectStatus().isOk();
+    }
+
+    // --- WMA: a rendition browsers can play --------------------------------------------------------
+
+    /** The state of a track's audio as a client reads it. */
+    record AudioBody(String status) {
+    }
+
+    private WebTestClient.ResponseSpec getAudio(String id) {
+        return client.get().uri("/api/tracks/{id}/audio", id).exchange();
+    }
+
+    /** Polls the audio state until it has the status, for up to 10 seconds. */
+    private void awaitAudio(String id, String status) {
+        await().atMost(Duration.ofSeconds(10)).until(
+                () -> getAudio(id).expectStatus().isOk().expectBody(AudioBody.class).returnResult().getResponseBody(),
+                audio -> status.equals(audio.status()));
+    }
+
+    private String uploadWma(byte[] wma) {
+        return uploadFile(Map.of("title", "Tune", "description", "Four seconds of A"), named("tune.wma", wma))
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+    }
+
+    @Test
+    void play_a_wma_track() {
+        var wma = TestAudio.wma();
+        var id = uploadWma(wma);
+        awaitAudio(id, "READY");
+
+        var whole = play(id, null)
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("audio/mp4")
+                .expectHeader().valueEquals(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .expectBody(byte[].class).returnResult();
+        var body = whole.getResponseBody();
+
+        assertThat(whole.getResponseHeaders().getContentLength()).isEqualTo(body.length);
+        assertThat(body).isNotEqualTo(wma);
+        // An mp4 file: its first box, after its size, is "ftyp"
+        assertThat(new String(body, 4, 4)).isEqualTo("ftyp");
+
+        var ranged = play(id)
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT)
+                .expectHeader().contentTypeCompatibleWith("audio/mp4")
+                .expectHeader().valueEquals(HttpHeaders.CONTENT_RANGE, "bytes 0-%d/%d".formatted(body.length - 1, body.length))
+                .expectBody(byte[].class).returnResult().getResponseBody();
+        assertThat(ranged).isEqualTo(body);
+
+        play(id, "bytes=10-19")
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT)
+                .expectHeader().valueEquals(HttpHeaders.CONTENT_RANGE, "bytes 10-19/" + body.length)
+                .expectBody(byte[].class).isEqualTo(Arrays.copyOfRange(body, 10, 20));
+    }
+
+    @Test
+    void play_while_the_rendition_is_being_made() {
+        var id = uploadWma(TestAudio.wma());
+        awaitAudio(id, "READY");
+        setRendition(id, "PENDING");
+
+        play(id).expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectHeader().exists(HttpHeaders.RETRY_AFTER)
+                .expectBody().isEmpty();
+        play(id, null).expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        getAudio(id).expectStatus().isOk().expectBody(AudioBody.class).isEqualTo(new AudioBody("PENDING"));
+    }
+
+    @Test
+    void play_audio_that_could_not_be_converted() {
+        var id = uploadWma(TestAudio.fakeWma());
+        awaitAudio(id, "FAILED");
+
+        play(id).expectStatus().isEqualTo(422).expectBody().isEmpty();
+    }
+
+    @Test
+    void a_failed_conversion_does_not_block_the_track() {
+        var id = uploadWma(TestAudio.fakeWma());
+        awaitAudio(id, "FAILED");
+
+        edit(id, Map.of("title", "Renamed", "description", "Still editable"), UPLOADER_TOKEN)
+                .expectStatus().is2xxSuccessful();
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+        assertThat(listTracks()).isEmpty();
+    }
+
+    @Test
+    void waveform_of_a_wma_track() {
+        var id = uploadWma(TestAudio.wma());
+
+        assertThat(awaitWaveform(id, "READY").peaks()).hasSize(200);
+    }
+
+    @Test
+    void the_wma_original_is_not_what_is_played_but_is_kept() {
+        var wma = TestAudio.wma();
+        var id = uploadWma(wma);
+        awaitAudio(id, "READY");
+
+        assertThat(count("media_files", "file_key = '" + id + "' AND content_type = 'audio/x-ms-wma'")).isEqualTo(1);
+        assertThat(count("media_files", "file_key = '" + id + ":play' AND content_type = 'audio/mp4'")).isEqualTo(1);
+    }
+
+    @Test
+    void audio_of_a_format_browsers_play_is_ready_at_once() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+
+        getAudio(id).expectStatus().isOk().expectBody(AudioBody.class).isEqualTo(new AudioBody("READY"));
+    }
+
+    @Test
+    void audio_state_of_an_unknown_track() {
+        getAudio("no-such-track").expectStatus().isNotFound();
+    }
+
+    @Test
+    void audio_state_without_logging_in() {
+        var id = uploadOk("Knees Up", "A reel and a song", KNEES_UP_MP3).id();
+
+        // getAudio() sends no session or token
+        getAudio(id).expectStatus().isOk();
+    }
+
+    @Test
+    void deleting_a_wma_track_deletes_its_rendition() {
+        var id = uploadWma(TestAudio.wma());
+        awaitAudio(id, "READY");
+
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+
+        play(id).expectStatus().isNotFound();
+        getAudio(id).expectStatus().isNotFound();
+        assertThat(count("media_files", "file_key LIKE '" + id + "%'")).isZero();
+        assertThat(count("media_renditions", "file_key = '" + id + "'")).isZero();
+    }
+
+    /** Puts the state of a track's rendition back, as if the conversion were under way or had failed. */
+    private void setRendition(String id, String status) {
+        db.sql("UPDATE media_renditions SET status = :status WHERE file_key = :key")
+                .bind("status", status).bind("key", id).then().block(Duration.ofSeconds(10));
     }
 
     /** The waveform as a client reads it. */

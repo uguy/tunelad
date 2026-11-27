@@ -28,3 +28,15 @@ CREATE TABLE media_waveforms
     computed_at TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (file_key)
 );
+
+--changeset tunelad:media-renditions
+-- Audio a browser cannot play (wma) gets an AAC rendition, stored as a media_files row under "<file_key>:play".
+-- This table holds its state, keyed by the original's key; audio with no row here needs no rendition and is ready.
+CREATE TABLE media_renditions
+(
+    file_key    TEXT                     NOT NULL REFERENCES media_files (file_key) ON DELETE CASCADE,
+    status      TEXT                     NOT NULL CHECK (status IN ('PENDING', 'READY', 'FAILED')),
+    computed_at TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY (file_key)
+);
+--rollback DROP TABLE media_renditions;

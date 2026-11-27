@@ -34,15 +34,18 @@ public class ChunkedMediaStore implements MediaStore {
 
     private final DatabaseClient client;
     private final Waveforms waveforms;
+    private final Renditions renditions;
     private final TransactionalEvents events;
     private final TransactionalOperator transactionalOperator;
 
     ChunkedMediaStore(DatabaseClient client,
                       Waveforms waveforms,
+                      Renditions renditions,
                       TransactionalEvents events,
                       @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
         this.client = client;
         this.waveforms = waveforms;
+        this.renditions = renditions;
         this.events = events;
         this.transactionalOperator = TransactionalOperator.create(transactionManager);
     }
@@ -53,7 +56,19 @@ public class ChunkedMediaStore implements MediaStore {
      */
     @Override
     public Mono<Void> store(String key, Publisher<DataBuffer> audio, String contentType) {
-        var upload = Mono.defer(() -> {
+        return write(key, audio, contentType).then(Mono.defer(() -> awaitWaveform(key, contentType)));
+    }
+
+    /**
+     * Stores the rendition of the audio stored under the key: no waveform and no event, since it is derived from
+     * audio that has them. It lives and goes with that audio.
+     */
+    Mono<Void> storeRendition(String key, Publisher<DataBuffer> rendition) {
+        return write(Playable.renditionKey(key), rendition, Playable.RENDITION_CONTENT_TYPE);
+    }
+
+    private Mono<Void> write(String key, Publisher<DataBuffer> audio, String contentType) {
+        return Mono.defer(() -> {
             var type = contentType(contentType);
             return delete(key)
                     .then(client.sql("""
@@ -70,7 +85,6 @@ public class ChunkedMediaStore implements MediaStore {
                             .bind("length", length).bind("key", key)
                             .then());
         }).as(transactionalOperator::transactional);
-        return upload.then(Mono.defer(() -> awaitWaveform(key)));
     }
 
     private Mono<Void> insertChunk(String key, int n, byte[] data) {
@@ -104,11 +118,13 @@ public class ChunkedMediaStore implements MediaStore {
     }
 
     /**
-     * Saves a pending waveform and announces it, in a transaction of its own: callers may store audio outside any
+     * Saves a pending waveform, and a pending rendition when browsers cannot play the audio, and announces it, in a transaction of its own: callers may store audio outside any
      * transaction (uploads do), and module listeners only hear about events published within one.
      */
-    private Mono<Void> awaitWaveform(String key) {
+    private Mono<Void> awaitWaveform(String key, String contentType) {
+        var rendition = Playable.byBrowsers(contentType) ? Mono.<Void>empty() : renditions.savePending(key);
         return waveforms.savePending(key)
+                .then(rendition)
                 .then(events.publish(new AudioStored(key)))
                 .as(transactionalOperator::transactional);
     }
@@ -118,15 +134,17 @@ public class ChunkedMediaStore implements MediaStore {
         return find(key).flatMapMany(media -> media.length() == 0 ? Flux.empty() : media.content(0, media.length() - 1));
     }
 
-    /** Deletes the audio and, with it, its chunks and waveform. */
+    /** Deletes the audio and, with it, its chunks, waveform and rendition. */
     @Override
     public Mono<Void> delete(String key) {
-        return client.sql("DELETE FROM media_files WHERE file_key = :key").bind("key", key).then();
+        return client.sql("DELETE FROM media_files WHERE file_key = :key OR file_key = :rendition")
+                .bind("key", key).bind("rendition", Playable.renditionKey(key)).then();
     }
 
-    /** The keys of all stored audio. */
+    /** The keys of all stored audio, renditions excepted: they are derived from the audio. */
     Flux<String> keys() {
-        return client.sql("SELECT file_key FROM media_files").map(row -> row.get("file_key", String.class)).all();
+        return client.sql("SELECT file_key FROM media_files").map(row -> row.get("file_key", String.class)).all()
+                .filter(key -> !Playable.isRenditionKey(key));
     }
 
     /** The audio stored under that key, or empty when there is none. */
@@ -136,6 +154,11 @@ public class ChunkedMediaStore implements MediaStore {
                 .map(row -> (Media) new ChunkedMedia(key, row.get("length", Long.class),
                         row.get("chunk_size", Integer.class), contentType(row.get("content_type", String.class))))
                 .one();
+    }
+
+    /** The rendition of the audio stored under that key, or empty when it has none (yet). */
+    public Mono<Media> findRendition(String key) {
+        return find(Playable.renditionKey(key));
     }
 
     private static String contentType(String stored) {

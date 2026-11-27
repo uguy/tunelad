@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class FfmpegPeakExtractorTest {
 
     private final FfmpegPeakExtractor extractor =
-            new FfmpegPeakExtractor(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30)));
+            new FfmpegPeakExtractor(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60)));
 
     @ParameterizedTest
     @ValueSource(strings = {"mp3/Knees_Up.mp3", "audio/tune.m4a", "audio/tune.ogg", "audio/tune.flac", "audio/tune.wav"})
@@ -49,7 +49,7 @@ class FfmpegPeakExtractorTest {
     @Test
     void missing_ffmpeg_is_told_apart() {
         var withoutFfmpeg = new FfmpegPeakExtractor(
-                new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30)));
+                new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60)));
 
         assertThatThrownBy(() -> withoutFfmpeg.peaks(bytes(TestAudio.silenceThenTone())).block())
                 .isInstanceOf(FfmpegUnavailableException.class);

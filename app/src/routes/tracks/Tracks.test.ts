@@ -14,6 +14,8 @@ describe('checkFile', () => {
 			'a.ogg',
 			'a.flac',
 			'a.wav',
+			'a.wma',
+			'A.WMA',
 			'A.FLAC',
 			'my.live.tune.Mp3'
 		]) {
@@ -37,7 +39,7 @@ describe('checkFile', () => {
 describe('uploadErrorMessage', () => {
 	it('explains each refusal', () => {
 		expect(uploadErrorMessage(413)).toContain('100 MB');
-		expect(uploadErrorMessage(415)).toContain('mp3, m4a, ogg, flac or wav');
+		expect(uploadErrorMessage(415)).toContain('mp3, m4a, ogg, flac, wav or wma');
 		expect(uploadErrorMessage(400)).toContain('title, a description');
 		expect(uploadErrorMessage(401)).toContain('Log in again');
 		expect(uploadErrorMessage(403)).toContain('may not upload');
@@ -86,6 +88,30 @@ describe('TrackService.findWaveform', () => {
 			await new TrackService(async () => {
 				throw new TypeError('network down');
 			}).findWaveform('x')
+		).toBeNull();
+	});
+});
+
+describe('TrackService.findAudio', () => {
+	it('returns the state of the track audio', async () => {
+		let url = '';
+		const service = new TrackService(async (input) => {
+			url = String(input);
+			return Response.json({ status: 'PENDING' });
+		});
+
+		expect(await service.findAudio('track 1')).toEqual({ status: 'PENDING' });
+		expect(url).toBe('/api/tracks/track%201/audio');
+	});
+
+	it('returns null for an unknown track or a failed request', async () => {
+		expect(
+			await new TrackService(async () => new Response(null, { status: 404 })).findAudio('x')
+		).toBeNull();
+		expect(
+			await new TrackService(async () => {
+				throw new TypeError('network down');
+			}).findAudio('x')
 		).toBeNull();
 	});
 });

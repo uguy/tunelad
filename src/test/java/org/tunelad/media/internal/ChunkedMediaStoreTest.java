@@ -24,6 +24,8 @@ class ChunkedMediaStoreTest {
     private static final int CHUNK_SIZE = 255 * 1024;
 
     @Autowired ChunkedMediaStore store;
+    @Autowired Renditions renditions;
+    @Autowired Waveforms waveforms;
 
     @Test
     void stored_audio_reads_back_whole() throws Exception {
@@ -92,6 +94,73 @@ class ChunkedMediaStoreTest {
     @Test
     void deleting_a_missing_key_completes() {
         store.delete(UUID.randomUUID().toString()).block();
+    }
+
+    @Test
+    void audio_a_browser_cannot_play_gets_a_pending_rendition() {
+        var key = UUID.randomUUID().toString();
+
+        store.store(key, kneesUpBuffers(), "audio/x-ms-wma").block();
+
+        assertThat(renditions.findStatus(key).block()).isEqualTo(RenditionStatus.PENDING);
+    }
+
+    @Test
+    void audio_a_browser_plays_gets_no_rendition() {
+        var key = UUID.randomUUID().toString();
+
+        store.store(key, kneesUpBuffers(), "audio/mpeg").block();
+
+        assertThat(renditions.findStatus(key).blockOptional()).isEmpty();
+    }
+
+    @Test
+    void deleting_audio_deletes_its_rendition_and_its_state() {
+        var key = UUID.randomUUID().toString();
+        store.store(key, kneesUpBuffers(), "audio/x-ms-wma").block();
+        store.storeRendition(key, kneesUpBuffers()).block();
+        assertThat(store.find(Playable.renditionKey(key)).block().contentType()).isEqualTo("audio/mp4");
+
+        store.delete(key).block();
+
+        assertThat(store.find(key).blockOptional()).isEmpty();
+        assertThat(store.find(Playable.renditionKey(key)).blockOptional()).isEmpty();
+        assertThat(renditions.findStatus(key).blockOptional()).isEmpty();
+    }
+
+    @Test
+    void renditions_are_not_listed_among_the_audio_keys() {
+        var key = UUID.randomUUID().toString();
+        store.store(key, kneesUpBuffers(), "audio/x-ms-wma").block();
+        store.storeRendition(key, kneesUpBuffers()).block();
+
+        assertThat(store.keys().collectList().block()).contains(key).doesNotContain(Playable.renditionKey(key));
+    }
+
+    @Test
+    void a_rendition_has_no_waveform_and_raises_no_event() {
+        var key = UUID.randomUUID().toString();
+        store.store(key, kneesUpBuffers(), "audio/x-ms-wma").block();
+
+        store.storeRendition(key, kneesUpBuffers()).block();
+
+        assertThat(waveforms.findById(Playable.renditionKey(key)).blockOptional()).isEmpty();
+    }
+
+    @Test
+    void completing_a_rendition_records_the_outcome_and_ignores_a_missing_one() {
+        var key = UUID.randomUUID().toString();
+        store.store(key, kneesUpBuffers(), "audio/x-ms-wma").block();
+
+        assertThat(renditions.pendingKeys().collectList().block()).contains(key);
+        assertThat(renditions.complete(key, RenditionStatus.READY).block()).isEqualTo(1L);
+        assertThat(renditions.findStatus(key).block()).isEqualTo(RenditionStatus.READY);
+        assertThat(renditions.pendingKeys().collectList().block()).doesNotContain(key);
+        assertThat(renditions.complete(UUID.randomUUID().toString(), RenditionStatus.READY).block()).isZero();
+    }
+
+    private static Flux<org.springframework.core.io.buffer.DataBuffer> kneesUpBuffers() {
+        return DataBufferUtils.read(new ClassPathResource("mp3/Knees_Up.mp3"), DefaultDataBufferFactory.sharedInstance, 8192);
     }
 
     private static byte[] kneesUp() throws Exception {

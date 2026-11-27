@@ -80,7 +80,7 @@ public class FfmpegPeakExtractor {
     }
 
     /** Streams the audio to ffmpeg's stdin, closing it at the end so ffmpeg knows the input is complete. */
-    private static void writeInBackground(Flux<DataBuffer> audio, OutputStream stdin) {
+    static void writeInBackground(Flux<DataBuffer> audio, OutputStream stdin) {
         DataBufferUtils.write(audio.publishOn(Schedulers.boundedElastic()), stdin)
                 .doOnNext(DataBufferUtils::release)
                 .doFinally(signal -> closeQuietly(stdin))
@@ -88,7 +88,7 @@ public class FfmpegPeakExtractor {
                 .subscribe(null, error -> log.debug("Stopped writing audio to ffmpeg: {}", error.toString()));
     }
 
-    private static String readAll(InputStream stream) {
+    static String readAll(InputStream stream) {
         try (stream) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -96,7 +96,7 @@ public class FfmpegPeakExtractor {
         }
     }
 
-    private static void closeQuietly(OutputStream stream) {
+    static void closeQuietly(OutputStream stream) {
         try {
             stream.close();
         } catch (IOException ignored) {

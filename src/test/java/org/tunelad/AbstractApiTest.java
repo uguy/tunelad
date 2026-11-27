@@ -72,6 +72,16 @@ public abstract class AbstractApiTest {
         return db.sql(sql).map(row -> row.get("n", Long.class)).one().block(Duration.ofSeconds(30));
     }
 
+    /** A file made of these bytes with this name, to upload (the API tells the format by the name). */
+    protected static Resource named(String filename, byte[] bytes) {
+        return new org.springframework.core.io.ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return filename;
+            }
+        };
+    }
+
     /** Uploads a track as alice; a null value omits that part, and a null fixture omits the file part. */
     protected WebTestClient.ResponseSpec upload(Map<String, String> parts, String fixture) {
         return upload(parts, fixture, UPLOADER_TOKEN);

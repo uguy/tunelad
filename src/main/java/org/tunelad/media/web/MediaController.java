@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.media.internal.ChunkedMediaStore;
 import org.tunelad.media.internal.Media;
+import org.tunelad.media.internal.RenditionStatus;
+import org.tunelad.media.internal.Renditions;
 import org.tunelad.media.internal.Waveform;
 import org.tunelad.media.internal.WaveformStatus;
 import org.tunelad.media.internal.Waveforms;
@@ -43,14 +45,18 @@ public class MediaController {
 
     private final ChunkedMediaStore store;
     private final Waveforms waveforms;
+    private final Renditions renditions;
 
     @GetMapping(value = "{id}/play",
             produces = {"audio/mpeg", "audio/mp4", "audio/ogg", "audio/flac", "audio/wav",
                     MediaType.APPLICATION_OCTET_STREAM_VALUE})
     @Operation(summary = "Play a track",
             description = "Streams the track's audio, with the content type of its format (`audio/mpeg` for "
-                    + "audio stored before formats were recorded). Honours a single byte range (RFC 9110); "
-                    + "malformed or multi-range Range headers are ignored and the whole file is sent.")
+                    + "audio stored before formats were recorded). A format browsers cannot play (wma) is streamed "
+                    + "as its AAC rendition, `audio/mp4`, once it is made: until then the answer is 503 with "
+                    + "`Retry-After`, or 422 when it could not be made (see `GET /api/tracks/{id}/audio`). Honours a "
+                    + "single byte range (RFC 9110); malformed or multi-range Range headers are ignored and the "
+                    + "whole file is sent.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "whole audio file",
                     headers = @Header(name = HttpHeaders.ACCEPT_RANGES, description = "Always `bytes`"),
@@ -66,6 +72,11 @@ public class MediaController {
                             @Content(mediaType = "audio/ogg"), @Content(mediaType = "audio/flac"),
                             @Content(mediaType = "audio/wav")}),
             @ApiResponse(responseCode = "404", description = "Track not found", content = @Content),
+            @ApiResponse(responseCode = "422", description = "The audio could not be converted to a playable format",
+                    content = @Content),
+            @ApiResponse(responseCode = "503", description = "The playable audio is still being made: try again",
+                    headers = @Header(name = HttpHeaders.RETRY_AFTER, description = "Seconds to wait"),
+                    content = @Content),
             @ApiResponse(responseCode = "416", description = "Range starts at or past the end of the file",
                     headers = @Header(name = HttpHeaders.CONTENT_RANGE, description = "`bytes */<size>`"),
                     content = @Content)
@@ -78,7 +89,54 @@ public class MediaController {
         var requested = singleRange(range);
         return store.find(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("No audio found for id: " + id)))
-                .map(media -> requested.map(r -> partial(media, r)).orElseGet(() -> wholeFile(media)));
+                .flatMap(original -> playable(id, original, requested));
+    }
+
+    /**
+     * What is played: the audio itself, or its rendition when browsers cannot play it. The ranges and the size of the
+     * response are the ones of what is played.
+     */
+    private Mono<ResponseEntity<Flux<DataBuffer>>> playable(String id, Media original, Optional<HttpRange> requested) {
+        return renditions.findStatus(id).map(Optional::of).defaultIfEmpty(Optional.empty())
+                .flatMap(status -> {
+                    if (status.isEmpty()) {
+                        return Mono.just(serve(original, requested));
+                    }
+                    if (status.get() != RenditionStatus.READY) {
+                        return Mono.just(notPlayable(status.get()));
+                    }
+                    return store.findRendition(id).map(rendition -> serve(rendition, requested))
+                            .switchIfEmpty(Mono.fromSupplier(() -> notPlayable(RenditionStatus.PENDING)));
+                });
+    }
+
+    private static ResponseEntity<Flux<DataBuffer>> serve(Media media, Optional<HttpRange> requested) {
+        return requested.map(range -> partial(media, range)).orElseGet(() -> wholeFile(media));
+    }
+
+    /** What is said while the rendition is not there: wait for it, or do not expect it. */
+    private static ResponseEntity<Flux<DataBuffer>> notPlayable(RenditionStatus status) {
+        return status == RenditionStatus.FAILED
+                ? ResponseEntity.unprocessableEntity().build()
+                : ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, "5").build();
+    }
+
+    @GetMapping(value = "{id}/audio", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get the state of a track's playable audio",
+            description = "READY when `GET /api/tracks/{id}/play` can stream it: at once for formats browsers play, "
+                    + "and once its AAC rendition is made for the others (wma). PENDING while the rendition is "
+                    + "being made, FAILED when the audio could not be converted. The change is announced by the "
+                    + "live event `audio.prepared`.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "the state of the audio"),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
+    })
+    public Mono<AudioResponse> audio(
+            @Parameter(description = "Track ID", required = true) @PathVariable("id") String id) {
+        return store.find(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("No audio found for id: " + id)))
+                .then(renditions.findStatus(id).defaultIfEmpty(RenditionStatus.READY))
+                .map(AudioResponse::new);
     }
 
     @GetMapping(value = "{id}/waveform", produces = MediaType.APPLICATION_JSON_VALUE)

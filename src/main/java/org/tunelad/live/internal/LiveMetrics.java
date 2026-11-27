@@ -19,7 +19,7 @@ public class LiveMetrics {
 
     /** The event types the application raises. */
     static final Set<String> TYPES = Set.of("track.indexed", "track.unindexed", "waveform.computed",
-            "favourite.changed", "playlist.changed");
+            "audio.prepared",            "favourite.changed", "playlist.changed");
 
     private final MeterRegistry registry;
     private final AtomicInteger connections = new AtomicInteger();
