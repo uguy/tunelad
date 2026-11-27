@@ -82,15 +82,18 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		const file = files?.[0];
-		if (!file) return;
+		if (!file) {
+			fail('Choose an audio file to upload.', null);
+			return;
+		}
 		const refusal = checkFile(file);
 		if (refusal) {
 			fail(refusal, null);
 			return;
 		}
 
-		if (!setChoice || (setChoice === NEW_SET && chosen.length === 0)) {
-			fail('Choose a set, or build one from its tunes.', null);
+		if (setChoice === NEW_SET && chosen.length === 0) {
+			fail('Add at least one tune to the new set, or choose no set yet.', null);
 			return;
 		}
 		const invalid = performances.map(checkPerformance).find(Boolean);
@@ -105,8 +108,9 @@
 		controller = new AbortController();
 		try {
 			// A new set is created first: the same list always gives the same set, so a retry finds it again
-			const setId =
-				setChoice === NEW_SET
+			const setId = !setChoice
+				? null
+				: setChoice === NEW_SET
 					? (await setService.create(chosen.map((tune) => tune.id))).set.id
 					: setChoice;
 			const track = await trackService.upload(
@@ -116,7 +120,7 @@
 					artist,
 					album,
 					setId,
-					performances: performances.map(toInput),
+					performances: setId ? performances.map(toInput) : undefined,
 					file
 				},
 				{ onProgress: (fraction) => (progress = fraction), signal: controller.signal }
@@ -169,8 +173,9 @@
 	{#if session.account}
 		<form class="card space-y-4 p-6" aria-label="upload a track" onsubmit={submit}>
 			<label class={labelClass}>
-				Audio file (mp3, m4a, ogg, flac, wav or wma, up to 100 MB)
+				Audio file (required: mp3, m4a, ogg, flac, wav or wma, up to 100 MB)
 				<input
+					aria-describedby="upload-hint"
 					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-on-accent hover:file:bg-accent-strong"
 					name="file"
 					type="file"
@@ -179,21 +184,23 @@
 					bind:files
 				/>
 			</label>
+			<p id="upload-hint" class="text-sm text-ink-muted">
+				Everything else is optional: Tune Lad fills in what it can from the file.
+			</p>
 			<label class={labelClass}>
-				Title <input class={inputClass} name="title" required bind:value={title} />
+				Title (optional) <input class={inputClass} name="title" bind:value={title} />
 			</label>
 			<label class={labelClass}>
-				Description <textarea
+				Description (optional) <textarea
 					class={inputClass}
 					rows="3"
 					name="description"
-					required
 					bind:value={description}></textarea>
 			</label>
 			<label class={labelClass}>
-				Set
-				<select class={inputClass} name="set" required bind:value={setChoice} onchange={chooseSet}>
-					<option value="">Choose a set</option>
+				Set (optional)
+				<select class={inputClass} name="set" bind:value={setChoice} onchange={chooseSet}>
+					<option value="">No set yet</option>
 					{#each sets as set (set.id)}
 						<option value={set.id}>{setTitle(set)}</option>
 					{/each}
@@ -214,10 +221,10 @@
 			{/if}
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class={labelClass}>
-					Artist <input class={inputClass} name="artist" bind:value={artist} />
+					Artist (optional) <input class={inputClass} name="artist" bind:value={artist} />
 				</label>
 				<label class={labelClass}>
-					Album <input class={inputClass} name="album" bind:value={album} />
+					Album (optional) <input class={inputClass} name="album" bind:value={album} />
 				</label>
 			</div>
 

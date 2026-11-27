@@ -51,6 +51,37 @@ public final class TestAudio {
         }
     }
 
+    /**
+     * A 2 second file of the given format (its extension, such as {@code mp3} or {@code wma}) made by ffmpeg from
+     * {@link #silenceThenTone()}, carrying these tags (name to value, as ffmpeg's {@code -metadata}); no third-party
+     * recording is kept in the repository.
+     */
+    public static byte[] tagged(String extension, java.util.Map<String, String> tags) {
+        var dir = tempDir();
+        try {
+            var in = dir.resolve("tone.wav");
+            var out = dir.resolve("tagged." + extension);
+            Files.write(in, silenceThenTone());
+            var command = new java.util.ArrayList<>(java.util.List.of("ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                    "-i", in.toString(), "-t", "2"));
+            tags.forEach((name, value) -> command.addAll(java.util.List.of("-metadata", name + "=" + value)));
+            command.add(out.toString());
+            var process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            var log = new String(process.getInputStream().readAllBytes());
+            if (!process.waitFor(30, TimeUnit.SECONDS) || process.exitValue() != 0) {
+                throw new IllegalStateException("ffmpeg could not make a tagged " + extension + " file: " + log);
+            }
+            return Files.readAllBytes(out);
+        } catch (IOException e) {
+            throw new IllegalStateException("ffmpeg must be installed to make a tagged file", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        } finally {
+            deleteQuietly(dir);
+        }
+    }
+
     /** Bytes with the ASF header of a WMA file, followed by noise: a file no decoder can play. */
     public static byte[] fakeWma() {
         var out = new ByteArrayOutputStream();

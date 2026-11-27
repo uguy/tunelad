@@ -17,6 +17,7 @@ public record TrackDTO(
 		String title,
 		String artist,
 		String album,
+		@Schema(description = "Absent when the track has none", nullable = true)
 		String description,
 		TrackFormat format,
 		TrackOwner owner,

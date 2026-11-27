@@ -219,8 +219,8 @@
 		try {
 			const updated = await trackService.update(track.id, {
 				title: form.title,
-				description: form.description,
-				// An empty field clears the artist or album
+				// An empty field clears the description, artist or album
+				description: form.description || null,
 				artist: form.artist || null,
 				album: form.album || null,
 				performances: performanceForms.length ? performanceForms.map(toInput) : undefined
@@ -382,7 +382,9 @@
 							{#if track.album}
 								<p><span class="text-ink-muted">Album:</span> {track.album}</p>
 							{/if}
-							<p class="mt-1 whitespace-pre-line">{track.description}</p>
+							{#if track.description}
+								<p class="mt-1 whitespace-pre-line">{track.description}</p>
+							{/if}
 							{#if details[track.id]?.performances?.length}
 								<h3 class="mt-3 font-medium">Tunes</h3>
 								<ol class="mt-1 space-y-1" aria-label="tunes of {track.title}">
@@ -438,15 +440,15 @@
 								Title <input class={inputClass} required bind:value={form.title} />
 							</label>
 							<label class="block text-sm font-medium">
-								Description <textarea class={inputClass} required bind:value={form.description}
+								Description (optional) <textarea class={inputClass} bind:value={form.description}
 								></textarea>
 							</label>
 							<div class="grid gap-3 sm:grid-cols-2">
 								<label class="block text-sm font-medium">
-									Artist <input class={inputClass} bind:value={form.artist} />
+									Artist (optional) <input class={inputClass} bind:value={form.artist} />
 								</label>
 								<label class="block text-sm font-medium">
-									Album <input class={inputClass} bind:value={form.album} />
+									Album (optional) <input class={inputClass} bind:value={form.album} />
 								</label>
 							</div>
 							{#if performanceForms.length}

@@ -6,13 +6,12 @@ import org.tunelad.track.command.PerformanceInput;
 
 import java.util.List;
 
-@Schema(description = "A track's new metadata: replaces all of it, so an omitted artist or album is cleared")
+@Schema(description = "A track's new metadata: replaces all of it, so an omitted description, artist or album is cleared")
 public record TrackEdit(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "Knees Up (live)")
         @NotBlank(message = "A track needs a title.")
         String title,
-        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, example = "Recorded at Celtic Connections")
-        @NotBlank(message = "A track needs a description.")
+        @Schema(example = "Recorded at Celtic Connections")
         String description,
         @Schema(example = "Breabach")
         String artist,

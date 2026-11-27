@@ -63,6 +63,11 @@ public class Track {
 
     private List<String> tags = new ArrayList<>();
 
+    /** The text fields (title, description, artist, album) an Account provided: tags read from the audio never replace them.
+     * Not mapped with the other columns (Spring Data cannot read it back through its generated accessor): DbTracks stores it itself. */
+    @Transient
+    private List<String> providedTextFields = new ArrayList<>();
+
     /** Only its owner, or an administrator, may edit or delete a track. */
     public boolean isChangeableBy(AccountRef account) {
         return account.admin() || (owner != null && owner.id().equals(account.id()));

@@ -90,3 +90,11 @@ ALTER TABLE track_performances
 --rollback UPDATE track_performances SET identification = 'pending' WHERE identification = 'nothing_found';
 --rollback ALTER TABLE track_performances DROP CONSTRAINT track_performances_identification_check;
 --rollback ALTER TABLE track_performances ADD CONSTRAINT track_performances_identification_check CHECK (identification IN ('pending', 'identified', 'corrected'));
+
+--changeset tunelad:track-provided-fields
+-- The text fields an Account provided (at upload or by an edit): tags read from the audio never replace them.
+-- Tracks stored before tags were read count as provided.
+ALTER TABLE track_tracks
+    ADD COLUMN provided_text_fields TEXT[] NOT NULL DEFAULT '{}';
+UPDATE track_tracks SET provided_text_fields = ARRAY['title', 'description', 'artist', 'album'];
+--rollback ALTER TABLE track_tracks DROP COLUMN provided_text_fields;

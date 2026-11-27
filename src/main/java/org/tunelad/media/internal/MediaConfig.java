@@ -4,6 +4,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(FfmpegProperties.class)
+@EnableConfigurationProperties({FfmpegProperties.class, FfprobeProperties.class})
 class MediaConfig {
 }

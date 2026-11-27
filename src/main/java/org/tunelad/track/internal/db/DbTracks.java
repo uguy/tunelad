@@ -78,15 +78,18 @@ class DbTracks implements Tracks {
         var set = track.getTuneSet();
         var setId = track.getSetId();
         var performances = track.getPerformances();
+        var provided = track.getProvidedTextFields();
         track.setArtistId(artist == null ? null : artist.id());
         return trackRepository.save(track)
                 .flatMap(saved -> storeSetId(saved.getId(), setId)
+                        .then(storeProvidedFields(saved.getId(), provided))
                         .then(replacePerformances(saved.getId(), performances)).thenReturn(saved))
                 .doOnNext(saved -> {
                     saved.setSetId(setId);
                     saved.setArtist(artist);
                     saved.setTuneSet(set);
                     saved.setPerformances(performances);
+                    saved.setProvidedTextFields(provided);
                 });
     }
 
@@ -115,6 +118,19 @@ class DbTracks implements Tracks {
     private Mono<Void> storeSetId(String trackId, String setId) {
         var spec = client.sql("UPDATE track_tracks SET set_id = :set WHERE id = :track").bind("track", trackId);
         return (setId == null ? spec.bindNull("set", String.class) : spec.bind("set", setId)).then();
+    }
+
+    private Mono<Void> storeProvidedFields(String trackId, List<String> provided) {
+        return client.sql("UPDATE track_tracks SET provided_text_fields = :fields WHERE id = :track")
+                .bind("track", trackId).bind("fields", provided.toArray(new String[0])).then();
+    }
+
+    private Mono<Map<String, List<String>>> providedFieldsOf(List<String> trackIds) {
+        return client.sql("SELECT id, provided_text_fields FROM track_tracks WHERE id IN (:ids)")
+                .bind("ids", trackIds)
+                .map(row -> Map.entry(row.get("id", String.class),
+                        (List<String>) new ArrayList<>(List.of(row.get("provided_text_fields", String[].class)))))
+                .all().collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
     private Mono<Map<String, String>> setIdsOf(List<String> trackIds) {
@@ -153,13 +169,14 @@ class DbTracks implements Tracks {
                             artists.findAllById(artistIds).collectMap(Artist::id, Function.identity()),
                             sets.findAllById(setIdByTrack.values().stream().distinct().toList())
                                     .collectMap(SetDTO::id, Function.identity()),
-                            performancesOf(trackIds))
+                            performancesOf(trackIds), providedFieldsOf(trackIds))
                     .map(loaded -> {
                         list.forEach(track -> {
                             track.setArtist(track.getArtistId() == null ? null : loaded.getT1().get(track.getArtistId()));
                             track.setSetId(setIdByTrack.get(track.getId()));
                             track.setTuneSet(track.getSetId() == null ? null : loaded.getT2().get(track.getSetId()));
                             track.setPerformances(loaded.getT3().getOrDefault(track.getId(), new ArrayList<>()));
+                            track.setProvidedTextFields(loaded.getT4().getOrDefault(track.getId(), new ArrayList<>()));
                         });
                         return list;
                     })).flatMapMany(Flux::fromIterable);

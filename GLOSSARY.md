@@ -19,7 +19,7 @@ An ordered sequence of Tunes played one after another, such as a set of reels. I
 _Avoid_: Suite, medley, plan
 
 **Track**:
-An audio recording, by one Artist, of a Set (a single Tune counts as a Set of one). It carries a title, a description, tags and a source (where the recording comes from, as free text).
+An audio recording, by one Artist, of a Set (a single Tune counts as a Set of one) once it has one: a Track uploaded from its audio file alone has no Set yet. The audio file is its only required part; it always has a title (the file name until the file's tags give a better one). It carries a title, a description, tags and a source (where the recording comes from, as free text).
 _Avoid_: Song, media
 
 **Artist**:
@@ -40,7 +40,7 @@ The ABC notation a Tune carries on its own, imported from a source such as these
 ### Identification
 
 **Identification**:
-The automatic analysis of a Track's audio, run in the background after upload, that proposes where each Tune of its Set starts, by recognising the Tunes in the audio (Transcriptions are still written by hand). A Track's Performances are pending (not analysed yet, or the analysis could not be done), identified (proposed by the machine), nothing found (an analysis finished without hearing the Tune) or corrected (edited by an Account); manual corrections are never overwritten by a re-run.
+The automatic analysis of a Track's audio, run in the background after upload. It reads the file's tags (title, artist, album, comment) to fill the Track's fields that no Account provided, and proposes where each Tune of its Set starts, by recognising the Tunes in the audio (Transcriptions are still written by hand). A Track's Performances are pending (not analysed yet, or the analysis could not be done), identified (proposed by the machine), nothing found (an analysis finished without hearing the Tune) or corrected (edited by an Account); manual corrections are never overwritten by a re-run.
 _Avoid_: Recognition, tagging
 
 ### People and lists
