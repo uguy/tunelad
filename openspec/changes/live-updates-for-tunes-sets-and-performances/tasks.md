@@ -9,7 +9,7 @@
 
 ## 3. UI
 
-- [ ] 3.1 `refreshOnLive` on the Tunes list, Tune page (Tune and Performances), Sets list and Set page, updating in place. Verify: vitest component tests and Playwright e2e (API mocked with `page.route`) for each UI scenario of `specs/live`, including reconnect; `bun run lint`, `bun run check`, `bun run format`. Commit `feat(ui): follow tunes, sets and performances live`.
+- [x] 3.1 `refreshOnLive` on the Tunes list, Tune page (Tune and Performances), Sets list and Set page, updating in place. Verify: vitest component tests and Playwright e2e (API mocked with `page.route`) for each UI scenario of `specs/live`, including reconnect; `bun run lint`, `bun run check`, `bun run format`. Commit `feat(ui): follow tunes, sets and performances live`.
 
 ## 4. Docs and delivery
 

@@ -2,6 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { session } from '#lib/session.svelte.js';
+	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import SetService, { type TuneSet } from './Sets.js';
 
 	const service = new SetService();
@@ -9,14 +11,19 @@
 	let sets = $state.raw<TuneSet[]>([]);
 	let status = $state<'loading' | 'ready' | 'error'>('loading');
 
-	onMount(async () => {
+	async function load() {
 		try {
 			sets = await service.findAll();
 			status = 'ready';
 		} catch {
 			status = 'error';
 		}
-	});
+	}
+
+	onMount(load);
+
+	// Sets created elsewhere, and what was missed while the live connection was down
+	onMount(() => refreshOnLive(live, ['set.changed'], () => void load()));
 </script>
 
 <svelte:head>
