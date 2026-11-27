@@ -3,12 +3,14 @@ import { parseOffset } from '#lib/offset.js';
 /** The longest key and notes the server accepts. */
 export const MAX_KEY = 30;
 export const MAX_NOTES = 2000;
+export const MAX_ABC = 20000;
 
 /** What a Performance's fields hold while the form is open: the offset as typed. */
 export interface PerformanceForm {
 	start: string;
 	key: string;
 	notes: string;
+	abc: string;
 }
 
 /** A Performance as the server takes it. */
@@ -16,9 +18,10 @@ export interface PerformanceInput {
 	startOffsetSeconds?: number;
 	key?: string;
 	notes?: string;
+	abc?: string;
 }
 
-export const emptyPerformance = (): PerformanceForm => ({ start: '', key: '', notes: '' });
+export const emptyPerformance = (): PerformanceForm => ({ start: '', key: '', notes: '', abc: '' });
 
 /** One empty form per tune. */
 export function emptyPerformances(count: number): PerformanceForm[] {
@@ -31,6 +34,7 @@ export function checkPerformance(form: PerformanceForm): string | undefined {
 		return 'The start must be a time such as 1:35, up to 24 hours.';
 	if (form.key.trim().length > MAX_KEY) return `A key has at most ${MAX_KEY} characters.`;
 	if (form.notes.trim().length > MAX_NOTES) return `Notes have at most ${MAX_NOTES} characters.`;
+	if (form.abc.trim().length > MAX_ABC) return `A transcription has at most ${MAX_ABC} characters.`;
 	return undefined;
 }
 
@@ -41,5 +45,6 @@ export function toInput(form: PerformanceForm): PerformanceInput {
 	if (start !== null && !Number.isNaN(start)) input.startOffsetSeconds = start;
 	if (form.key.trim()) input.key = form.key.trim();
 	if (form.notes.trim()) input.notes = form.notes.trim();
+	if (form.abc.trim()) input.abc = form.abc.trim();
 	return input;
 }

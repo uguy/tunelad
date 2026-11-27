@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MAX_KEY, MAX_NOTES, type PerformanceForm } from './Performances.js';
+	import { MAX_ABC, MAX_KEY, MAX_NOTES, type PerformanceForm } from './Performances.js';
 
 	interface Props {
 		/** The names of the tunes, in order: one group of fields each. */
@@ -47,6 +47,16 @@
 				Notes
 				<textarea class={inputClass} rows="2" maxlength={MAX_NOTES} bind:value={values[i].notes}
 				></textarea>
+			</label>
+			<label class="block text-sm font-medium">
+				Transcription <span class="font-normal text-ink-muted">(ABC notation, optional)</span>
+				<textarea
+					class="{inputClass} font-mono"
+					rows="4"
+					maxlength={MAX_ABC}
+					spellcheck="false"
+					autocapitalize="off"
+					bind:value={values[i].abc}></textarea>
 			</label>
 		</fieldset>
 	{/if}
