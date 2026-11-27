@@ -4,6 +4,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.tunelad.identification.DetectedTune;
 import org.tunelad.identification.IdentificationSource;
 import reactor.core.publisher.Flux;
@@ -42,7 +43,20 @@ class CadenceSource implements IdentificationSource {
                 .body(audio, DataBuffer.class)
                 .retrieve()
                 .bodyToFlux(DetectedTune.class)
+                // The sidecar explains a refusal in its body: without it the log only says "400 Bad Request"
+                .onErrorMap(WebClientResponseException.class, CadenceSource::explained)
                 .timeout(properties.timeout());
+    }
+
+    private static final int MAX_EXPLANATION = 300;
+
+    static IllegalStateException explained(WebClientResponseException error) {
+        var body = error.getResponseBodyAsString().strip();
+        var message = "analysis service answered " + error.getStatusCode().value();
+        if (!body.isEmpty()) {
+            message += ": " + (body.length() > MAX_EXPLANATION ? body.substring(0, MAX_EXPLANATION) + "..." : body);
+        }
+        return new IllegalStateException(message, error);
     }
 
     @Override
