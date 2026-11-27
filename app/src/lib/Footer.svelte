@@ -14,6 +14,11 @@
 		</a> PWA playground
 	</p>
 	<p class="mt-1">
+		<a class="font-semibold text-accent-ink hover:underline" href="https://thesession.org">
+			Data from thesession.org
+		</a>
+	</p>
+	<p class="mt-1">
 		Last update :
 		<Time timestamp={buildDate} format="dddd D MMMM YYYY" />
 	</p>

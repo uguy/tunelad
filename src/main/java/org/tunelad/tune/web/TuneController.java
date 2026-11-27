@@ -22,6 +22,7 @@ import org.tunelad.account.AccountRef;
 import org.tunelad.account.CurrentAccount;
 import org.tunelad.tune.DanceType;
 import org.tunelad.tune.TuneDTO;
+import org.tunelad.tune.internal.TuneDumpImport;
 import org.tunelad.tune.internal.TuneService;
 import org.tunelad.tune.internal.TuneSource.SourceUnavailableException;
 import reactor.core.publisher.Flux;
@@ -38,6 +39,7 @@ public class TuneController {
 	public record ImportRequest(@Schema(description = "thesession.org tune id", requiredMode = Schema.RequiredMode.REQUIRED) Integer id) {}
 
 	private final TuneService tunes;
+	private final TuneDumpImport dumpImport;
 	private final CurrentAccount currentAccount;
 
 	@GetMapping(value = "api/dance-types", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -96,6 +98,41 @@ public class TuneController {
 		return account().flatMap(account -> tunes.importTune(account, request.id()))
 				.map(imported -> ResponseEntity.status(imported.created() ? HttpStatus.CREATED : HttpStatus.OK).body(imported.tune()))
 				.onErrorMap(SourceUnavailableException.class, e -> new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage()));
+	}
+
+	@PostMapping(value = "api/tunes/import-dump", produces = MediaType.APPLICATION_JSON_VALUE)
+	@org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.ACCEPTED)
+	@Operation(summary = "Import the thesession.org tune dump",
+			description = "Administrators only. Downloads tunes.csv and aliases.csv from adactio/TheSession-data and creates the Tunes the catalogue lacks "
+					+ "(first setting only, with aliases and composer); Tunes already known are left unchanged, so running it again resumes an interrupted run. "
+					+ "The import runs in the background: read its progress with GET.",
+			security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponse(responseCode = "202", description = "The import started")
+	@ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content)
+	@ApiResponse(responseCode = "403", description = "Not an administrator, or a browser session request without a valid CSRF token", content = @Content)
+	@ApiResponse(responseCode = "409", description = "An import is running already", content = @Content)
+	public Mono<TuneDumpImport.Run> startDumpImport() {
+		return administrator().map(account -> {
+			if (!dumpImport.start(account.id())) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT, "An import is running already");
+			}
+			return dumpImport.last();
+		});
+	}
+
+	@GetMapping(value = "api/tunes/import-dump", produces = MediaType.APPLICATION_JSON_VALUE)
+	@Operation(summary = "Progress of the thesession.org tune dump import",
+			description = "Administrators only: the state of the last import (idle, running, done or failed), the Tunes it created, the rows it skipped, and why it failed.",
+			security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponse(responseCode = "200", description = "The last import")
+	@ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content)
+	@ApiResponse(responseCode = "403", description = "Not an administrator", content = @Content)
+	public Mono<TuneDumpImport.Run> dumpImportProgress() {
+		return administrator().map(account -> dumpImport.last());
+	}
+
+	private Mono<AccountRef> administrator() {
+		return account().filter(AccountRef::admin).switchIfEmpty(Mono.error(() -> new ResponseStatusException(HttpStatus.FORBIDDEN)));
 	}
 
 	private Mono<AccountRef> account() {
