@@ -75,7 +75,7 @@
 
 - [ ] 11.1 Run the Svelte MCP autofixer over every new or heavily edited component and fix findings; verify `bun run lint`, `bun run check` and `bun run format` are clean
 - [ ] 11.2 Start the app (`docker compose up -d`, backend and `bun run dev`) and check the flow by hand in light and dark, with two tabs open: log in, favourite, create a playlist, drag to reorder, play it through, account page, theme switch and reload, and watch the changes appear in the other tab and in the Grafana dashboards
-- [ ] 11.3 Run `./mvnw clean verify` and verify it passes (frontend lint and check, Java, vitest and Playwright e2e)
+- [x] 11.3 Run `./mvnw clean verify` and verify it passes (frontend lint and check, Java, vitest and Playwright e2e)
 - [ ] 11.4 Archive the change on the feature branch with `/openspec-archive-change`, then push and open a PR titled `feat(ui): redesign the app with dark theme, favourites, playlists and account page`
 
 ## Workflow follow-up
