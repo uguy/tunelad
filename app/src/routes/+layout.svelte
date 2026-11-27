@@ -8,6 +8,7 @@
 	import { player } from '#lib/player.svelte.js';
 	import { live } from '#lib/live.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { theme } from '#lib/theme.svelte.js';
 	import { onMount } from 'svelte';
 
 	import { pwaInfo } from 'virtual:pwa-info';
@@ -15,6 +16,9 @@
 	let { children } = $props();
 
 	const webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
+
+	// Keeps the theme applied, and follows the system's while the user has not chosen
+	onMount(() => theme.start());
 
 	// One live connection for the tab, opened once it is known who is logged in, and reopened if that changes
 	onMount(() => live.follow(() => (session.loaded ? (session.account?.id ?? null) : undefined)));

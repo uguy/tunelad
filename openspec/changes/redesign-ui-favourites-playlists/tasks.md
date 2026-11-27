@@ -2,10 +2,10 @@
 
 ## 1. Branch and theme foundation
 
-- [ ] 1.1 From an up-to-date `main`, create the branch `feat/ui-redesign-favourites-playlists`; verify with `git branch --show-current`
-- [ ] 1.2 Turn the palette in `app/src/app.css` into light and dark CSS variables under `:root` and `:root[data-theme='dark']`, keep the `@theme` token names, add the `dark` custom variant; verify with `bun run check` and a vitest that computes the contrast ratio of every text/background token pair in both themes (4.5:1 text, 3:1 large text and icons)
-- [ ] 1.3 Add `app/src/lib/theme.svelte.ts` (preference `system|light|dark`, persisted under `tunelad.theme`, follows `prefers-color-scheme` while `system`) and the inline pre-paint script in `app/src/app.html` (sets `data-theme`, `color-scheme`, `theme-color`); verify with vitest for the store (stored choice, system change, back to system, script and store resolve the same theme)
-- [ ] 1.4 Commit: `feat(ui): add light and dark theme tokens with system default`
+- [x] 1.1 From an up-to-date `main`, create the branch `feat/ui-redesign-favourites-playlists`; verify with `git branch --show-current`
+- [x] 1.2 Turn the palette in `app/src/app.css` into light and dark CSS variables under `:root` and `:root[data-theme='dark']`, keep the `@theme` token names, add the `dark` custom variant; verify with `bun run check` and a vitest that computes the contrast ratio of every text/background token pair in both themes (4.5:1 text, 3:1 large text and icons)
+- [x] 1.3 Add `app/src/lib/theme.svelte.ts` (preference `system|light|dark`, persisted under `tunelad.theme`, follows `prefers-color-scheme` while `system`) and the inline pre-paint script in `app/src/app.html` (sets `data-theme`, `color-scheme`, `theme-color`); verify with vitest for the store (stored choice, system change, back to system, script and store resolve the same theme)
+- [x] 1.4 Commit: `feat(ui): add light and dark theme tokens with system default`
 
 ## 2. Shared components and app shell redesign
 

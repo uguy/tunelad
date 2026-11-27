@@ -40,7 +40,7 @@
 	}
 
 	const iconButton =
-		'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:text-accent-strong disabled:opacity-30 disabled:hover:text-ink';
+		'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:text-accent-ink disabled:opacity-30 disabled:hover:text-ink';
 </script>
 
 <!-- The app's one audio element: the controls below drive it through the player state -->
@@ -100,7 +100,7 @@
 		</div>
 
 		<div class="hidden min-w-0 flex-1 items-center gap-3 sm:flex">
-			<span class="w-12 text-right text-xs tabular-nums text-accent-strong" data-testid="elapsed">
+			<span class="w-12 text-right text-xs tabular-nums text-accent-ink" data-testid="elapsed">
 				{formatTime(player.currentTime)}
 			</span>
 			<input

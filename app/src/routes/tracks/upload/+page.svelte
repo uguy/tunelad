@@ -155,7 +155,7 @@
 	{:else}
 		<p class="card p-6">
 			<!-- Served by the server, not the SPA router: it lists the login providers -->
-			<a href="/login" rel="external" class="font-semibold text-accent-strong hover:underline">
+			<a href="/login" rel="external" class="font-semibold text-accent-ink hover:underline">
 				Log in to upload
 			</a> a track.
 		</p>

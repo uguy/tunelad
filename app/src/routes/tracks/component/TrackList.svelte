@@ -186,7 +186,7 @@
 								</p>
 							{/if}
 							<h2
-								class="truncate font-medium {loaded ? 'text-accent-strong' : ''}"
+								class="truncate font-medium {loaded ? 'text-accent-ink' : ''}"
 								data-testid="track-title"
 							>
 								{track.title}
@@ -228,7 +228,7 @@
 						{#each track.tags ?? [] as tag (tag)}
 							<button
 								type="button"
-								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-strong"
+								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-ink"
 								onclick={() => ontagclick?.(tag)}
 							>
 								#{tag}
