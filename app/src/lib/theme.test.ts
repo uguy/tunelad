@@ -107,7 +107,9 @@ describe('ThemeState', () => {
 
 describe('the inline script of app.html', () => {
 	const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-	const script = /<script>([\s\S]*?)<\/script>/.exec(html)![1];
+	// The one inline script of the page, found by position: this reads our own file, it does not filter HTML
+	const start = html.indexOf('<script>') + '<script>'.length;
+	const script = html.slice(start, html.indexOf('</script>', start));
 
 	function run(stored: string | null, systemDark: boolean) {
 		const root = { dataset: {} as Record<string, string>, style: {} as Record<string, string> };
