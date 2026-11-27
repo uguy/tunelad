@@ -14,9 +14,17 @@ frontend in `app/`. The point of the repo is learning these tools, so prefer the
 
 Tests use Testcontainers, so Docker must be running.
 
+## Frontend conventions
+
+- Colours come from theme tokens (`bg-surface`, `text-ink`, `bg-accent`, ...) defined in `app/src/app.css`: never raw
+  colours or `dark:` pairs. `palette.test.ts` checks contrast in both themes. Details in `app/README.md`.
+- Shared state lives in `app/src/lib/*.svelte.ts` stores; pages refetch on live events with `refreshOnLive`.
+- Playwright e2e tests mock the API with `page.route`. The README screenshots are retaken with
+  `node doc/screenshots.mjs` (UI, needs a build) and `node doc/api-screenshots.mjs` (Scalar and OpenAPI, needs the app running).
+
 ## Architecture rules
 
-- Top-level packages under `org.tunelad` are Spring Modulith modules (`track`, `search`, ...).
+- Top-level packages under `org.tunelad` are Spring Modulith modules (`track`, `search`, `favourite`, `playlist`, `live`, ...).
   `ModularApplicationTests` verifies module boundaries and fails the build on violations.
 - Allowed dependencies are declared in each module's `package-info.java` (`allowedDependencies`),
   and only packages marked `@NamedInterface` (e.g. `track::command`, `track::event`) are exposed.

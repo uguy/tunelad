@@ -1,38 +1,48 @@
-# create-svelte
+# Tune Lad frontend
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+SvelteKit (static adapter, SPA fallback), Svelte 5 runes, Tailwind CSS 4, bun. The backend serves the build; see the
+[project README](../README.adoc) for running the whole application.
 
-## Creating a project
+## Commands
 
-If you're seeing this, you've probably already done this step. Congrats!
+| Command                      | What it does                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| `bun run dev`                | dev server with live reload (proxies nothing: run the backend for the API)       |
+| `bun run build`              | production build, also copied to `../target/classes/static` for the backend      |
+| `bun run preview`            | serves the build on port 4173, as the e2e tests and `doc/screenshots.mjs` use it |
+| `bun run lint`               | prettier check and eslint                                                        |
+| `bun run check`              | `svelte-check`                                                                   |
+| `bun run format`             | prettier write (CI does not do it for you)                                       |
+| `bun run test:unit -- --run` | vitest: `client` (browser) and `server` (node) projects                          |
+| `bun run test:e2e`           | Playwright; the REST API is mocked with `page.route`                             |
 
-```bash
-# create a new project in the current directory
-bun create svelte@latest
+## Structure
 
-# create a new project in my-app
-bun create svelte@latest my-app
-```
+- `src/routes`: pages. `tracks` (list, upload, `favourites`, `playlists`, `playlists/[id]`), `account`, `login`, `about`.
+- `src/lib`: shared code. Stores are `*.svelte.ts` classes holding `$state` (`player`, `session`, `favourites`,
+  `playlists`, `theme`, `live`); `src/lib/ui` holds the small shared components (`Menu`, `EmptyState`, `PageHeader`, `Toast`).
+- `e2e`: Playwright tests, one file per feature.
 
-## Developing
+## Theme
 
-Once you've created a project and installed dependencies with `bun install`, start a development server:
+Colours are CSS variables in `src/app.css` (`:root` and `:root[data-theme='dark']`) exposed as Tailwind tokens:
+`bg-surface`, `bg-canvas`, `text-ink`, `text-ink-muted`, `bg-accent`, `text-accent-ink`, `border-line`, `text-danger`, ...
+Write components with tokens, never raw colours or `dark:` pairs, and they follow the theme for free.
+`palette.test.ts` checks the contrast of every pair in both themes.
 
-```bash
-bun run dev
+The theme is the `data-theme` attribute of `<html>`. The inline script in `app.html` sets it before the first paint
+(no flash), `theme.svelte.ts` keeps it in step with the choice (System, Light, Dark, stored in `localStorage` under
+`tunelad.theme`) and with the operating system. Both share one resolve rule, which `theme.test.ts` covers.
 
-# or start the server and open the app in a new browser tab
-bun run dev -- --open
-```
+## Live updates
 
-## Building
+`live.svelte.ts` holds the tab's one `EventSource` on `/api/live`. Events carry ids only: pages refetch through the API
+with `refreshOnLive(live, ['type'], refresh)` (`liveRefresh.ts`), which also refetches when the connection comes back.
+The track list follows `track.*`; favourites and playlists follow `favourite.changed` and `playlist.changed`, which the
+server only sends to the account's own connections.
 
-To create a production version of your app:
+## Playlists
 
-```bash
-bun run build
-```
-
-You can preview the production build with `bun run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+`playlists.svelte.ts` is the API client and the shared list of playlists. Reordering is native HTML5 drag and drop
+(`PlaylistTracks.svelte`, with the pure logic in `playlistOrder.ts`) plus Move up and Move down buttons, the keyboard
+and touch alternative. The page shows a new order at once and goes back, with a toast, if saving fails.
