@@ -92,6 +92,16 @@ class BrowserSessionSecurityTest {
                         .doesNotContain("Please sign in"));
     }
 
+    /** A reload on a page of the SPA must reach the SPA, not a 404. */
+    @Test
+    void reloading_a_page_of_the_app_serves_the_app() {
+        for (var path : List.of("/account", "/tracks/favourites", "/tracks/playlists", "/tracks/playlists/some-id")) {
+            client.get().uri(path).accept(MediaType.TEXT_HTML).exchange()
+                    .expectStatus().isOk()
+                    .expectBody(String.class).value(page -> assertThat(page).as(path).contains("data-sveltekit-preload-data"));
+        }
+    }
+
     @Test
     void provider_callback_is_not_the_login_page() {
         client.get().uri("/login/oauth2/code/keycloak?code=x&state=y").accept(MediaType.TEXT_HTML).exchange()

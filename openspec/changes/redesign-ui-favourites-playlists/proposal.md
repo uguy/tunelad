@@ -10,7 +10,7 @@ and delivers the favourites, playlists and account pages the navigation already 
 
 ## What Changes
 
-- **Redesign of every page and shared component** (header, home, tracks, track list, upload, login, about, footer,
+- **Redesign of every page and shared component** (header, home, tracks, track list, upload, login, footer,
   player bar) on one design language: same orange accent and charcoal header, refined typography, spacing, cards,
   focus states and motion (respecting `prefers-reduced-motion`).
 - **Dark theme.** Colours become theme tokens with a light and a dark value. The theme follows the operating
@@ -32,7 +32,7 @@ and delivers the favourites, playlists and account pages the navigation already 
   `favourite.changed` and `playlist.changed`, which carry ids only. The `live` module gains them; the `favourite` and
   `playlist` modules publish `favourite::event` and `playlist::event` events.
 - **Docs, screenshots and dashboards aligned.** `README.adoc` (features, data model, live updates, UI section and
-  all screenshots), `app/README.md`, `CLAUDE.md`, the About page, the PWA manifest colours and the Grafana
+  all screenshots), `app/README.md`, `CLAUDE.md`, the PWA manifest colours and the Grafana
   dashboards are updated to match: the screenshots are retaken from the redesigned app (light and dark, favourites,
   playlists, account, Scalar and OpenAPI with the new endpoints), and a new Grafana dashboard shows live connections
   and library activity from new Micrometer metrics.
@@ -69,7 +69,7 @@ Proposed PR title: `feat(ui): redesign the app with dark theme, favourites, play
   every component in `app/src/lib` and every route, new routes `account` and `tracks/playlists/[id]`, new stores
   for theme and favourites, a play queue in the player. Tests: vitest component tests, Playwright e2e for the new
   flows.
-- **Docs and ops:** `README.adoc`, `doc/*.png`, `app/README.md`, `CLAUDE.md`, About page, PWA manifest colours,
+- **Docs and ops:** `README.adoc`, `doc/*.png`, `app/README.md`, `CLAUDE.md`, PWA manifest colours,
   `docker/observability/grafana/provisioning/dashboards/` (new `live.json`).
 - **Dependencies:** none new. Tailwind v4 `@custom-variant` handles dark mode, and drag and drop uses the browser's
   native API.

@@ -14,8 +14,7 @@
 
 	const links = [
 		{ path: '/', label: 'Home' },
-		{ path: '/tracks', label: 'Tracks' },
-		{ path: '/about', label: 'About' }
+		{ path: '/tracks', label: 'Tracks' }
 	] as const;
 
 	/** The Tracks link also stands for the pages of the collections below it. */

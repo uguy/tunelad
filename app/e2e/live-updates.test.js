@@ -216,8 +216,8 @@ test.describe('the live connection', () => {
 	test('is one per tab, however much the user navigates', async ({ page }) => {
 		await openTracks(page);
 
-		await page.getByRole('link', { name: 'About' }).first().click();
-		await expect(page).toHaveURL(/\/about/);
+		await page.getByRole('link', { name: 'Home', exact: true }).first().click();
+		await expect(page).toHaveURL(/\/$/);
 		await page.goBack();
 		await expect(page.getByText('Knees Up')).toBeVisible();
 

@@ -158,7 +158,7 @@ other personal pages.
 - `app/README.md` is replaced by what the frontend really is: structure, theme tokens, commands, tests.
 - `CLAUDE.md` gains the frontend conventions the redesign introduces (semantic colour tokens, never raw colours or
   `dark:` pairs; the shared components; the live helper) and the new modules.
-- About page text and the PWA manifest `theme_color` and `background_color` are checked against the redesign.
+- The PWA manifest `theme_color` and `background_color` are checked against the redesign.
 - Grafana: a new provisioned dashboard `live.json` (_Tune Lad - Live and library_): open live connections, live events
   published and delivered per second by type, favourite and playlist API request rates and latency from
   `http_server_requests` filtered on their URIs, with the same `$application` variable and folder as the others. The

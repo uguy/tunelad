@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 	);
 });
 
-for (const path of ['/', '/tracks', '/about', '/login']) {
+for (const path of ['/', '/tracks', '/account', '/login']) {
 	test(`${path} does not scroll horizontally at 360 px`, async ({ page }) => {
 		await page.goto(path);
 		await expect(page.getByRole('button', { name: 'Open main menu' })).toBeVisible();
@@ -39,9 +39,13 @@ for (const path of ['/', '/tracks', '/about', '/login']) {
 
 test('the navigation is in a menu button on a phone', async ({ page }) => {
 	await page.goto('/tracks');
-	await expect(page.getByRole('banner').getByRole('link', { name: 'About' })).toBeHidden();
+	await expect(
+		page.getByRole('banner').getByRole('link', { name: 'Home', exact: true })
+	).toBeHidden();
 	await page.getByRole('button', { name: 'Open main menu' }).click();
-	await expect(page.getByRole('banner').getByRole('link', { name: 'About' })).toBeVisible();
+	await expect(
+		page.getByRole('banner').getByRole('link', { name: 'Home', exact: true })
+	).toBeVisible();
 });
 
 test('the player bar does not cover the end of the page', async ({ page }) => {

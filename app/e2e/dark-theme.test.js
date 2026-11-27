@@ -23,8 +23,7 @@ const PAGES = [
 	'/tracks/playlists',
 	'/tracks/playlists/p1',
 	'/account',
-	'/login',
-	'/about'
+	'/login'
 ];
 
 test.beforeEach(async ({ page }) => {
