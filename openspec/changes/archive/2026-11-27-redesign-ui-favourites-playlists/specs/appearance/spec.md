@@ -8,7 +8,7 @@ large text and icons), and every interactive element SHALL show a visible focus 
 
 #### Scenario: Dark theme applied everywhere
 - **GIVEN** the dark theme is active
-- **WHEN** the user visits the home, tracks, upload, login, about, account, favourites and playlists pages
+- **WHEN** the user visits the home, tracks, upload, login, account, favourites and playlists pages
 - **THEN** each page uses the dark surfaces and light text of the dark theme, with no light-theme panel left
 
 #### Scenario: Focus is visible
