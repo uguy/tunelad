@@ -119,6 +119,25 @@ describe('next', () => {
 	});
 });
 
+describe('a playlist played from its first track', () => {
+	it('plays every track in playlist order, then stops after the last', () => {
+		const player = newPlayer();
+		const playlist = [REEL, KNEES_UP, JIG]; // an order of the user's, not the library's
+
+		player.playFrom(playlist, 0);
+		const heard = [player.source?.trackId];
+		while (player.hasNext) {
+			player.ended();
+			heard.push(player.source?.trackId);
+		}
+		player.ended();
+
+		expect(heard).toEqual(['track-2', 'track-1', 'track-3']);
+		expect(player.paused).toBe(true);
+		expect(player.source?.trackId).toBe('track-3');
+	});
+});
+
 describe('previous', () => {
 	it(`restarts a track that has played more than ${RESTART_THRESHOLD} seconds`, () => {
 		const player = newPlayer();

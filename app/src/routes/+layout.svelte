@@ -10,6 +10,7 @@
 	import { live } from '#lib/live.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { favourites } from '#lib/favourites.svelte.js';
+	import { playlists } from '#lib/playlists.svelte.js';
 	import { theme } from '#lib/theme.svelte.js';
 	import { onMount } from 'svelte';
 
@@ -22,11 +23,16 @@
 	// Keeps the theme applied, and follows the system's while the user has not chosen
 	onMount(() => theme.start());
 
-	// The favourites of whoever is logged in; none for an anonymous visitor
+	// The favourites and playlists of whoever is logged in; none for an anonymous visitor
 	$effect(() => {
 		if (!session.loaded) return;
-		if (session.account?.id) void favourites.load();
-		else favourites.clear();
+		if (session.account?.id) {
+			void favourites.load();
+			void playlists.load();
+		} else {
+			favourites.clear();
+			playlists.clear();
+		}
 	});
 
 	// One live connection for the tab, opened once it is known who is logged in, and reopened if that changes

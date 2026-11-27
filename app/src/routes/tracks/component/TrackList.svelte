@@ -2,6 +2,7 @@
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from '#lib/Icon.svelte';
 	import FavouriteButton from '#lib/FavouriteButton.svelte';
+	import AddToPlaylist from '#lib/AddToPlaylist.svelte';
 	import EmptyState from '#lib/ui/EmptyState.svelte';
 	import Waveform from '#lib/Waveform.svelte';
 	import { artworkGradient } from '#lib/artwork.js';
@@ -198,6 +199,7 @@
 						</div>
 
 						<FavouriteButton trackId={track.id} title={track.title} />
+						<AddToPlaylist trackId={track.id} title={track.title} />
 
 						{#if canChange(session.account, track)}
 							<div class="flex shrink-0 gap-2">

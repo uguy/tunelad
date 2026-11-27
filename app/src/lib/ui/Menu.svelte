@@ -7,7 +7,8 @@
 		trigger,
 		children,
 		align = 'right',
-		triggerClass = ''
+		triggerClass = '',
+		onopen
 	}: {
 		/** The accessible name of the button, when `trigger` is only an icon. */
 		label?: string;
@@ -17,6 +18,8 @@
 		children: Snippet;
 		align?: 'left' | 'right';
 		triggerClass?: string;
+		/** Called each time the menu opens, to load what it lists. */
+		onopen?: () => void;
 	} = $props();
 
 	let open = $state(false);
@@ -31,6 +34,7 @@
 
 	function show() {
 		open = true;
+		onopen?.();
 		// Once the panel is in the page: the first item gets the focus, as the keyboard user expects
 		queueMicrotask(() => items()[0]?.focus());
 	}
@@ -48,6 +52,9 @@
 	}
 
 	function onPanelKeydown(event: KeyboardEvent) {
+		// A text field in the menu keeps its own keys (Home, End, the arrows move the caret)
+		if (event.target instanceof HTMLInputElement && event.key !== 'Escape' && event.key !== 'Tab')
+			return;
 		const list = items();
 		const at = list.indexOf(document.activeElement as HTMLElement);
 		if (event.key === 'ArrowDown') {
@@ -108,7 +115,10 @@
 				: 'left-0'}"
 			onkeydown={onPanelKeydown}
 			onclick={(event) => {
-				if ((event.target as HTMLElement).closest('[role^="menuitem"]')) setTimeout(() => close());
+				const target = event.target as HTMLElement;
+				// An item marked data-keep-open does something inside the menu, such as showing a form
+				if (target.closest('[role^="menuitem"]') && !target.closest('[data-keep-open]'))
+					setTimeout(() => close());
 			}}
 		>
 			{@render children()}

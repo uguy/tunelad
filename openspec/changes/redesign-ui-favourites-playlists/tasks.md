@@ -44,10 +44,10 @@
 
 ## 7. Playlists UI
 
-- [ ] 7.1 Add the playlist API client and the `/tracks/playlists` list page (create, empty state, anonymous prompt); verify with Playwright (API mocked)
-- [ ] 7.2 Add the `/tracks/playlists/[id]` page (rename, delete with confirmation, remove track, Move up and Move down buttons with accessible names, native drag and drop of rows with a drop indicator, optimistic reorder with rollback and toast, play all, play from a track, not-found message); verify with Playwright for the move button request, a drag with `locator.dragTo` sending the new order (and no request when dropped in place, and rollback when the save fails), delete, and not found, and a vitest that the player advances through the playlist queue and stops after the last track
-- [ ] 7.3 Add the "Add to playlist" menu to `TrackList` (lists the user's playlists, creates one inline, confirms with a toast); verify with Playwright (add request sent, hidden for anonymous visitors)
-- [ ] 7.4 Commit: `feat(ui): add playlists pages and add to playlist menu`
+- [x] 7.1 Add the playlist API client and the `/tracks/playlists` list page (create, empty state, anonymous prompt); verify with Playwright (API mocked)
+- [x] 7.2 Add the `/tracks/playlists/[id]` page (rename, delete with confirmation, remove track, Move up and Move down buttons with accessible names, native drag and drop of rows with a drop indicator, optimistic reorder with rollback and toast, play all, play from a track, not-found message); verify with Playwright for the move button request, a drag with `locator.dragTo` sending the new order (and no request when dropped in place, and rollback when the save fails), delete, and not found, and a vitest that the player advances through the playlist queue and stops after the last track
+- [x] 7.3 Add the "Add to playlist" menu to `TrackList` (lists the user's playlists, creates one inline, confirms with a toast); verify with Playwright (add request sent, hidden for anonymous visitors)
+- [x] 7.4 Commit: `feat(ui): add playlists pages and add to playlist menu`
 
 ## 8. Account page
 
