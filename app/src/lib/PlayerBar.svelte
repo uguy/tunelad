@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
+	import FavouriteButton from './FavouriteButton.svelte';
 	import { artworkGradient, formatTime } from './artwork.js';
 	import { player, type MediaSource } from './player.svelte.js';
 
@@ -40,7 +41,7 @@
 	}
 
 	const iconButton =
-		'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:text-accent-strong disabled:opacity-30 disabled:hover:text-ink';
+		'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:text-accent-ink disabled:opacity-30 disabled:hover:text-ink';
 </script>
 
 <!-- The app's one audio element: the controls below drive it through the player state -->
@@ -59,7 +60,7 @@
 
 <section
 	aria-label="player"
-	class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur"
+	class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 shadow-[0_-2px_12px_rgb(0_0_0/0.12)] backdrop-blur"
 >
 	<!-- On small screens, the progress is a thin bar along the top edge -->
 	<div class="h-0.5 bg-line sm:hidden" aria-hidden="true">
@@ -82,7 +83,7 @@
 			</button>
 			<button
 				type="button"
-				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-strong"
+				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-strong"
 				aria-label={player.paused ? 'Play' : 'Pause'}
 				onclick={() => player.toggle()}
 			>
@@ -100,7 +101,7 @@
 		</div>
 
 		<div class="hidden min-w-0 flex-1 items-center gap-3 sm:flex">
-			<span class="w-12 text-right text-xs tabular-nums text-accent-strong" data-testid="elapsed">
+			<span class="w-12 text-right text-xs tabular-nums text-accent-ink" data-testid="elapsed">
 				{formatTime(player.currentTime)}
 			</span>
 			<input
@@ -154,7 +155,10 @@
 			</div>
 		</div>
 
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-1">
+			{#if player.source}
+				<FavouriteButton trackId={player.source.trackId} {title} />
+			{/if}
 			<button
 				id="copy-link-at-current-time-btn"
 				type="button"
@@ -175,7 +179,7 @@
 		<div class="mx-auto max-w-6xl px-3 pb-2 sm:px-6 lg:px-8">
 			<input
 				aria-label="link at current time"
-				class="w-full rounded border-line px-2 py-1 text-sm"
+				class="w-full rounded border-line bg-surface px-2 py-1 text-sm text-ink"
 				readonly
 				value={copy.fallbackLink}
 				onfocus={(e) => e.currentTarget.select()}

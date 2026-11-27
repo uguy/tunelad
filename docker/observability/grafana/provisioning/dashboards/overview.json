@@ -190,7 +190,7 @@
       "id": 3,
       "type": "stat",
       "title": "p95 latency",
-      "description": "",
+      "description": "Live update streams (/api/live) last as long as the connection, so they are left out.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -207,7 +207,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\",uri!=\"/api/live\"}[$__rate_interval])))",
           "legendFormat": "",
           "refId": "A",
           "editorMode": "code",
@@ -484,7 +484,7 @@
       "id": 8,
       "type": "timeseries",
       "title": "Latency percentiles",
-      "description": "",
+      "description": "Live update streams (/api/live) last as long as the connection, so they are left out.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -501,7 +501,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\",uri!=\"/api/live\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "refId": "A",
           "editorMode": "code",
@@ -512,7 +512,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\",uri!=\"/api/live\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "refId": "B",
           "editorMode": "code",
@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"$application\",uri!=\"/api/live\"}[$__rate_interval])))",
           "legendFormat": "p99",
           "refId": "C",
           "editorMode": "code",

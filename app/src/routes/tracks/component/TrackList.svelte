@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from '#lib/Icon.svelte';
+	import FavouriteButton from '#lib/FavouriteButton.svelte';
+	import AddToPlaylist from '#lib/AddToPlaylist.svelte';
+	import EmptyState from '#lib/ui/EmptyState.svelte';
 	import Waveform from '#lib/Waveform.svelte';
 	import { artworkGradient } from '#lib/artwork.js';
 	import { canChange } from '#lib/permissions.js';
@@ -151,14 +154,16 @@
 
 <div id="track-list" class="flex w-full flex-col gap-4">
 	{#if tracks.length === 0}
-		<p class="card p-6 text-center text-ink-muted">No tracks found.</p>
+		<EmptyState title="No tracks found">Try other words, or upload a track of your own.</EmptyState>
 	{:else}
 		{#each tracks as track, index (track.id)}
 			{@const playing = player.isPlaying(track.id)}
 			{@const loaded = player.isLoaded(track.id)}
 			<article
 				data-testid="track-{track.id}"
-				class="card flex gap-4 p-4 transition-shadow hover:shadow-md"
+				class="card flex gap-4 border-l-4 p-4 transition-shadow hover:shadow-md {loaded
+					? 'border-accent'
+					: 'border-transparent'}"
 				{@attach waveformWhenVisible(track.id)}
 			>
 				<div
@@ -173,7 +178,7 @@
 							id="play-track-{track.id}-btn"
 							type="button"
 							aria-label="{playing ? 'pause' : 'play'} track {track.title} button"
-							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-strong"
+							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent shadow-sm transition-colors hover:bg-accent-strong"
 							onclick={() => play(index)}
 						>
 							<Icon name={playing ? 'pause' : 'play'} class="h-6 w-6" />
@@ -186,12 +191,15 @@
 								</p>
 							{/if}
 							<h2
-								class="truncate font-medium {loaded ? 'text-accent-strong' : ''}"
+								class="truncate font-medium {loaded ? 'text-accent-ink' : ''}"
 								data-testid="track-title"
 							>
 								{track.title}
 							</h2>
 						</div>
+
+						<FavouriteButton trackId={track.id} title={track.title} />
+						<AddToPlaylist trackId={track.id} title={track.title} />
 
 						{#if canChange(session.account, track)}
 							<div class="flex shrink-0 gap-2">
@@ -206,7 +214,7 @@
 								<button
 									type="button"
 									aria-label="delete track {track.title}"
-									class="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+									class="rounded-full border border-danger-line px-3 py-1 text-xs font-medium text-danger hover:bg-danger-soft"
 									onclick={() => deleteTrack(track)}
 								>
 									Delete
@@ -228,7 +236,7 @@
 						{#each track.tags ?? [] as tag (tag)}
 							<button
 								type="button"
-								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-strong"
+								class="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-accent-ink"
 								onclick={() => ontagclick?.(tag)}
 							>
 								#{tag}
@@ -242,17 +250,10 @@
 							onclick={() => (expanded[track.id] = !expanded[track.id])}
 						>
 							{expanded[track.id] ? 'Less' : 'More'}
-							<svg
-								class="h-3 w-3 fill-current transition-transform {expanded[track.id]
-									? '-rotate-90'
-									: 'rotate-90'}"
-								viewBox="0 0 20 20"
-								aria-hidden="true"
-							>
-								<path
-									d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"
-								/>
-							</svg>
+							<Icon
+								name="chevron"
+								class="h-4 w-4 transition-transform {expanded[track.id] ? 'rotate-180' : ''}"
+							/>
 						</button>
 					</div>
 
@@ -300,7 +301,7 @@
 					{/if}
 
 					{#if errors[track.id]}
-						<p role="alert" class="mt-2 text-sm text-red-700">{errors[track.id]}</p>
+						<p role="alert" class="mt-2 text-sm text-danger">{errors[track.id]}</p>
 					{/if}
 				</div>
 			</article>

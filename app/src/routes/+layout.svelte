@@ -5,9 +5,14 @@
 	import Footer from '#lib/Footer.svelte';
 
 	import PlayerBar from '#lib/PlayerBar.svelte';
+	import Toast from '#lib/ui/Toast.svelte';
 	import { player } from '#lib/player.svelte.js';
 	import { live } from '#lib/live.svelte.js';
+	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import { session } from '#lib/session.svelte.js';
+	import { favourites } from '#lib/favourites.svelte.js';
+	import { playlists } from '#lib/playlists.svelte.js';
+	import { theme } from '#lib/theme.svelte.js';
 	import { onMount } from 'svelte';
 
 	import { pwaInfo } from 'virtual:pwa-info';
@@ -16,7 +21,35 @@
 
 	const webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
+	// Keeps the theme applied, and follows the system's while the user has not chosen
+	onMount(() => theme.start());
+
+	// The favourites and playlists of whoever is logged in; none for an anonymous visitor
+	$effect(() => {
+		if (!session.loaded) return;
+		if (session.account?.id) {
+			void favourites.load();
+			void playlists.load();
+		} else {
+			favourites.clear();
+			playlists.clear();
+		}
+	});
+
 	// One live connection for the tab, opened once it is known who is logged in, and reopened if that changes
+	// What this account's other tabs and devices change in the favourites and playlists, and what was missed meanwhile.
+	// The server only sends these events to the connections of the account they concern.
+	onMount(() => {
+		const stops = [
+			refreshOnLive(live, ['favourite.changed'], () => {
+				if (session.account) void favourites.load();
+			}),
+			refreshOnLive(live, ['playlist.changed'], () => {
+				if (session.account) void playlists.load();
+			})
+		];
+		return () => stops.forEach((stop) => stop());
+	});
 	onMount(() => live.follow(() => (session.loaded ? (session.account?.id ?? null) : undefined)));
 </script>
 
@@ -34,6 +67,8 @@
 	</main>
 	<Footer />
 </div>
+
+<Toast />
 
 <!-- In the root layout, so it stays mounted, and keeps playing, while the user moves between pages -->
 {#if player.source}

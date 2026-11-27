@@ -216,11 +216,109 @@ test.describe('the live connection', () => {
 	test('is one per tab, however much the user navigates', async ({ page }) => {
 		await openTracks(page);
 
-		await page.getByRole('link', { name: 'About' }).first().click();
-		await expect(page).toHaveURL(/\/about/);
+		await page.getByRole('link', { name: 'Home', exact: true }).first().click();
+		await expect(page).toHaveURL(/\/$/);
 		await page.goBack();
 		await expect(page.getByText('Knees Up')).toBeVisible();
 
 		expect(await page.evaluate(() => window.__live.opened())).toBe(1);
+	});
+});
+
+test.describe('favourites and playlists across tabs', () => {
+	const summary = (id, name, trackCount) => ({
+		id,
+		name,
+		description: null,
+		trackCount,
+		updatedAt: '2026-11-27T10:00:00Z'
+	});
+
+	/** Mocks alice's favourites and playlists, which the test changes, and opens the page with a live stream. */
+	async function open(page, path) {
+		const server = { favourites: [KNEES_UP], playlists: [summary('p1', 'Session tunes', 0)] };
+		await fakeLiveStream(page);
+		await page.route('**/api/me', (route) => route.fulfill({ json: ALICE }));
+		await page.route('**/api/me/favourites', (route) => route.fulfill({ json: server.favourites }));
+		await page.route('**/api/playlists', (route) => route.fulfill({ json: server.playlists }));
+		await page.route('**/api/playlists/p1', (route) =>
+			route.fulfill({ json: { ...server.playlists[0], tracks: [] } })
+		);
+		await page.route('**/api/tracks/search*', (route) =>
+			route.fulfill({ json: [KNEES_UP, MOSSY_BANKS] })
+		);
+		await page.route('**/api/tracks/*/waveform', (route) =>
+			route.fulfill({ json: { status: 'FAILED', peaks: [] } })
+		);
+		await page.goto(path);
+		await page.waitForFunction(() => window.__live?.opened() === 1);
+		return server;
+	}
+
+	test('a favourite added in another tab appears without a reload', async ({ page }) => {
+		const server = await open(page, '/tracks/favourites');
+		await expect(page.getByTestId('track-title')).toHaveText(['Knees Up']);
+		await page.evaluate(() => (window.__notReloaded = true));
+
+		server.favourites = [MOSSY_BANKS, KNEES_UP];
+		await emit(page, 'favourite.changed', MOSSY_BANKS.id);
+
+		await expect(page.getByTestId('track-title')).toHaveText(['Mossy Banks', 'Knees Up']);
+		expect(await page.evaluate(() => window.__notReloaded)).toBe(true);
+	});
+
+	test('the heart of a track follows a favourite changed in another tab', async ({ page }) => {
+		const server = await open(page, '/tracks');
+		await expect(
+			page.getByRole('button', { name: 'favourite track Mossy Banks button' })
+		).toHaveAttribute('aria-pressed', 'false');
+
+		server.favourites = [KNEES_UP, MOSSY_BANKS];
+		await emit(page, 'favourite.changed', MOSSY_BANKS.id);
+
+		await expect(
+			page.getByRole('button', { name: 'favourite track Mossy Banks button' })
+		).toHaveAttribute('aria-pressed', 'true');
+	});
+
+	test('the playlist list follows a playlist created in another tab', async ({ page }) => {
+		const server = await open(page, '/tracks/playlists');
+		await expect(page.getByRole('link', { name: /Session tunes/ })).toBeVisible();
+
+		server.playlists = [summary('p2', 'Reels', 0), ...server.playlists];
+		await emit(page, 'playlist.changed', 'p2');
+
+		await expect(page.getByRole('link', { name: /Reels/ })).toBeVisible();
+	});
+
+	test('a playlist open in a tab follows its changes in another', async ({ page }) => {
+		const server = await open(page, '/tracks/playlists/p1');
+		await expect(page.getByRole('heading', { name: 'Session tunes' })).toBeVisible();
+
+		server.playlists = [summary('p1', 'Renamed elsewhere', 0)];
+		await emit(page, 'playlist.changed', 'p1');
+
+		await expect(page.getByRole('heading', { name: 'Renamed elsewhere' })).toBeVisible();
+	});
+
+	test('the account counts follow the changes', async ({ page }) => {
+		const server = await open(page, '/account');
+		await expect(page.getByRole('link', { name: /1 favourite/ })).toBeVisible();
+
+		server.favourites = [KNEES_UP, MOSSY_BANKS];
+		await emit(page, 'favourite.changed', MOSSY_BANKS.id);
+
+		await expect(page.getByRole('link', { name: /2 favourites/ })).toBeVisible();
+	});
+
+	test('everything is fetched again when the connection comes back', async ({ page }) => {
+		const server = await open(page, '/tracks/favourites');
+		await expect(page.getByTestId('track-title')).toHaveText(['Knees Up']);
+
+		server.favourites = [MOSSY_BANKS];
+		await page.evaluate(() => window.__live.fail());
+		await page.evaluate(() => window.__live.reconnect());
+
+		await expect(page.getByTestId('track-title')).toHaveText(['Mossy Banks']);
 	});
 });

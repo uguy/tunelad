@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
+import org.tunelad.favourite.event.FavouriteChanged;
 import org.tunelad.media.event.WaveformComputed;
+import org.tunelad.playlist.event.PlaylistChanged;
 import org.tunelad.search.event.TrackIndexed;
 import org.tunelad.search.event.TrackUnindexed;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Turns the events of the modules that own the state into live events for everyone, published on NATS.
+ * Turns the events of the modules that own the state into live events, published on NATS: for everyone when they
+ * concern the shared library, and for the connections of one account when they concern its favourites or
+ * playlists, which are private.
  * <p>
  * It listens to {@code search} and {@code media}, which announce a change once it is written, and not to the events
  * that started it: a browser told earlier could refetch the list before the change is in it. Like every module
@@ -26,6 +30,7 @@ class LiveBridge {
 
     private final LiveBus bus;
     private final JsonMapper json;
+    private final LiveMetrics metrics;
 
     @ApplicationModuleListener
     void on(TrackIndexed event) {
@@ -43,9 +48,26 @@ class LiveBridge {
         publishToEveryone("waveform.computed", event.key());
     }
 
+    /** The track's id: the browser refetches the favourites, which only the account's own connections hear of. */
+    @ApplicationModuleListener
+    void on(FavouriteChanged event) {
+        publish(LiveSubjects.account(event.accountId(), "favourite.changed"), "favourite.changed", event.trackId());
+    }
+
+    /** The playlist's id: the browser refetches it, through the API, which only lets its owner read it. */
+    @ApplicationModuleListener
+    void on(PlaylistChanged event) {
+        publish(LiveSubjects.account(event.ownerId(), "playlist.changed"), "playlist.changed", event.playlistId());
+    }
+
     private void publishToEveryone(String type, String id) {
+        publish(LiveSubjects.library(type), type, id);
+    }
+
+    private void publish(String subject, String type, String id) {
         try {
-            bus.publish(LiveSubjects.library(type), json.writeValueAsString(new LiveEvent(type, id)));
+            bus.publish(subject, json.writeValueAsString(new LiveEvent(type, id)));
+            metrics.published(type);
         } catch (RuntimeException e) {
             log.warn("A live event {} for {} was dropped", type, id, e);
         }

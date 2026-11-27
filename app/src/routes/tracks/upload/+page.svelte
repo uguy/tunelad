@@ -94,7 +94,7 @@
 			<label class={labelClass}>
 				Audio file (mp3, m4a, ogg, flac or wav, up to 100 MB)
 				<input
-					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-accent-strong"
+					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-on-accent hover:file:bg-accent-strong"
 					name="file"
 					type="file"
 					accept={ACCEPTED_FILES}
@@ -135,7 +135,7 @@
 			{/if}
 
 			{#if message}
-				<p role="alert" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+				<p role="alert" class="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
 					{message}
 					{#if refusedWith === 401}
 						<a href="/login" rel="external" class="font-medium underline">Log in</a>
@@ -155,7 +155,7 @@
 	{:else}
 		<p class="card p-6">
 			<!-- Served by the server, not the SPA router: it lists the login providers -->
-			<a href="/login" rel="external" class="font-semibold text-accent-strong hover:underline">
+			<a href="/login" rel="external" class="font-semibold text-accent-ink hover:underline">
 				Log in to upload
 			</a> a track.
 		</p>

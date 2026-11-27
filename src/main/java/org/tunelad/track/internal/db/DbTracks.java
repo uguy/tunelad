@@ -23,6 +23,11 @@ class DbTracks implements Tracks {
     }
 
     @Override
+    public Flux<Track> findAllById(java.util.Collection<String> ids) {
+        return ids.isEmpty() ? Flux.empty() : trackRepository.findAllById(ids);
+    }
+
+    @Override
     public Mono<Track> save(Track track) {
         if (track.getId() == null || track.getId().isBlank()) {
             track.setId(UUID.randomUUID().toString());

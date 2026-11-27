@@ -56,7 +56,10 @@ This simple app allows to store an mp3 file with some description and play it vi
 
 == Features
 
-* Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens
+* Light and dark themes in the orange and charcoal palette: the operating system's theme by default, a switch in the header
+  to force one (remembered in the browser), no flash of the wrong theme on load
+* Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens; an
+  account page shows who you are, your role and the size of your collections
 * Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry; every track shows who uploaded it
 * Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
@@ -66,9 +69,15 @@ This simple app allows to store an mp3 file with some description and play it vi
 * Track waveforms: computed with ffmpeg shortly after upload (and backfilled at startup for older tracks), served on
   `GET /api/tracks/{id}/waveform`, and drawn on each track of the list, where a click seeks within the track
 * Live updates: the track list and the waveforms refresh by themselves when another user uploads, edits or deletes a
-  track and when a waveform is computed, with no reload and no polling. The server streams them as Server-Sent Events
+  track and when a waveform is computed, and your favourites and playlists follow what you change in your other tabs
+  and devices (they are private: only your own connections hear of them), with no reload and no polling. The server streams them as Server-Sent Events
   (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
   browsers
+* Favourites: a heart on every track (list and player bar) for logged-in users, and a page that lists them
+  (`/tracks/favourites`, `GET /api/me/favourites`)
+* Playlists: private ordered lists of tracks, created, renamed and deleted from `/tracks/playlists`. Add a track from the
+  list with the _Add to playlist_ button, reorder a playlist by drag and drop (or with the _Move up_ and _Move down_
+  buttons, for keyboard and touch), and play it from the start, the player moving on to the next track
 * Share a link that starts a track at a given time (`/tracks?play=<id>&t=<seconds>`)
 * OpenAPI v3 endpoint
 * Spring boot actuator features (health, info, etc.)
@@ -164,7 +173,7 @@ database `tunelad`).
 
 Live updates travel between instances of the application through NATS (core, with no persistence): `docker compose up -d`
 starts it on `nats://localhost:4222`, which is the default of `tunelad.live.nats.url`. Without it the application still
-starts and works, but the track list and waveforms only refresh on reload, until NATS is reachable again (no restart
+starts and works, but the track list, waveforms, favourites and playlists only refresh on reload, until NATS is reachable again (no restart
 needed).
 
 === Keycloak (local login)
@@ -263,8 +272,14 @@ The application exports its traces, metrics and logs with OpenTelemetry, over OT
 |===
 
 Open Grafana, then _Dashboards_ and the _Tune Lad_ folder: _Overview_ (traffic, latency, resources, then the logs and
-traces behind them), _HTTP and API_ (with database connection pool usage) and _JVM and runtime_. They fill up as the
+traces behind them), _HTTP and API_ (with database connection pool usage), _JVM and runtime_ and _Live and library_ (open live
+connections, live events published and delivered by type, and the favourites and playlists traffic). They fill up as the
 application gets requests.
+
+The live connections are metrics of their own (`tunelad.live.connections`, `tunelad.live.events.published` and
+`tunelad.live.events.delivered`, tagged by event type only, never by id or account). The `/api/live` stream is a request that
+lasts as long as the browser tab is open: the latency panels leave it out, and so does _Requests in flight_, which would
+otherwise count one request per open tab.
 
 The three are linked. In _Explore_, choose Tempo and search `{resource.service.name="tunelad"}`: open a trace, select a
 span, and _Related logs_, _Request rate_ and _Latency, 95th percentile_ open its logs and the service's metrics. The other
@@ -329,6 +344,8 @@ Database configuration lives in the `application.yml` file. The application read
 
 The `track` module stores tracks in `track_tracks` (plain columns, tags as a `text[]`). Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in chunks (`media_files` and `media_chunks`) under the track id, in one transaction so that a failed upload leaves nothing behind, and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges). Waveforms are in `media_waveforms`, accounts in `account_accounts`.
 
+Favourites and playlists are private to their owner and belong to two more modules. `favourite` keeps one row per account and track in `favourite_favourites`. `playlist` keeps `playlist_playlists` (owner, name, description) and `playlist_items` (the tracks of a playlist, with their position; a unique, deferrable `(playlist_id, position)` lets a reorder swap positions inside one transaction). Both refer to accounts and tracks by id only, so they follow the rule of no foreign key across modules; a deleted track disappears from both through the `TrackDeleted` event. Their own events (`FavouriteChanged`, `PlaylistChanged`, carrying ids only) feed the live updates.
+
 Search follows CQRS: the `search` module keeps its own read model, the `search_tracks` table with a PostgreSQL full-text index (English configuration, title weighted above description), and fills it from the `NewTrackSaved` events that the `track` module publishes. Events go through the Spring Modulith Event Publication Registry (the `event_publication` table), and are delivered once the upload's transaction has committed.
 
 The schema lives in `src/main/resources/db/changelog`, one Liquibase changelog per module.
@@ -353,6 +370,29 @@ spring:
 Application is available at http://localhost:8080
 
 image::./doc/track-list.png[Track list]
+
+The same page in the dark theme, which follows the operating system unless the switch in the header says otherwise:
+
+image::./doc/track-list-dark.png[Track list, dark theme]
+
+Favourites, a playlist (drag the handle of a track to reorder it) and the account page:
+
+image::./doc/favourites.png[Favourites]
+
+image::./doc/playlist.png[Playlist]
+
+image::./doc/account.png[Account]
+
+The screenshots are retaken from the built frontend, with fixture data in place of the API, by a script that gives the same
+images every time it runs:
+
+[source,bash]
+----
+cd app && bun run build && cd ..
+node doc/screenshots.mjs
+----
+
+The two API pages below come from the running application: start it, then run `node doc/api-screenshots.mjs`.
 
 You can load some samples, uploaded as alice, by running the import methods of the (disabled) test class `org.tunelad.ImporterTest` xref:src/test/java/org/tunelad/ImporterTest.java[src/test/java/org/tunelad/ImporterTest.java].
 

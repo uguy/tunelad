@@ -31,19 +31,41 @@ test('anonymous visitor', async ({ page }) => {
 	await page.goto('/');
 
 	await expect(page.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
-	await expect(page.getByRole('button', { name: 'Log out' })).toHaveCount(0);
+	await expect(page.getByRole('menuitem', { name: 'Log out' })).toHaveCount(0);
+	await expect(page.getByRole('banner').getByRole('button', { name: 'Account' })).toHaveCount(0);
 });
 
 test('logged-in user', async ({ page }) => {
 	await page.route('**/api/me', loggedInAsAlice);
 	await page.goto('/');
 
-	// The mobile menu repeats it, hidden at this width
+	// The account menu button is labelled with the name; the mobile menu repeats it, hidden at this width
 	await expect(
-		page.getByRole('banner').getByText('Alice Liddell').filter({ visible: true })
+		page
+			.getByRole('banner')
+			.getByRole('button', { name: 'Alice Liddell' })
+			.filter({ visible: true })
 	).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Log in' })).toHaveCount(0);
+});
+
+test('account menu', async ({ page }) => {
+	await page.route('**/api/me', loggedInAsAlice);
+	await page.goto('/');
+
+	await page.getByRole('banner').getByRole('button', { name: 'Alice Liddell' }).click();
+
+	const menu = page.getByRole('menu');
+	await expect(menu.getByRole('menuitem', { name: 'Account' })).toHaveAttribute('href', '/account');
+	await expect(menu.getByRole('menuitem', { name: 'Favourites' })).toHaveAttribute(
+		'href',
+		'/tracks/favourites'
+	);
+	await expect(menu.getByRole('menuitem', { name: 'Playlists' })).toHaveAttribute(
+		'href',
+		'/tracks/playlists'
+	);
+	await expect(menu.getByRole('menuitem', { name: 'Log out' })).toBeVisible();
 });
 
 test('log out from the header', async ({ page, context }) => {
@@ -58,7 +80,8 @@ test('log out from the header', async ({ page, context }) => {
 	});
 	await page.goto('/');
 
-	await page.getByRole('button', { name: 'Log out' }).click();
+	await page.getByRole('banner').getByRole('button', { name: 'Alice Liddell' }).click();
+	await page.getByRole('menuitem', { name: 'Log out' }).click();
 
 	await expect(page.getByText('Logged out')).toBeVisible();
 	expect(logout.method()).toBe('POST');

@@ -7,7 +7,7 @@
 <footer class="mt-10 border-t border-line px-6 py-8 text-center text-sm text-ink-muted">
 	<p>
 		Tune Lad, a <a
-			class="font-semibold text-accent-strong hover:underline"
+			class="font-semibold text-accent-ink hover:underline"
 			href="https://svelte.dev/docs/kit"
 		>
 			SvelteKit

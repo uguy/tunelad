@@ -56,7 +56,7 @@ test('service worker leaves backend navigations to the server', async ({ page })
 	}
 
 	// Client-side routes, the login page among them, are still served from the precached shell
-	for (const path of ['/about', '/login']) {
+	for (const path of ['/account', '/login']) {
 		const response = await page.goto(path);
 		expect(response?.fromServiceWorker(), path).toBe(true);
 	}

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.tunelad.account.AccountRef;
 import org.tunelad.account.CurrentAccount;
+import org.tunelad.live.internal.LiveMetrics;
 import org.tunelad.live.internal.LiveProperties;
 import org.tunelad.live.internal.LiveRouter;
 import org.tunelad.live.internal.LiveSubjects;
@@ -30,6 +31,7 @@ public class LiveController {
     private final LiveRouter router;
     private final CurrentAccount currentAccount;
     private final LiveProperties properties;
+    private final LiveMetrics metrics;
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Follow live updates",
@@ -37,8 +39,9 @@ public class LiveController {
                     + "named after its type and its data is a JSON object with the `type` and, when the event concerns "
                     + "one entity, its `id`; the content is never sent, the client refetches it through the API. "
                     + "Types: `track.indexed` and `track.unindexed` (a track became or stopped being searchable) and "
-                    + "`waveform.computed` (a track's waveform is ready or failed), for everyone; further types are "
-                    + "addressed to the logged-in account only. Which events a connection receives depends only on who "
+                    + "`waveform.computed` (a track's waveform is ready or failed), for everyone; and `favourite.changed` "
+                    + "(its id is a track's) and `playlist.changed` (its id is a playlist's), which only the connections "
+                    + "of the account they concern receive. Which events a connection receives depends only on who "
                     + "makes the request. A comment line is sent regularly to keep idle connections open. Events can "
                     + "be missed, such as while disconnected: refetch what depends on them when reconnecting.")
     @ApiResponse(responseCode = "200", description = "the event stream",
@@ -51,8 +54,13 @@ public class LiveController {
                 .defaultIfEmpty(java.util.Optional.empty())
                 .flatMapMany(viewer -> Flux.merge(
                         router.stream(viewer.orElse(null))
-                                .map(routed -> ServerSentEvent.builder(routed.body()).event(routed.type()).build()),
-                        heartbeat()));
+                                .map(routed -> {
+                                    metrics.delivered(routed.type());
+                                    return ServerSentEvent.builder(routed.body()).event(routed.type()).build();
+                                }),
+                        heartbeat()))
+                .doOnSubscribe(subscription -> metrics.connectionOpened())
+                .doFinally(signal -> metrics.connectionClosed());
     }
 
     /**
