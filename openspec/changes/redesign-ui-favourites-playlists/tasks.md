@@ -51,8 +51,8 @@
 
 ## 8. Account page
 
-- [ ] 8.1 Build `/account` (name, role, favourites and playlists counts with links, log out, anonymous prompt); verify with Playwright (member, administrator, counts and links, log out posts `/logout` with the CSRF token, anonymous)
-- [ ] 8.2 Commit: `feat(ui): add account details page`
+- [x] 8.1 Build `/account` (name, role, favourites and playlists counts with links, log out, anonymous prompt); verify with Playwright (member, administrator, counts and links, log out posts `/logout` with the CSRF token, anonymous)
+- [x] 8.2 Commit: `feat(ui): add account details page`
 
 ## 9. Live updates and metrics
 

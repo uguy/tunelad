@@ -1,16 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { session } from '#lib/session.svelte.js';
-	import { csrfToken } from '#lib/api.js';
+	import LogoutButton from './LogoutButton.svelte';
 	import Menu from './ui/Menu.svelte';
 
 	let { mobile = false }: { mobile?: boolean } = $props();
-
-	// The token is read when the form is submitted: the cookie may have been renewed since the page rendered
-	function addCsrfToken(event: SubmitEvent) {
-		const form = event.currentTarget as HTMLFormElement;
-		(form.elements.namedItem('_csrf') as HTMLInputElement).value = csrfToken() ?? '';
-	}
 
 	const links = [
 		{ path: '/account', label: 'Account' },
@@ -28,14 +22,6 @@
 		'flex w-full items-center px-4 py-2 text-left text-sm hover:bg-canvas focus-visible:bg-canvas';
 </script>
 
-{#snippet logout(className: string, role?: 'menuitem')}
-	<!-- A plain form post: the server ends the session, then redirects through the provider's logout -->
-	<form method="post" action="/logout" onsubmit={addCsrfToken}>
-		<input type="hidden" name="_csrf" value="" />
-		<button type="submit" {role} class={className}>Log out</button>
-	</form>
-{/snippet}
-
 {#if session.account}
 	{#if mobile}
 		<div class="space-y-1">
@@ -43,7 +29,7 @@
 			{#each links as link (link.path)}
 				<a href={resolve(link.path)} class={mobileClass}>{link.label}</a>
 			{/each}
-			{@render logout(mobileClass)}
+			<LogoutButton class={mobileClass} />
 		</div>
 	{:else}
 		<Menu
@@ -62,7 +48,7 @@
 				<a href={resolve(link.path)} role="menuitem" class={itemClass}>{link.label}</a>
 			{/each}
 			<div class="my-1 border-t border-line"></div>
-			{@render logout(itemClass, 'menuitem')}
+			<LogoutButton class={itemClass} role="menuitem" />
 		</Menu>
 	{/if}
 {:else}

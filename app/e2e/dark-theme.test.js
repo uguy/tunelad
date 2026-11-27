@@ -15,13 +15,49 @@ const TRACK = {
 	owner: ALICE
 };
 
-const PAGES = ['/', '/tracks', '/tracks/upload', '/login', '/about'];
+const PAGES = [
+	'/',
+	'/tracks',
+	'/tracks/upload',
+	'/tracks/favourites',
+	'/tracks/playlists',
+	'/tracks/playlists/p1',
+	'/account',
+	'/login',
+	'/about'
+];
 
 test.beforeEach(async ({ page }) => {
 	await page.addInitScript(() => localStorage.setItem('tunelad.theme', 'dark'));
 	await page.route('**/api/me', (route) => route.fulfill({ json: ALICE }));
 	await page.route('**/api/login-providers', (route) =>
 		route.fulfill({ json: [{ id: 'keycloak', name: 'Keycloak' }] })
+	);
+	await page.route('**/api/me/favourites', (route) => route.fulfill({ json: [TRACK] }));
+	await page.route('**/api/playlists', (route) =>
+		route.fulfill({
+			json: [
+				{
+					id: 'p1',
+					name: 'Session tunes',
+					description: null,
+					trackCount: 1,
+					updatedAt: '2026-11-27T10:00:00Z'
+				}
+			]
+		})
+	);
+	await page.route('**/api/playlists/p1', (route) =>
+		route.fulfill({
+			json: {
+				id: 'p1',
+				name: 'Session tunes',
+				description: 'Reels',
+				trackCount: 1,
+				updatedAt: '2026-11-27T10:00:00Z',
+				tracks: [TRACK]
+			}
+		})
 	);
 	await page.route('**/api/tracks/search*', (route) => route.fulfill({ json: [TRACK] }));
 	await page.route('**/api/tracks/*/waveform', (route) =>
