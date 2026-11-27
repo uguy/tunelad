@@ -169,7 +169,7 @@
 	{#if session.account}
 		<form class="card space-y-4 p-6" aria-label="upload a track" onsubmit={submit}>
 			<label class={labelClass}>
-				Audio file (mp3, m4a, ogg, flac or wav, up to 100 MB)
+				Audio file (mp3, m4a, ogg, flac, wav or wma, up to 100 MB)
 				<input
 					class="mt-2 block w-full rounded-md border border-dashed border-line bg-canvas p-4 text-sm text-ink-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-on-accent hover:file:bg-accent-strong"
 					name="file"

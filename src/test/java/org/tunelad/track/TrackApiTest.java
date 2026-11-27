@@ -3,6 +3,7 @@ package org.tunelad.track;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
@@ -127,6 +128,18 @@ class TrackApiTest extends AbstractApiTest {
                 .expectBody(TrackDTO.class).returnResult().getResponseBody();
 
         assertThat(created.format()).isEqualTo(TrackFormat.FLAC);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"tune.wma", "TUNE.WMA"})
+    void upload_a_wma_file(String filename) {
+        var created = uploadFile(Map.of("title", "Tune", "description", "Four seconds of A"),
+                named(filename, org.tunelad.media.TestAudio.wma()))
+                .expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(created.format()).isEqualTo(TrackFormat.WMA);
+        assertThat(trackTitled("Tune").format()).isEqualTo(TrackFormat.WMA);
     }
 
     @Test

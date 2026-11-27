@@ -14,6 +14,8 @@ describe('checkFile', () => {
 			'a.ogg',
 			'a.flac',
 			'a.wav',
+			'a.wma',
+			'A.WMA',
 			'A.FLAC',
 			'my.live.tune.Mp3'
 		]) {
@@ -37,7 +39,7 @@ describe('checkFile', () => {
 describe('uploadErrorMessage', () => {
 	it('explains each refusal', () => {
 		expect(uploadErrorMessage(413)).toContain('100 MB');
-		expect(uploadErrorMessage(415)).toContain('mp3, m4a, ogg, flac or wav');
+		expect(uploadErrorMessage(415)).toContain('mp3, m4a, ogg, flac, wav or wma');
 		expect(uploadErrorMessage(400)).toContain('title, a description');
 		expect(uploadErrorMessage(401)).toContain('Log in again');
 		expect(uploadErrorMessage(403)).toContain('may not upload');

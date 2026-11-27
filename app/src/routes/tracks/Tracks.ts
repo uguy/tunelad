@@ -79,7 +79,7 @@ export interface TrackUpload {
 }
 
 /** File name extensions the server accepts, as `TrackFormat` on the server lists them. */
-export const SUPPORTED_EXTENSIONS = ['mp3', 'm4a', 'ogg', 'flac', 'wav'] as const;
+export const SUPPORTED_EXTENSIONS = ['mp3', 'm4a', 'ogg', 'flac', 'wav', 'wma'] as const;
 
 /** The largest audio file the server accepts, as `spring.webflux.multipart.max-disk-usage-per-part` sets it. */
 export const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -91,7 +91,8 @@ export const ACCEPTED_FILES = [
 	'audio/mp4',
 	'audio/ogg',
 	'audio/flac',
-	'audio/wav'
+	'audio/wav',
+	'audio/x-ms-wma'
 ].join(',');
 
 /**
@@ -111,7 +112,7 @@ export function uploadErrorMessage(status: number): string {
 		case 413:
 			return 'This file is larger than the 100 MB limit.';
 		case 415:
-			return "This file type isn't supported: choose an mp3, m4a, ogg, flac or wav file.";
+			return "This file type isn't supported: choose an mp3, m4a, ogg, flac, wav or wma file.";
 		default:
 			return `The server could not store the track (${status}). Try again.`;
 	}
