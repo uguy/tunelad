@@ -8,7 +8,7 @@ import org.tunelad.track.TrackDTO;
 public interface TrackMapper extends ModelMapper<TrackDTO, Track> {
 
     default Artist map(String value){
-        return new Artist(value);
+        return new Artist(null, value);
     }
     default String map(Artist value){
         // A track without an artist name has no artist: its columns are all null

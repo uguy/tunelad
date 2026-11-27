@@ -523,4 +523,105 @@ class TrackApiTest extends AbstractApiTest {
 
         assertThat(listTracks()).extracting(TrackDTO::title).containsExactly("Knees Up");
     }
+
+    // --- Requirement: An Artist is a shared record matched by name -----------------------------
+
+    @Test
+    void first_use_creates_the_artist() {
+        uploadBy("Knees Up", "Altan");
+
+        assertThat(trackTitled("Knees Up").artist()).isEqualTo("Altan");
+        assertThat(artistCount()).isEqualTo(1);
+    }
+
+    @Test
+    void same_name_reuses_the_artist() {
+        uploadBy("Knees Up", "Altan");
+        uploadBy("Mossy Banks", "Altan");
+
+        assertThat(listTracks()).extracting(TrackDTO::artist).containsExactly("Altan", "Altan");
+        assertThat(artistCount()).isEqualTo(1);
+    }
+
+    @Test
+    void name_matches_ignoring_case_and_whitespace() {
+        uploadBy("Knees Up", "Altan");
+        uploadBy("Mossy Banks", "  altan ");
+
+        assertThat(trackTitled("Mossy Banks").artist()).isEqualTo("Altan");
+        assertThat(artistCount()).isEqualTo(1);
+    }
+
+    @Test
+    void different_names_are_different_artists() {
+        uploadBy("Knees Up", "Altan");
+        uploadBy("Mossy Banks", "Dervish");
+
+        assertThat(artistCount()).isEqualTo(2);
+    }
+
+    @Test
+    void blank_artist_means_no_artist() {
+        uploadBy("Knees Up", "   ");
+        uploadOk("Mossy Banks", "No artist at all", MOSSY_BANKS_MP3);
+
+        assertThat(listTracks()).extracting(TrackDTO::artist).containsOnlyNulls();
+        assertThat(artistCount()).isZero();
+    }
+
+    // --- Requirement: Editing a track's artist uses the shared Artist --------------------------
+
+    @Test
+    void edit_to_an_existing_artists_name() {
+        uploadBy("Knees Up", "Altan");
+        uploadBy("Mossy Banks", "Dervish");
+
+        edit(trackTitled("Mossy Banks").id(), Map.of("title", "Mossy Banks", "description", "A reel", "artist", "altan"),
+                UPLOADER_TOKEN).expectStatus().isOk();
+
+        assertThat(trackTitled("Mossy Banks").artist()).isEqualTo("Altan");
+        assertThat(artistCount()).isEqualTo(2);
+    }
+
+    @Test
+    void edit_to_a_new_name() {
+        uploadBy("Knees Up", "Altan");
+
+        edit(trackTitled("Knees Up").id(), Map.of("title", "Knees Up", "description", "A reel", "artist", "Dervish"),
+                UPLOADER_TOKEN).expectStatus().isOk();
+
+        assertThat(trackTitled("Knees Up").artist()).isEqualTo("Dervish");
+    }
+
+    @Test
+    void clear_the_artist() {
+        uploadBy("Knees Up", "Altan");
+        uploadBy("Mossy Banks", "Altan");
+
+        edit(trackTitled("Knees Up").id(), Map.of("title", "Knees Up", "description", "A reel", "artist", " "),
+                UPLOADER_TOKEN).expectStatus().isOk();
+
+        assertThat(trackTitled("Knees Up").artist()).isNull();
+        assertThat(trackTitled("Mossy Banks").artist()).isEqualTo("Altan");
+    }
+
+    @Test
+    void concurrent_first_uploads_share_one_artist() {
+        var uploads = java.util.stream.IntStream.range(0, 4)
+                .mapToObj(i -> java.util.concurrent.CompletableFuture.runAsync(() -> uploadBy("Track " + i, "Altan")))
+                .toList();
+        uploads.forEach(java.util.concurrent.CompletableFuture::join);
+
+        assertThat(listTracks()).hasSize(4).extracting(TrackDTO::artist).containsOnly("Altan");
+        assertThat(artistCount()).isEqualTo(1);
+    }
+
+    private void uploadBy(String title, String artist) {
+        upload(Map.of("title", title, "description", "A reel", "artist", artist), KNEES_UP_MP3)
+                .expectStatus().isCreated();
+    }
+
+    private long artistCount() {
+        return count("track_artists", "TRUE");
+    }
 }

@@ -1,6 +1,4 @@
 package org.tunelad.track.internal;
 
-
-public record Artist(
-		String name
-) {}
+/** An Artist, shared by the tracks that name it. Its id is null until it is stored. */
+public record Artist(String id, String name) {}

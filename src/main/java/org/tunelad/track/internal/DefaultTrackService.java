@@ -30,6 +30,8 @@ class DefaultTrackService implements TrackService {
 
     private final Tracks tracks;
 
+    private final Artists artists;
+
     private final MediaStore mediaStore;
 
     private final TransactionalEvents events;
@@ -37,10 +39,11 @@ class DefaultTrackService implements TrackService {
     /** For uploads, whose transaction covers only part of the work; the other methods use the annotation. */
     private final TransactionalOperator transactionalOperator;
 
-    DefaultTrackService(TrackMapper trackMapper, Tracks tracks, MediaStore mediaStore, TransactionalEvents events,
-                        @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
+    DefaultTrackService(TrackMapper trackMapper, Tracks tracks, Artists artists, MediaStore mediaStore,
+                        TransactionalEvents events, @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
         this.trackMapper = trackMapper;
         this.tracks = tracks;
+        this.artists = artists;
         this.mediaStore = mediaStore;
         this.events = events;
         this.transactionalOperator = TransactionalOperator.create(transactionManager);
@@ -57,14 +60,15 @@ class DefaultTrackService implements TrackService {
         // Known up front, so the audio can be stored under the track's id before the track exists
         track.setId(java.util.UUID.randomUUID().toString());
         track.setTitle(command.title());
-        track.setArtist(new Artist(command.artist()));
         track.setAlbum(command.album());
         track.setDescription(command.description());
         track.setFormat(command.format());
         track.setOwner(command.owner());
         var id = track.getId();
 
-        var saveAndAnnounce = Mono.defer(() -> tracks.save(track))
+        var saveAndAnnounce = artists.findOrCreate(command.artist())
+                .doOnNext(track::setArtist)
+                .then(Mono.defer(() -> tracks.save(track)))
                 .map(trackMapper::toDto)
                 // Published within the transaction: module listeners only see it once the track is committed
                 .flatMap(dto -> events.publish(new NewTrackSaved(dto)).thenReturn(dto))
@@ -88,13 +92,16 @@ class DefaultTrackService implements TrackService {
     @Override
     public Mono<TrackDTO> execute(UpdateTrackCommand command) {
         return changeableTrack(command.id(), command.by())
-                .flatMap(track -> {
-                    track.setTitle(command.title());
-                    track.setDescription(command.description());
-                    track.setArtist(new Artist(command.artist()));
-                    track.setAlbum(command.album());
-                    return tracks.save(track);
-                })
+                .flatMap(track -> artists.findOrCreate(command.artist())
+                        // A blank name has no Artist: the track loses the one it had
+                        .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
+                        .flatMap(artist -> {
+                            track.setTitle(command.title());
+                            track.setDescription(command.description());
+                            track.setArtist(artist.orElse(null));
+                            track.setAlbum(command.album());
+                            return tracks.save(track);
+                        }))
                 .map(trackMapper::toDto)
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
     }
