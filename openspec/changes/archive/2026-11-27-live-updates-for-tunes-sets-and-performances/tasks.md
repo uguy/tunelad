@@ -15,4 +15,4 @@
 
 - [x] 4.1 Update `GLOSSARY.md` (`Live update` lists Tunes, Sets and Performances) and README.adoc features if user-visible. Verify: terms match the specs. Commit `docs(live): describe live updates for tunes, sets and performances`.
 - [x] 4.2 Run `./mvnw clean verify`; it must pass. Verify: exit code 0.
-- [ ] 4.3 Push and open the PR titled `feat(live): publish events for the new entities`, body ending with `Closes #824`. Verify: PR exists and `workflow-pr-title` passes.
+- [x] 4.3 Push and open the PR titled `feat(live): publish events for the new entities`, body ending with `Closes #824`. Verify: PR exists and `workflow-pr-title` passes.
