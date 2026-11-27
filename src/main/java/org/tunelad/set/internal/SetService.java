@@ -5,6 +5,7 @@ import org.tunelad.account.AccountRef;
 import org.tunelad.infrastructure.BadRequestException;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.set.SetCatalog;
 import org.tunelad.set.SetDTO;
 import org.tunelad.tune.TuneCatalog;
 import org.tunelad.tune.TuneDTO;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 
 /** Creates, finds and lists Sets. */
 @Service
-public class SetService {
+public class SetService implements SetCatalog {
 
 	public static final int MAX_TUNES = 20;
 
@@ -55,6 +56,20 @@ public class SetService {
 	public Mono<SetDTO> findById(String id) {
 		return sets.findById(id).flatMap(this::toDto)
 				.switchIfEmpty(Mono.error(() -> new NotFoundException("No set found for id: " + id)));
+	}
+
+	@Override
+	public Mono<SetDTO> find(String id) {
+		return sets.findById(id).flatMap(this::toDto);
+	}
+
+	@Override
+	public Flux<SetDTO> findAllById(java.util.Collection<String> ids) {
+		return sets.findAllById(ids).collectList().flatMapMany(rows -> {
+			var tuneIds = rows.stream().flatMap(row -> row.tuneIds().stream()).distinct().toList();
+			return tunes.findAllById(tuneIds).collect(Collectors.toMap(TuneDTO::id, Function.identity()))
+					.flatMapMany(byId -> Flux.fromIterable(rows.stream().map(row -> dto(row, byId)).toList()));
+		});
 	}
 
 	/** The Sets, by the names of their Tunes, optionally only those with the Tune. */

@@ -46,3 +46,23 @@ ALTER TABLE track_tracks
 --rollback UPDATE track_tracks SET artist_name = (SELECT a.name FROM track_artists a WHERE a.id = track_tracks.artist_id);
 --rollback ALTER TABLE track_tracks DROP COLUMN artist_id;
 --rollback DROP TABLE track_artists;
+
+--changeset tunelad:track-performances
+-- A Track records one Set; set_id and tune_id refer to the set and tune modules by value: no foreign key across modules.
+-- Tracks stored before Sets existed keep a null set_id and have no Performances.
+ALTER TABLE track_tracks
+    ADD COLUMN set_id TEXT;
+
+CREATE TABLE track_performances
+(
+    track_id             TEXT           NOT NULL REFERENCES track_tracks (id) ON DELETE CASCADE,
+    position             INTEGER        NOT NULL,
+    tune_id              TEXT           NOT NULL,
+    start_offset_seconds NUMERIC(9, 3)  NOT NULL DEFAULT 0,
+    key                  TEXT,
+    notes                TEXT,
+    PRIMARY KEY (track_id, position)
+);
+CREATE INDEX track_performances_tune_idx ON track_performances (tune_id);
+--rollback DROP TABLE track_performances;
+--rollback ALTER TABLE track_tracks DROP COLUMN set_id;
