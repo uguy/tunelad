@@ -65,7 +65,7 @@ public final class TestTokens {
                 .subject(subject)
                 .audience(audience)
                 .issueTime(Date.from(now))
-                .expirationTime(Date.from(now.plus(5, ChronoUnit.MINUTES)));
+                .expirationTime(Date.from(now.plus(2, ChronoUnit.HOURS)));
     }
 
     private static String sign(PrivateKey key, JWTClaimsSet standard, Map<String, Object> claims) {
