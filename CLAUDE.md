@@ -1,6 +1,6 @@
 # Tune Lad
 
-Playground app: upload an mp3 with a description, list/search tracks, play them in the browser.
+Pet project app: upload an mp3 with a description, list/search tracks, play them in the browser.
 Spring Boot (WebFlux, Spring Modulith, R2DBC + PostgreSQL, Liquibase) backend in `src/`, SvelteKit + Tailwind
 frontend in `app/`. The point of the repo is learning these tools, so prefer their idiomatic use.
 
@@ -21,6 +21,9 @@ Tests use Testcontainers, so Docker must be running.
 - Shared state lives in `app/src/lib/*.svelte.ts` stores; pages refetch on live events with `refreshOnLive`.
 - Playwright e2e tests mock the API with `page.route`. The README screenshots are retaken with
   `node doc/screenshots.mjs` (UI, needs a build) and `node doc/api-screenshots.mjs` (Scalar and OpenAPI, needs the app running).
+- UI package must stay thin for fast loading
+- UX must be optimal
+- UI must follow accessibility best practices
 
 ## Architecture rules
 
