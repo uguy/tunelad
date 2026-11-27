@@ -250,6 +250,20 @@ class TrackPerformancesTest extends AbstractApiTest {
         assertThat(get(track.id()).performances().get(0).key()).isNull();
     }
 
+    @Test
+    void administrator_edits_the_performances_of_someone_elses_track() {
+        twoTuneSet();
+        var track = uploadOk(null);
+
+        var updated = edit(track.id(), Map.of("title", "T", "description", "D",
+                "performances", List.of(Map.of("key", "Em"), Map.of())), TestTokens.admin())
+                .expectStatus().isOk().expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(updated.performances().get(0).key()).isEqualTo("Em");
+        assertThat(updated.owner()).isEqualTo(track.owner());
+        assertThat(get(track.id()).performances().get(0).key()).isEqualTo("Em");
+    }
+
     // --- Performances of a Tune ------------------------------------------------------------------
 
     private List<TunePerformanceDTO> performancesOf(String tuneId) {
