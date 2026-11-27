@@ -6,15 +6,16 @@ Hears which tunes are played in a recording. It runs [Cadence](https://github.co
 
 ## API
 
-- `POST /identify?tunes=<id>,<id>`: the body is the audio in any format ffmpeg reads. `tunes` are thesession.org tune
-  ids (the Tunes of the Track's Set); only those can be reported. Answers `200` with a list in time order:
+- `POST /identify[?tunes=<id>,<id>]`: the body is the audio in any format ffmpeg reads. `tunes` are thesession.org tune
+  ids (the Tunes of the Track's Set); only those can be reported. Without `tunes` every tune of the index can be
+  reported (used to derive the Set of a Track that has none). Answers `200` with a list in time order:
 
   ```json
   [{ "tuneId": "1846", "name": "the mossy banks", "start": 7.5, "end": 112.5, "confidence": 0.60 }]
   ```
 
-  Times are seconds. Analysis uses 10 s windows every 5 s, so boundaries are accurate to about 2.5 s. `400` without
-  `tunes` or body, `413` over `MAX_UPLOAD_BYTES`, `422` when ffmpeg cannot decode the audio.
+  Times are seconds. Analysis uses 10 s windows every 5 s, so boundaries are accurate to about 2.5 s. `400` with an empty
+  `tunes` or no body, `413` over `MAX_UPLOAD_BYTES`, `422` when ffmpeg cannot decode the audio.
 - `GET /health`: `200` once the engine and the index are loaded (the first start downloads the index), else `503`.
 
 ## Run
@@ -28,3 +29,5 @@ Settings (environment): `PORT` (8090), `INDEX_DIR` (`.cache`, `/data` in the ima
 `MAX_UPLOAD_BYTES` (200 MB).
 
 The analysis takes about 5 % of the audio's duration and runs in one worker thread, one request at a time.
+The open-ended pass searches the whole index but measured the same on the two-reel test recording (about 4 s each,
+mostly decoding and note extraction); expect it to cost somewhat more on long recordings.
