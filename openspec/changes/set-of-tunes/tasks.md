@@ -15,7 +15,7 @@
 
 ## 4. Docs, verification, PR
 
-- [ ] 4.1 Check `GLOSSARY.md` still matches (Set definition, update if a term changed) and add Sets to the README.adoc features. Commit `docs(set): document sets`
+- [x] 4.1 Check `GLOSSARY.md` still matches (Set definition, update if a term changed) and add Sets to the README.adoc features. Commit `docs(set): document sets`
 - [ ] 4.2 Run `./mvnw clean verify`
 - [ ] 4.3 Archive the change on the feature branch (`/openspec-archive-change set-of-tunes`) so its spec lands in `main` with the code. Commit `docs(openspec): archive set-of-tunes`
 - [ ] 4.4 Push and open the PR titled `feat(set): add sets of tunes`, body including `Closes #818`
