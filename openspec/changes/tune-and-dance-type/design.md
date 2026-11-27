@@ -22,7 +22,7 @@ No other module depends on it yet (Sets will, in a later slice).
   alternative (the ABC in a visually-hidden element, `aria-label` on the container).
 - **Playback**: abcjs `synth.CreateSynth`; the Play button is the user gesture that starts the AudioContext. Starting pauses the shared `player.svelte.ts`
   store so two audio sources never overlap. Stop and a tempo control (warp) are provided; failures show an inline error.
-- **Soundfont**: one small single-instrument soundfont served from the app's static files rather than abcjs's default CDN, so playback works offline and
+- **Soundfont**: one instrument (flute, octaves 3 to 7, one mp3 per note, about 6 MB in `static/soundfonts/flute-mp3`) served from the app's static files rather than abcjs's default CDN; abcjs fetches only the notes a tune uses, and the service worker does not precache them, so playback works offline and
   with the PWA and adds no external runtime dependency.
 
 ## Risks / Trade-offs
