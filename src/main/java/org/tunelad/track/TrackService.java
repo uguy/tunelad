@@ -2,6 +2,7 @@ package org.tunelad.track;
 
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.ApplyTags;
+import org.tunelad.track.command.AttachSet;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
@@ -34,6 +35,12 @@ public interface TrackService {
      * audio, and returns the track. Completes empty when nothing changed, or when the track no longer exists.
      */
     Mono<TrackDTO> execute(ApplyTags command);
+
+    /**
+     * Gives a Track without a Set the Set of the command, with its Performances identified at the offsets, and returns
+     * the track. Completes empty, changing nothing, when the track no longer exists or already has a Set.
+     */
+    Mono<TrackDTO> execute(AttachSet command);
 
     Flux<TrackDTO> findAll();
 

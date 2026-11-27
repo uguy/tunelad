@@ -47,7 +47,8 @@ public class IdentificationController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Operation(summary = "Run identification again",
             description = "Hears the track's audio again and proposes the start of each performance. Performances "
-                    + "an account corrected are never changed. Runs in the background: the response does not wait "
+                    + "an account corrected are never changed. A track without a set is listened to for any tune "
+                    + "and given the set of those recognised. Runs in the background: the response does not wait "
                     + "for it. Only the track's owner or an administrator may ask.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {

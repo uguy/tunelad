@@ -18,6 +18,8 @@ class LiveStreamTest extends AbstractLiveTest {
 
     @Autowired MeterRegistry meters;
 
+    @Autowired org.tunelad.track.TrackService trackService;
+
     private static final String ALICE = UPLOADER_TOKEN;
     private static final String BOB = TestTokens.bearer("bob", "Bob Smith");
 
@@ -77,6 +79,21 @@ class LiveStreamTest extends AbstractLiveTest {
         await().atMost(Duration.ofSeconds(10)).until(() -> !anonymous.events().isEmpty() && !alice.events().isEmpty());
         assertThat(anonymous.dataOf("track.indexed")).containsExactly(body("track.indexed", "42"));
         assertThat(alice.dataOf("track.indexed")).containsExactly(body("track.indexed", "42"));
+    }
+
+    @Test
+    void giving_a_track_a_set_announces_it_as_indexed() {
+        var parts = new java.util.HashMap<String, String>();
+        parts.put("title", "Knees Up");
+        parts.put("setId", null);
+        var track = upload(parts, KNEES_UP_MP3).expectStatus().isCreated()
+                .expectBody(org.tunelad.track.TrackDTO.class).returnResult().getResponseBody();
+        var stream = follow(null);
+
+        trackService.execute(new org.tunelad.track.command.AttachSet(
+                track.id(), createSet(createTune("Cooley's", "reel")).id(), java.util.List.of(12.0))).block();
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> stream.dataOf("track.indexed").contains(body("track.indexed", track.id())));
     }
 
     @Test

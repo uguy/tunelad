@@ -13,4 +13,10 @@ public interface IdentificationSource {
      * analysis cannot be done (service down, audio it cannot decode, timeout).
      */
     Flux<DetectedTune> detect(Flux<DataBuffer> audio, Collection<String> tuneIds);
+
+    /**
+     * Every Tune heard in the audio that the analysis knows, in time order, whatever the Set. Fails like
+     * {@link #detect}.
+     */
+    Flux<DetectedTune> detectAny(Flux<DataBuffer> audio);
 }
