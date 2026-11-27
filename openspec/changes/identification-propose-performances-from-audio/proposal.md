@@ -4,22 +4,27 @@ Issue: #823
 
 ## Why
 
-Uploading a Track means typing in its Set and, for every Performance, its start offset, key and Transcription. Most of that can be proposed from the audio.
-**Identification** (see `GLOSSARY.md`) analyses a Track's audio in the background after upload and proposes its Performances and Transcriptions from
-FolkFriend and irishtune.info, so an Account only checks and corrects. The roadmap (#815) needs it now that Performances own the Transcription (ADR 0001).
+Uploading a Track means typing in its Set and, for every Performance, where its Tune starts. That can be proposed from the audio.
+**Identification** (see `GLOSSARY.md`) analyses a Track's audio in the background after upload and proposes its Performances, so an Account only checks and
+corrects. The roadmap (#815) needs it now that Performances are recorded per Track (ADR 0001).
 
 ## What Changes
 
-- New `identification` module: after a Track is saved, it runs an analysis in the background and proposes values for each of the Track's Performances.
-- Each Performance gets an Identification state: `pending` (analysis not finished), `identified` (proposed by the machine), `corrected` (edited by an Account).
-- A proposal fills only what is still empty or `pending`/`identified`; a Performance that is `corrected` is never overwritten, including by a re-run.
+- New `identification` module: after a Track is saved, it sends the audio and the Tune ids of the Track's Set to a **sidecar** and proposes a start offset for each Performance whose Tune is detected.
+- The sidecar is a Node container running Cadence's recognition engine (FolkFriend WASM, note decoder, Viterbi segmenter; 10 s windows, 5 s hop) behind a small HTTP wrapper. The Java module calls it through the `IdentificationSource` port, so the engine can later be replaced (for example by a Java port).
+- Each Performance gets an Identification state: `pending` (nothing proposed), `identified` (proposed by the machine), `corrected` (edited by an Account).
+- A proposal fills only Performances that are `pending` or `identified`; a `corrected` Performance is never overwritten, including by a re-run.
 - Editing a Performance by hand (offset, key, notes, Transcription) marks it `corrected`.
-- `PerformanceDTO` gains `identification` (the state) and the track API shows it; the track view shows the state and lets an Account re-run Identification.
+- `PerformanceDTO` gains `identification`; the track view shows the state and lets an Account re-run Identification.
 - `POST /api/tracks/{id}/identification` (owner or administrator) re-runs the analysis.
-- **First task is a research ticket**: the FolkFriend and irishtune.info APIs, licences, rate limits and whether FolkFriend copes with band recordings are
-  unverified (ADR 0001). Findings are recorded under `docs/` and decide the adapter; the rest of the design assumes a pluggable source behind one port.
-- Assumption (to confirm): a Track is still uploaded with its Set. Identification proposes offset, key and Transcription for the Performances the Set already
-  gives; proposing the Set itself from audio is out of scope.
+- Research is done (`docs/research/identification-sources.md`). The bare FolkFriend CLI failed on a real duo recording; Cadence's pipeline found "The Mossy Banks" in every window from 5 s to 105 s (scores 0.47 to 0.76). irishtune.info has no API or licence and is dropped.
+
+Assumptions (confirmed with the owner):
+- A Track is still uploaded with its Set. Only Tunes of that Set are accepted; a detection of any other Tune is ignored, which also limits false positives.
+- This slice proposes **start offsets only**. Key and Transcription proposals are a later slice (the engine returns Tune and time, not a key or ABC); #823 is to say so.
+- Start offsets are accurate to about 2.5 s (half a hop); they stay editable.
+- Tunes missing from the thesession.org index (the second reel of the test recording seems to be one) can never be identified; their Performances stay `pending`.
+- The sidecar is AGPL-3.0 / GPL-3.0 code (Cadence and its vendored FolkFriend), accepted as a separate container whose source stays public in this repository with its own `LICENSE` and a notice.
 
 REST change is additive, not breaking (new response field, new endpoint). UI and API both touched.
 
@@ -34,17 +39,20 @@ REST change is additive, not breaking (new response field, new endpoint). UI and
 ## Impact
 
 - Modules: `identification` (new, depends on `track::event`, `track::command`, `media`, `infrastructure`), `track` (state column, DTO, edit rule). `package-info.java` `allowedDependencies` updated for both.
+- New sidecar: a `sidecar/identification/` directory (Node, vendored engine with its licence), a service and an index volume in `docker-compose.yml`, and CI building its image.
 - Database: Liquibase change adding the Identification state to `track_performances`.
 - OpenAPI: `PerformanceDTO.identification`, new `POST /api/tracks/{id}/identification`; README screenshots retaken if the UI changes.
 - Frontend: state badge and re-run button on the tune/track view; Playwright e2e with `page.route` mocks.
-- Dependencies: a reactive `WebClient` to the external sources (no new library expected); no secrets until research says otherwise.
-- `GLOSSARY.md`: **Identification** states are already defined; check wording after the research outcome.
+- Dependencies: a reactive `WebClient` to the sidecar (no new Java library); the sidecar downloads the thesession.org index once and caches it on a volume.
+- `GLOSSARY.md`: **Identification** says it proposes Performances and Transcriptions; narrow the wording to what this slice does. ADR 0001 consequences updated.
 
 ## Out of scope
 
 - Training or hosting models.
 - Proposing the Set (which Tunes a Track contains) from audio.
-- Importing Tunes from the sources beyond matching to existing Tunes (Tune identity stays the thesession.org id, ADR 0001).
+- Proposing key or Transcription (a later slice).
+- Using irishtune.info, and a Java port of the engine.
+- Refreshing the sidecar's index beyond a volume cache.
 - Bulk re-identification of Tracks stored before this change.
 - Live updates of Identification progress (slice #824).
 
