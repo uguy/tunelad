@@ -11,6 +11,6 @@
     "test": "node --no-experimental-strip-types --import tsx --test test/*.test.ts"
   },
   "dependencies": {
-    "tsx": "4.21.0"
+    "tsx": "4.23.15"
   }
 }
