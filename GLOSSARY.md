@@ -23,11 +23,11 @@ An audio recording, by one Artist, of a Set (a single Tune counts as a Set of on
 _Avoid_: Song, media
 
 **Artist**:
-A musician or a band that performs Tracks: a Musician, a Band, or not yet classified (as when imported by name only). A shared record, created on first use and matched by name, ignoring case and surrounding whitespace.
+A musician or a band that performs Tracks: a Musician, a Band, or not yet classified (as when imported by name only). A shared record, created on first use and matched by name, ignoring case and surrounding whitespace. Any Account can classify an Artist and edit a Band's members.
 _Avoid_: Performer, brand
 
 **Band**:
-An Artist made of several Musicians, its members.
+An Artist made of several Musicians, its members. A Band is never a member of another Band.
 _Avoid_: Group
 
 **Musician**:

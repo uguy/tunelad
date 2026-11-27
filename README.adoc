@@ -76,6 +76,10 @@ This simple app allows to store an mp3 file with some description and play it vi
   and devices (they are private: only your own connections hear of them), with no reload and no polling. The server streams them as Server-Sent Events
   (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
   browsers
+* Artists: an artist is a musician, a band or not yet classified (`GET /api/artists/{id}`); any logged-in account can classify one
+  (`PUT /api/artists/{id}`) and replace a band's members, created by name on first use (`PUT /api/artists/{id}/members`). A tune's
+  page lists who recorded it ("Recorded by", from `artistId` and `artistKind` on `GET /api/tunes/{id}/performances`), bands with their
+  members, and offers accounts the controls to classify and edit them
 * Tunes: a shared collection of traditional tunes with their dance type (`/tunes`, `GET /api/tunes`), created by hand or imported
   from thesession.org by id (`POST /api/tunes/import`). An administrator can fill the whole catalogue at once from thesession.org's open data dump (`POST /api/tunes/import-dump`, progress with `GET`; first setting, aliases and composer; safe to run again), and every page credits thesession.org. A tune's page shows a sheet for each recording's transcription (`GET /api/tunes/{id}/performances`), or its reference
   transcription when no recording has one, as sheet music or as ABC

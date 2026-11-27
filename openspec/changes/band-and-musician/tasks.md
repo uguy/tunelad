@@ -21,7 +21,7 @@
 
 ## 4. Docs and wrap-up (commit: `docs(track): document artist kinds`)
 
-- [ ] 4.1 Update `GLOSSARY.md` if a term's wording changed (Artist, Band, Musician)
-- [ ] 4.2 Update `README.adoc` features and retake screenshots if the UI changed visibly
-- [ ] 4.3 Run `./mvnw clean verify` and fix failures
+- [x] 4.1 Update `GLOSSARY.md` if a term's wording changed (Artist, Band, Musician)
+- [x] 4.2 Update `README.adoc` features and retake screenshots if the UI changed visibly
+- [x] 4.3 Run `./mvnw clean verify` and fix failures
 - [ ] 4.4 Open the PR titled `feat(track): classify artists as musicians and bands`, body ending with `Closes #845`
