@@ -14,6 +14,6 @@
 
 ## 4. Docs and delivery
 
-- [ ] 4.1 Check `GLOSSARY.md` (Transcription, Reference transcription) still matches and update it if a term changed; update `README.adoc` features if user-visible and retake screenshots if the Tune page changed. Commit `docs: describe performance transcriptions`.
+- [x] 4.1 Check `GLOSSARY.md` (Transcription, Reference transcription) still matches and update it if a term changed; update `README.adoc` features if user-visible and retake screenshots if the Tune page changed. Commit `docs: describe performance transcriptions`.
 - [ ] 4.2 Run `./mvnw clean verify` and confirm it passes.
 - [ ] 4.3 Push and open the PR titled `feat(tune): show transcriptions on the tune view`, body ending with `Closes #820`; move the card to In review.
