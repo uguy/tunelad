@@ -60,7 +60,7 @@ This simple app allows to store an mp3 file with some description and play it vi
   to force one (remembered in the browser), no flash of the wrong theme on load
 * Log in with an OpenID Connect provider (Keycloak locally, Google optional); API clients use bearer access tokens; an
   account page shows who you are, your role and the size of your collections
-* Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry; every track shows who uploaded it
+* Upload a track from the UI or the API (mp3, m4a, ogg, flac or wav, up to 100 MB; requires login or a bearer token), with progress, cancel and retry; every track shows who uploaded it. A track records a set (chosen or built on the upload form, `setId` in the API) and has one performance per tune of it, with its start offset, key and notes, shown in the track's details and editable by its owner. Tracks stored before sets existed have none
 * Owners edit and delete their own tracks, and administrators (Keycloak `admin` role) any track, from the API or the track list
 * List tracks and search them by words in title or description (a new upload becomes searchable within a few seconds)
 * Play track from browser (streaming bytes with range support, so the player can seek), in a player bar that stays
