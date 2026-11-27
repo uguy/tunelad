@@ -19,5 +19,5 @@
 ## 5. Docs and delivery
 
 - [x] 5.1 Update `GLOSSARY.md` (`Comment`: flat plain text, author or Administrator edits/deletes, public; `Live update` mentions Comments) and README.adoc features. Verify: terms match the specs. Commit `docs(comment): describe comments`.
-- [ ] 5.2 Run `./mvnw clean verify`; it must pass. Verify: exit code 0.
-- [ ] 5.3 Push and open the PR titled `feat(comment): comment on tracks, tunes and sets`, body ending with `Closes #844`. Verify: PR exists and `workflow-pr-title` passes.
+- [x] 5.2 Run `./mvnw clean verify`; it must pass. Verify: exit code 0.
+- [x] 5.3 Push and open the PR titled `feat(comment): comment on tracks, tunes and sets`, body ending with `Closes #844`. Verify: PR exists and `workflow-pr-title` passes.
