@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
+import org.tunelad.comment.event.CommentChanged;
 import org.tunelad.favourite.event.FavouriteChanged;
 import org.tunelad.media.event.AudioPrepared;
 import org.tunelad.media.event.WaveformComputed;
@@ -65,6 +66,12 @@ class LiveBridge {
     @ApplicationModuleListener
     void on(PlaylistChanged event) {
         publish(LiveSubjects.account(event.ownerId(), "playlist.changed"), "playlist.changed", event.playlistId());
+    }
+
+    /** The subject's id: the browser refetches its Comments, which are public. */
+    @ApplicationModuleListener
+    void on(CommentChanged event) {
+        publishToEveryone("comment.changed", event.subjectId());
     }
 
     private void publishToEveryone(String type, String id) {

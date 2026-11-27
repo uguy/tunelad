@@ -2,6 +2,7 @@
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from '#lib/Icon.svelte';
 	import FavouriteButton from '#lib/FavouriteButton.svelte';
+	import Comments from '#lib/Comments.svelte';
 	import AddToPlaylist from '#lib/AddToPlaylist.svelte';
 	import EmptyState from '#lib/ui/EmptyState.svelte';
 	import Waveform from '#lib/Waveform.svelte';
@@ -467,6 +468,10 @@
 					{#if errors[track.id]}
 						<p role="alert" class="mt-2 text-sm text-danger">{errors[track.id]}</p>
 					{/if}
+
+					<div class="mt-4 border-t border-line pt-3">
+						<Comments subject="tracks" id={track.id} />
+					</div>
 				</div>
 			</article>
 		{/each}

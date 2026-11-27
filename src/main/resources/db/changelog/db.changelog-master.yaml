@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/tune.sql
   - include:
       file: db/changelog/set.sql
+  - include:
+      file: db/changelog/comment.sql

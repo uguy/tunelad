@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import Comments from '#lib/Comments.svelte';
 	import SetService, { type TuneSet } from '../Sets.js';
 
 	const service = new SetService();
@@ -57,5 +58,6 @@
 				</li>
 			{/each}
 		</ol>
+		<Comments subject="sets" {id} />
 	{/if}
 </section>

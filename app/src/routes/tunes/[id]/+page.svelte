@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
+	import Comments from '#lib/Comments.svelte';
 	import IdentificationBadge from '../../tracks/IdentificationBadge.svelte';
 	import { formatOffset } from '#lib/offset.js';
 	import TuneService, { type Tune, type TunePerformance } from '../Tunes.js';
@@ -114,5 +115,6 @@
 			<h2 class="sr-only">Reference transcription</h2>
 			<AbcViewer abc={tune.abc} title={tune.name} />
 		{/if}
+		<Comments subject="tunes" {id} />
 	{/if}
 </section>

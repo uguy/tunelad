@@ -32,6 +32,8 @@ async function openTracks(page, context, account) {
 	await page.route('**/api/tracks/*/waveform', (route) =>
 		route.fulfill({ json: { status: 'FAILED', peaks: [] } })
 	);
+	// Comments are not under test here either
+	await page.route('**/api/tracks/*/comments', (route) => route.fulfill({ json: [] }));
 	await context.addCookies([
 		{ name: 'XSRF-TOKEN', value: 'csrf-123', url: 'http://localhost:4173' }
 	]);

@@ -93,6 +93,7 @@ This simple app allows to store an mp3 file with some description and play it vi
   (an existing one when the list is known), with one identified performance per tune. A recognised tune the catalogue
   lacks is imported from thesession.org for the uploader. Nothing recognised leaves the track as it is, and asking
   again later tries again. A set is attached once and never replaces one that exists
+* Comments: logged-in users comment on tracks, tunes and sets; anyone reads them, only the author or an administrator edits or deletes, and open pages follow live
 * Favourites: a heart on every track (list and player bar) for logged-in users, and a page that lists them
   (`/tracks/favourites`, `GET /api/me/favourites`)
 * Playlists: private ordered lists of tracks, created, renamed and deleted from `/tracks/playlists`. Add a track from the
@@ -381,6 +382,8 @@ Search shows the change within a few seconds.
 Database configuration lives in the `application.yml` file. The application reads and writes through R2DBC; JDBC is only used where nothing reactive exists: Liquibase, which creates the schema at startup, and the Spring Modulith Event Publication Registry. There is a single schema; each module owns the tables that carry its prefix, and no foreign key crosses a module: modules refer to each other by id or key only.
 
 The `track` module stores tracks in `track_tracks` (plain columns, tags as a `text[]`). Audio files belong to the `media` module: on upload, `track` hands the audio stream to `media`, which stores it in chunks (`media_files` and `media_chunks`) under the track id, in one transaction so that a failed upload leaves nothing behind, and serves it to the player (`GET /api/tracks/{id}/play`, with byte ranges). Waveforms are in `media_waveforms`. Audio a browser cannot play (WMA) gets an AAC rendition, stored as a second `media_files` row under `<track id>:play`, with its state in `media_renditions`. Accounts in `account_accounts`.
+
+Comments belong to the `comment` module (`comment_comments`, one table for Tracks, Tunes and Sets, which it refers to by id only); a deleted track takes its comments through the `TrackDeleted` event, and `CommentChanged` (the subject's id) feeds the live updates, for everyone.
 
 Favourites and playlists are private to their owner and belong to two more modules. `favourite` keeps one row per account and track in `favourite_favourites`. `playlist` keeps `playlist_playlists` (owner, name, description) and `playlist_items` (the tracks of a playlist, with their position; a unique, deferrable `(playlist_id, position)` lets a reorder swap positions inside one transaction). Both refer to accounts and tracks by id only, so they follow the rule of no foreign key across modules; a deleted track disappears from both through the `TrackDeleted` event. Their own events (`FavouriteChanged`, `PlaylistChanged`, carrying ids only) feed the live updates.
 
