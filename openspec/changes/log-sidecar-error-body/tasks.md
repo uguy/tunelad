@@ -12,6 +12,6 @@
 
 ## 3. Verify and ship
 
-- [ ] 3.1 Run `./mvnw clean verify` until it passes
-- [ ] 3.2 No README.adoc or GLOSSARY.md change is expected (not user-visible); confirm
+- [x] 3.1 Run `./mvnw clean verify` until it passes
+- [x] 3.2 No README.adoc or GLOSSARY.md change is expected (not user-visible); confirm
 - [ ] 3.3 Open a PR titled `fix(identification): surface the sidecar's error body in failures`
