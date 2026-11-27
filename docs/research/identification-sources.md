@@ -42,3 +42,16 @@ Built `Batpapa/folkfriend` (HEAD `0d1531b`, GPL-3.0) in Docker (`rust:1-slim` pl
 - Output is plain text, not JSON, and the CLI has no HTTP mode: the sidecar needs a thin wrapper (shell script or tiny Rust/HTTP shim) or the Java side runs it per window through the container.
 
 Decision: option C. Sidecar CLI now behind the `IdentificationSource` port, irishtune.info dropped from this slice, a pure-Java segmenter constrained to the Track's Set, and a Java port of FolkFriend left for a later slice (GPL-3 or clean-room).
+
+### Spike result on a real recording (negative)
+
+File: `Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3` (set of two reels, 152 s, a duo). Converted to 48 kHz mono WAV and cut into 29 windows of 10 s with a 5 s hop, as Cadence does.
+
+- Whole file as one query: unrelated tunes, top score 0.20.
+- Per window, default mode: top scores 0.04 to 0.33, a different winner nearly every window, never a stable tune over several windows.
+- With pitch-class mode and any-pitch enabled (the library has them, off by default; I patched the CLI locally to switch them on with env vars): scores 0.09 to 0.29, still no stable winner.
+- "The Mossy Banks" is in the index (tune 1846) but appears in **no window's top 10** in either mode. A name search for "raven" finds nothing, so "Raven's Rock" may not be in the index at all, in which case it can never be identified.
+- The fork's CLI is not Cadence's pipeline: Cadence feeds FolkFriend through its own transcriptor (added 2026-11-26) and its Viterbi segmenter, neither of which I ran. So this shows the bare CLI fails on this file, not that Cadence would.
+- Only one recording was tested.
+
+Consequence: FolkFriend through the bare CLI is **not** good enough to base Identification on, at least for duos. Before building the sidecar, decide between testing Cadence's transcriptor path, testing more recordings, or changing the approach (see the proposal's open questions).
