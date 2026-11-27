@@ -156,6 +156,11 @@ public class ChunkedMediaStore implements MediaStore {
                 .one();
     }
 
+    /** The rendition of the audio stored under that key, or empty when it has none (yet). */
+    public Mono<Media> findRendition(String key) {
+        return find(Playable.renditionKey(key));
+    }
+
     private static String contentType(String stored) {
         return stored == null || stored.isBlank() ? Media.DEFAULT_CONTENT_TYPE : stored;
     }

@@ -36,9 +36,9 @@ Commit: `feat(media): convert wma to an aac rendition with ffmpeg`
 
 Commit: `feat(media): play the rendition and expose the audio state`
 
-- [ ] 5.1 In `MediaController.play`, serve `<key>:play` when the rendition is `READY`, answer 503 with `Retry-After` when `PENDING` and 422 when `FAILED`, and keep the original path untouched for audio with no rendition row; document both responses in OpenAPI; verify with API tests for "Play a WMA track" (with and without `Range: bytes=0-`, `Content-Length` of the rendition), "Play while the rendition is being made" and "Play audio that could not be converted".
-- [ ] 5.2 Add `GET /api/tracks/{id}/audio` returning `{status}`, 404 for an unknown track, no login required; verify with API tests for `PENDING`, `READY`, `FAILED`, an mp3 (`READY` at once), unknown id and an anonymous client, and that `/v3/api-docs` lists the endpoint and the `AudioResponse` schema.
-- [ ] 5.3 Verify with API tests that the existing byte-for-byte play scenarios still pass for mp3, m4a, ogg, flac and wav, that a WMA track's waveform reaches `READY`, that deleting a WMA track makes `/play` and `/audio` answer 404, and that editing and deleting a track whose audio is `FAILED` succeed.
+- [x] 5.1 In `MediaController.play`, serve `<key>:play` when the rendition is `READY`, answer 503 with `Retry-After` when `PENDING` and 422 when `FAILED`, and keep the original path untouched for audio with no rendition row; document both responses in OpenAPI; verify with API tests for "Play a WMA track" (with and without `Range: bytes=0-`, `Content-Length` of the rendition), "Play while the rendition is being made" and "Play audio that could not be converted".
+- [x] 5.2 Add `GET /api/tracks/{id}/audio` returning `{status}`, 404 for an unknown track, no login required; verify with API tests for `PENDING`, `READY`, `FAILED`, an mp3 (`READY` at once), unknown id and an anonymous client, and that `/v3/api-docs` lists the endpoint and the `AudioResponse` schema.
+- [x] 5.3 Verify with API tests that the existing byte-for-byte play scenarios still pass for mp3, m4a, ogg, flac and wav, that a WMA track's waveform reaches `READY`, that deleting a WMA track makes `/play` and `/audio` answer 404, and that editing and deleting a track whose audio is `FAILED` succeed.
 
 ## 6. Live event and UI
 
