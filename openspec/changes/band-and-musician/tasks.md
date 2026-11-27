@@ -14,10 +14,10 @@
 
 ## 3. UI: Recorded by (commit: `feat(ui): show who recorded a tune`)
 
-- [ ] 3.1 Regenerate/update the API client types for `ArtistDTO` and `TunePerformance`
-- [ ] 3.2 "Recorded by" section on the Tune page with read-only view for visitors and classify/members controls for Accounts (accessible labels, theme tokens)
-- [ ] 3.3 Vitest for the distinct-Artist derivation; Playwright e2e (mocked API) for the `specs/tune` scenarios
-- [ ] 3.4 `bun run format`, `bun run lint`, `bun run check`
+- [x] 3.1 Regenerate/update the API client types for `ArtistDTO` and `TunePerformance`
+- [x] 3.2 "Recorded by" section on the Tune page with read-only view for visitors and classify/members controls for Accounts (accessible labels, theme tokens)
+- [x] 3.3 Vitest for the distinct-Artist derivation; Playwright e2e (mocked API) for the `specs/tune` scenarios
+- [x] 3.4 `bun run format`, `bun run lint`, `bun run check`
 
 ## 4. Docs and wrap-up (commit: `docs(track): document artist kinds`)
 

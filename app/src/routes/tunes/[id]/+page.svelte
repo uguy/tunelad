@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
 	import Comments from '#lib/Comments.svelte';
+	import RecordedBy from '#lib/RecordedBy.svelte';
 	import { live } from '#lib/live.svelte.js';
 	import { refreshOnLive } from '#lib/liveRefresh.js';
 	import IdentificationBadge from '../../tracks/IdentificationBadge.svelte';
@@ -85,6 +86,7 @@
 				{/if}
 			</dl>
 		</div>
+		<RecordedBy {performances} />
 		{#if sheets.length > 0}
 			{#each sheets as performance (`${performance.trackId}-${performance.position}`)}
 				<section class="flex flex-col gap-2">

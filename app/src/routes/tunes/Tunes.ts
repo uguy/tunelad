@@ -1,4 +1,5 @@
 import { request } from '#lib/api.js';
+import type { ArtistKind } from '#lib/artists.js';
 import type { IdentificationState } from '../tracks/Tracks.js';
 
 /** A tune as the API returns it. */
@@ -18,6 +19,8 @@ export interface TunePerformance {
 	trackId: string;
 	trackTitle: string;
 	artist?: string | null;
+	artistId?: string | null;
+	artistKind?: ArtistKind | null;
 	position: number;
 	startOffsetSeconds: number;
 	key?: string | null;
