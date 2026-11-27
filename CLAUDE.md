@@ -41,7 +41,7 @@ Tests use Testcontainers, so Docker must be running.
 - PRs target `main` and are squash-merged, so the **PR title becomes the commit on main**:
   it must be a valid conventional commit (checked by the `workflow-pr-title` workflow, config in
   `commitlint.config.mjs`).
-- Push and open the PR only after `./mvnw clean verify` passes locally.
+- Push and open the PR only after `./mvnw clean verify` passes locally except when changes do not affect code.
 
 ## OpenSpec
 
