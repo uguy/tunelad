@@ -1,7 +1,9 @@
 package org.tunelad.favourite.web;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,6 +61,8 @@ public class FavouriteController {
     @Operation(summary = "My favourite tracks",
             description = "Returns the user's favourite tracks, most recently marked first.",
             security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "The user's favourite tracks",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = TrackDTO.class))))
     @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content)
     public Flux<TrackDTO> list() {
         return account().flatMapMany(favourites::list);

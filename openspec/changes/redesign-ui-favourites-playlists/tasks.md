@@ -37,10 +37,10 @@
 
 ## 6. Playlists backend
 
-- [ ] 6.1 Create the `playlist` module: `package-info`, `playlist.sql` (playlists and ordered items, cascade inside the module only) registered in the master changelog, repositories, service with ownership as `NotFoundException`, position handling in `@ReactiveTransactional`, `TrackDeleted` listener closing gaps; verify with Testcontainers tests for create, validation of the name, list isolation between users, read in order, rename, delete keeping tracks, add (idempotent, unknown track), remove, reorder and wrong-list 400, and a deleted track leaving the order of the others intact
-- [ ] 6.2 Publish `PlaylistChanged(ownerId, playlistId)` from every playlist mutation and from the `TrackDeleted` cleanup in a `playlist::event` named interface; verify with a Testcontainers test per operation, including one event per playlist touched by a track deletion
-- [ ] 6.3 Add `PlaylistController` for the nine operations in the spec with OpenAPI annotations, tag "Playlists" and the DTOs, and authenticate `/api/playlists/**` in `SecurityConfig`; verify with WebTestClient tests for status codes, 401 without redirect, and CSRF behaviour, and that `/v3/api-docs` lists the new operations
-- [ ] 6.4 Run `ModularApplicationTests`, then commit: `feat(api): add playlists api`
+- [x] 6.1 Create the `playlist` module: `package-info`, `playlist.sql` (playlists and ordered items, cascade inside the module only) registered in the master changelog, repositories, service with ownership as `NotFoundException`, position handling in `@ReactiveTransactional`, `TrackDeleted` listener closing gaps; verify with Testcontainers tests for create, validation of the name, list isolation between users, read in order, rename, delete keeping tracks, add (idempotent, unknown track), remove, reorder and wrong-list 400, and a deleted track leaving the order of the others intact
+- [x] 6.2 Publish `PlaylistChanged(ownerId, playlistId)` from every playlist mutation and from the `TrackDeleted` cleanup in a `playlist::event` named interface; verify with a Testcontainers test per operation, including one event per playlist touched by a track deletion
+- [x] 6.3 Add `PlaylistController` for the nine operations in the spec with OpenAPI annotations, tag "Playlists" and the DTOs, and authenticate `/api/playlists/**` in `SecurityConfig`; verify with WebTestClient tests for status codes, 401 without redirect, and CSRF behaviour, and that `/v3/api-docs` lists the new operations
+- [x] 6.4 Run `ModularApplicationTests`, then commit: `feat(api): add playlists api`
 
 ## 7. Playlists UI
 

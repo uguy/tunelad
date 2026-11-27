@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/search.sql
   - include:
       file: db/changelog/favourite.sql
+  - include:
+      file: db/changelog/playlist.sql

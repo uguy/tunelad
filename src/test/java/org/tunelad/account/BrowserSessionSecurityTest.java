@@ -197,19 +197,35 @@ class BrowserSessionSecurityTest {
                 .expectStatus().isForbidden();
         client.delete().uri("/api/tracks/any/favourite").cookie("SESSION", session).exchange()
                 .expectStatus().isForbidden();
+        client.post().uri("/api/playlists").cookie("SESSION", session)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{\"name\":\"x\"}").exchange()
+                .expectStatus().isForbidden();
+        client.put().uri("/api/playlists/any/tracks/any").cookie("SESSION", session).exchange()
+                .expectStatus().isForbidden();
+        client.delete().uri("/api/playlists/any").cookie("SESSION", session).exchange()
+                .expectStatus().isForbidden();
     }
 
     @Test
     void favourite_change_from_a_session_with_the_token_gets_past_csrf() {
         var csrf = csrfToken();
 
+        var session = aliceSession();
+
         // 404 and not 403: the track does not exist, but the request was let through
         client.put().uri("/api/tracks/unknown/favourite")
-                .cookie("SESSION", aliceSession())
+                .cookie("SESSION", session)
                 .cookie("XSRF-TOKEN", csrf)
                 .header("X-XSRF-TOKEN", csrf)
                 .exchange()
                 .expectStatus().isNotFound();
+        client.post().uri("/api/playlists")
+                .cookie("SESSION", session)
+                .cookie("XSRF-TOKEN", csrf)
+                .header("X-XSRF-TOKEN", csrf)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{\"name\":\"Session tunes\"}")
+                .exchange()
+                .expectStatus().isCreated();
     }
 
     @Test
