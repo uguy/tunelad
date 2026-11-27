@@ -226,29 +226,59 @@ test('performance fields follow the set', async ({ page, context }) => {
 	await expect(page.getByRole('group').nth(1)).toContainText('The Kesh');
 });
 
-test('set left empty', async ({ page, context }) => {
+test('upload with only a file', async ({ page, context }) => {
 	const requests = await recordUploads(page, (route) =>
 		route.fulfill({ status: 201, json: KNEES_UP })
 	);
-	await fillUploadForm(page, context);
-	await setField(page).selectOption('');
+	await mockApi(page, context, ALICE);
+	await page.goto('/tracks/upload');
+	await page.getByLabel(/Audio file/).setInputFiles(KNEES_UP_FILE);
 
 	await uploadButton(page).click();
 
-	expect(await setField(page).evaluate((select) => select.validity.valueMissing)).toBe(true);
-	expect(requests).toHaveLength(0);
+	await expect(page).toHaveURL('/tracks');
+	await expect(trackTitles(page).first()).toHaveText('Knees Up');
+	expect(requests).toHaveLength(1);
+	expect(Object.keys(partsOf(requests[0]))).toEqual(['file']);
+	expect(requests[0].headers()['x-xsrf-token']).toBe('csrf-123');
+});
+
+test('only the file is marked required', async ({ page, context }) => {
+	await mockApi(page, context, ALICE);
+	await page.goto('/tracks/upload');
+
+	const required = (locator) => locator.evaluate((element) => element.required);
+	expect(await required(page.getByLabel(/Audio file/))).toBe(true);
+	for (const label of ['Title', 'Description', 'Artist', 'Album'])
+		expect(await required(page.getByLabel(label)), label).toBe(false);
+	expect(await required(setField(page))).toBe(false);
+	await expect(setField(page)).toHaveValue('');
+	await expect(page.getByLabel('Title')).toHaveAccessibleName(/optional/);
+	await expect(page.getByText('Tune Lad fills in what it can from the file')).toBeVisible();
+});
+
+test('no set yet hides the performance fields again', async ({ page, context }) => {
+	await mockApi(page, context, ALICE);
+	await page.goto('/tracks/upload');
+	await setField(page).selectOption({ label: "Cooley's, The Kesh" });
+	await expect(page.getByRole('group')).toHaveCount(2);
+
+	await setField(page).selectOption({ label: 'No set yet' });
+
+	await expect(page.getByRole('group')).toHaveCount(0);
 });
 
 test('required field left empty', async ({ page, context }) => {
 	const requests = await recordUploads(page, (route) =>
 		route.fulfill({ status: 201, json: KNEES_UP })
 	);
-	await fillUploadForm(page, context);
-	await page.getByLabel('Title').fill('');
+	await mockApi(page, context, ALICE);
+	await page.goto('/tracks/upload');
+	await page.getByLabel('Title').fill('Knees Up');
 
 	await uploadButton(page).click();
 
-	expect(await page.getByLabel('Title').evaluate((input) => input.validity.valueMissing)).toBe(
+	expect(await page.getByLabel(/Audio file/).evaluate((input) => input.validity.valueMissing)).toBe(
 		true
 	);
 	await expect(page).toHaveURL('/tracks/upload');
@@ -298,7 +328,10 @@ test('cancel an upload', async ({ page, context }) => {
 const refusals = [
 	[413, 'This file is larger than the 100 MB limit.'],
 	[415, "This file type isn't supported: choose an mp3, m4a, ogg, flac, wav or wma file."],
-	[400, 'A track needs a title, a description, a set and an audio file, and valid performances.'],
+	[
+		400,
+		'The set or the performances do not fit: choose an existing set, give one entry per tune, or choose no set yet.'
+	],
 	[401, 'Your session has expired. Log in again, then upload the track again.'],
 	[403, 'You may not upload this track. Reload the page and try again.'],
 	[500, 'The server could not store the track (500). Try again.']

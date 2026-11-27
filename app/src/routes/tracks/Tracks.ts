@@ -9,7 +9,8 @@ export type IdentificationState = 'pending' | 'identified' | 'nothing_found' | '
 export interface Track {
 	id: string;
 	title: string;
-	description: string;
+	/** Absent when the track has none. */
+	description?: string | null;
 	artist?: string | null;
 	album?: string | null;
 	format: string;
@@ -48,10 +49,10 @@ export interface Audio {
 /** Formats a browser cannot play as they are uploaded: the server converts them, and says when they are ready. */
 export const CONVERTED_FORMATS = ['WMA'];
 
-/** A track's metadata as an edit replaces it: an omitted artist or album is cleared. */
+/** A track's metadata as an edit replaces it: an omitted description, artist or album is cleared. */
 export interface TrackEdit {
 	title: string;
-	description: string;
+	description?: string | null;
 	artist?: string | null;
 	album?: string | null;
 	/** One entry per performance, in order; omitted leaves them unchanged. */
@@ -67,20 +68,20 @@ export class TrackChangeError extends Error {
 				: status === 404
 					? 'This track no longer exists.'
 					: status === 400
-						? 'A track needs a title and a description, and performances that fit.'
+						? 'A track needs a title, and performances that fit.'
 						: `The server refused the change (${status}).`
 		);
 	}
 }
 
-/** A new track as the upload form sends it: an empty artist or album is left out. */
+/** A new track as the upload form sends it: only the file is required, and an empty field is left out. */
 export interface TrackUpload {
-	title: string;
-	description: string;
+	title?: string | null;
+	description?: string | null;
 	artist?: string | null;
 	album?: string | null;
-	/** The id of the set the track records. */
-	setId: string;
+	/** The id of the set the track records; none for a track without a set yet. */
+	setId?: string | null;
 	/** One entry per tune of the set, in order. */
 	performances?: PerformanceInput[];
 	file: File;
@@ -112,7 +113,7 @@ export function uploadErrorMessage(status: number): string {
 		case 0:
 			return 'The connection was lost. Your file is still selected: try again.';
 		case 400:
-			return 'A track needs a title, a description, a set and an audio file, and valid performances.';
+			return 'The set or the performances do not fit: choose an existing set, give one entry per tune, or choose no set yet.';
 		case 401:
 			return 'Your session has expired. Log in again, then upload the track again.';
 		case 403:
@@ -266,11 +267,13 @@ export default class TrackService {
 			signal?.addEventListener('abort', () => xhr.abort(), { once: true });
 
 			const form = new FormData();
-			form.append('setId', upload.setId);
-			if (upload.performances?.length)
-				form.append('performances', JSON.stringify(upload.performances));
-			form.append('title', upload.title);
-			form.append('description', upload.description);
+			if (upload.setId) {
+				form.append('setId', upload.setId);
+				if (upload.performances?.length)
+					form.append('performances', JSON.stringify(upload.performances));
+			}
+			if (upload.title) form.append('title', upload.title);
+			if (upload.description) form.append('description', upload.description);
 			if (upload.artist) form.append('artist', upload.artist);
 			if (upload.album) form.append('album', upload.album);
 			form.append('file', upload.file);

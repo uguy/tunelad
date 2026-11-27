@@ -40,7 +40,7 @@ describe('uploadErrorMessage', () => {
 	it('explains each refusal', () => {
 		expect(uploadErrorMessage(413)).toContain('100 MB');
 		expect(uploadErrorMessage(415)).toContain('mp3, m4a, ogg, flac, wav or wma');
-		expect(uploadErrorMessage(400)).toContain('title, a description');
+		expect(uploadErrorMessage(400)).toContain('set or the performances');
 		expect(uploadErrorMessage(401)).toContain('Log in again');
 		expect(uploadErrorMessage(403)).toContain('may not upload');
 		expect(uploadErrorMessage(0)).toContain('connection was lost');

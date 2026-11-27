@@ -21,15 +21,15 @@
 - [x] 3.4 `TestAudio`: tagged fixtures built with ffmpeg for mp3, m4a, ogg, flac and WMA
 - [x] 3.5 Tests: tag fill per format, partial and blank tags, shared Artist, uploader's values kept, edit before and after, redelivered event, no tags, unreadable audio, ffprobe missing, no analysis request for a Set-less Track, `track.indexed` and search by the tag title
 - [x] 3.6 `ModularApplicationTests` still passes
-- [ ] 3.7 Commit `feat(identification): fill a track's blank metadata from the file's tags`
+- [x] 3.7 Commit `feat(identification): fill a track's blank metadata from the file's tags`
 
 ## 4. Frontend
 
-- [ ] 4.1 `Tracks.ts`: optional description, upload payload sends only filled fields, new 400 message and the optional-Set path
-- [ ] 4.2 Upload page: file first, "(optional)" labels, hint, "No set yet" default hiding Performance fields, file-missing error; theme tokens only, accessible labels
-- [ ] 4.3 `TrackList` and the edit form: no empty description, artist or album lines, no Tunes section without a Set, description optional in the form
-- [ ] 4.4 Tests: vitest for the form and list; Playwright e2e with `page.route` for a file-only upload and the list updating when `track.indexed` arrives; update existing e2e that expect a required title
-- [ ] 4.5 `bun run format`, lint and check; run `svelte-autofixer` on the changed components
+- [x] 4.1 `Tracks.ts`: optional description, upload payload sends only filled fields, new 400 message and the optional-Set path
+- [x] 4.2 Upload page: file first, "(optional)" labels, hint, "No set yet" default hiding Performance fields, file-missing error; theme tokens only, accessible labels
+- [x] 4.3 `TrackList` and the edit form: no empty description, artist or album lines, no Tunes section without a Set, description optional in the form
+- [x] 4.4 Tests: vitest for the form and list; Playwright e2e with `page.route` for a file-only upload and the list updating when `track.indexed` arrives; update existing e2e that expect a required title
+- [x] 4.5 `bun run format`, lint and check; run `svelte-autofixer` on the changed components
 - [ ] 4.6 Commit `feat(ui): upload a track with only its audio file`
 
 ## 5. Docs
