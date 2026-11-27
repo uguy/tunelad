@@ -23,7 +23,7 @@ An audio recording, by one Artist, of a Set (a single Tune counts as a Set of on
 _Avoid_: Song, media
 
 **Artist**:
-The musician or band that performs a Track. A shared record, created on first use and matched by name.
+The musician or band that performs a Track. A shared record, created on first use and matched by name, ignoring case and surrounding whitespace.
 _Avoid_: Performer, brand
 
 **Performance**:
