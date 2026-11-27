@@ -10,8 +10,8 @@
 
 ## 3. thesession.org import
 
-- [ ] 3.1 `TuneSource` interface and WebClient implementation, `POST /api/tunes/import`, idempotent on `source_id`, 404/502 mapping
-- [ ] 3.2 Tests with a stubbed thesession.org (MockWebServer or stub bean): import, import twice, unknown id, upstream failure. Commit `feat(tune): import tunes from thesession.org`
+- [x] 3.1 `TuneSource` interface and WebClient implementation, `POST /api/tunes/import`, idempotent on `source_id`, 404/502 mapping
+- [x] 3.2 Tests with a stubbed thesession.org (MockWebServer or stub bean): import, import twice, unknown id, upstream failure. Commit `feat(tune): import tunes from thesession.org`
 
 ## 4. UI
 
