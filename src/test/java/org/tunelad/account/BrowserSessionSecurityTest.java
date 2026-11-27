@@ -188,6 +188,30 @@ class BrowserSessionSecurityTest {
                 .satisfies(track -> assertThat(track.owner().displayName()).isEqualTo("Alice Liddell"));
     }
 
+    /** The favourite and playlist routes are state-changing routes like the others: a session needs the token. */
+    @Test
+    void favourite_and_playlist_changes_from_a_session_need_the_token() {
+        var session = aliceSession();
+
+        client.put().uri("/api/tracks/any/favourite").cookie("SESSION", session).exchange()
+                .expectStatus().isForbidden();
+        client.delete().uri("/api/tracks/any/favourite").cookie("SESSION", session).exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void favourite_change_from_a_session_with_the_token_gets_past_csrf() {
+        var csrf = csrfToken();
+
+        // 404 and not 403: the track does not exist, but the request was let through
+        client.put().uri("/api/tracks/unknown/favourite")
+                .cookie("SESSION", aliceSession())
+                .cookie("XSRF-TOKEN", csrf)
+                .header("X-XSRF-TOKEN", csrf)
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
     @Test
     void bearer_request() {
         client.post().uri("/api/tracks")

@@ -23,11 +23,11 @@
 
 ## 4. Favourites backend
 
-- [ ] 4.1 Add `TrackService.findAllById(Collection<String>)` to the `track` module's API and implementation; verify with a track service test (Testcontainers)
-- [ ] 4.2 Create the `favourite` module: `package-info` (`allowedDependencies = { "account", "track", "track::event" }`), `favourite.sql` registered in `db.changelog-master.yaml`, repository, service, `TrackDeleted` listener; verify with Testcontainers tests for marking (idempotent, 404 unknown track), unmarking, listing order (newest first), privacy between users, and cleanup after a track is deleted
-- [ ] 4.3 Publish `FavouriteChanged(accountId, trackId)` from the service and the cleanup listener in a `favourite::event` named interface; verify with a Testcontainers test that each mark, unmark and cleanup publishes it once after commit
-- [ ] 4.4 Add `FavouriteController` (`PUT` and `DELETE /api/tracks/{id}/favourite`, `GET /api/me/favourites`) with OpenAPI annotations and tag "Favourites", and authenticate the routes in `SecurityConfig`; verify with WebTestClient tests for 204, 401 without redirect, 403 without CSRF for a session and success with a bearer token
-- [ ] 4.5 Run `ModularApplicationTests`; verify the module boundaries pass, then commit: `feat(track): add favourite tracks api`
+- [x] 4.1 Add `TrackService.findAllById(Collection<String>)` to the `track` module's API and implementation; verify with a track service test (Testcontainers)
+- [x] 4.2 Create the `favourite` module: `package-info` (`allowedDependencies = { "account", "track", "track::event" }`), `favourite.sql` registered in `db.changelog-master.yaml`, repository, service, `TrackDeleted` listener; verify with Testcontainers tests for marking (idempotent, 404 unknown track), unmarking, listing order (newest first), privacy between users, and cleanup after a track is deleted
+- [x] 4.3 Publish `FavouriteChanged(accountId, trackId)` from the service and the cleanup listener in a `favourite::event` named interface; verify with a Testcontainers test that each mark, unmark and cleanup publishes it once after commit
+- [x] 4.4 Add `FavouriteController` (`PUT` and `DELETE /api/tracks/{id}/favourite`, `GET /api/me/favourites`) with OpenAPI annotations and tag "Favourites", and authenticate the routes in `SecurityConfig`; verify with WebTestClient tests for 204, 401 without redirect, 403 without CSRF for a session and success with a bearer token
+- [x] 4.5 Run `ModularApplicationTests`; verify the module boundaries pass, then commit: `feat(track): add favourite tracks api`
 
 ## 5. Favourites UI
 

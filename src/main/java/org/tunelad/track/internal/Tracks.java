@@ -10,5 +10,8 @@ public interface Tracks {
 
 	Mono<Track> findById(String id);
 
+	/** The tracks with these ids; ids that match no track are ignored, and the order is unspecified. */
+	Flux<Track> findAllById(java.util.Collection<String> ids);
+
 	Mono<Void> delete(Track track);
 }

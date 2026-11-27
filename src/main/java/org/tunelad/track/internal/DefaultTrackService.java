@@ -131,4 +131,10 @@ class DefaultTrackService implements TrackService {
                 .map(trackMapper::toDto);
     }
 
+    @ReactiveTransactional(readOnly = true)
+    @Override
+    public Flux<TrackDTO> findAllById(java.util.Collection<String> ids) {
+        return tracks.findAllById(ids).map(trackMapper::toDto);
+    }
+
 }

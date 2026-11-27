@@ -22,4 +22,7 @@ public interface TrackService {
     Flux<TrackDTO> findAll();
 
     Mono<TrackDTO> findById(String id);
+
+    /** The tracks with these ids, in no particular order; ids that match no track are ignored. */
+    Flux<TrackDTO> findAllById(java.util.Collection<String> ids);
 }

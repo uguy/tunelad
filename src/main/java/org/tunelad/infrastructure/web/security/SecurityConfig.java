@@ -52,7 +52,9 @@ class SecurityConfig {
                                                   ReactiveClientRegistrationRepository clientRegistrations) {
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(HttpMethod.GET, "/api/me").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/api/me", "/api/me/favourites").authenticated()
+                        .pathMatchers(HttpMethod.PUT, "/api/tracks/*/favourite").authenticated()
+                        .pathMatchers(HttpMethod.DELETE, "/api/tracks/*/favourite").authenticated()
                         .pathMatchers(HttpMethod.POST, "/api/tracks").authenticated()
                         .pathMatchers(HttpMethod.PUT, "/api/tracks/*").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/tracks/*").authenticated()
