@@ -99,7 +99,7 @@ class FailedUploadTest extends AbstractApiTest {
                     return DefaultDataBufferFactory.sharedInstance.wrap(new byte[256 * 1024]);
                 })
                 .concatWith(Sinks.<DataBuffer>empty().asMono());
-        var command = new AddTrackCommand("Cancelled", null, null, "Cancelled while stored", defaultSetId(), null, audio,
+        var command = new AddTrackCommand("Cancelled", "cancelled.mp3", null, null, "Cancelled while stored", defaultSetId(), null, audio,
                 TrackFormat.MP3, new TrackOwner("account-alice", "Alice Liddell"));
 
         var upload = trackService.execute(command).subscribe();

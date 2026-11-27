@@ -73,19 +73,79 @@ class TrackApiTest extends AbstractApiTest {
     }
 
     @Test
+    void upload_with_only_a_file() {
+        var body = upload(noSet(), KNEES_UP_MP3).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(body.title()).isEqualTo("Knees_Up");
+        assertThat(body.format()).isEqualTo(TrackFormat.MP3);
+        assertThat(body.owner()).isEqualTo(owner(accountOf(UPLOADER_TOKEN)));
+        assertThat(body.description()).isNull();
+        assertThat(body.artist()).isNull();
+        assertThat(body.album()).isNull();
+        assertThat(body.set()).isNull();
+        assertThat(body.performances()).isEmpty();
+    }
+
+    @Test
     void required_part_missing() {
-        var noTitle = new HashMap<String, String>();
-        noTitle.put("description", "A reel and a song");
-        upload(noTitle, KNEES_UP_MP3).expectStatus().isBadRequest();
-
-        var noDescription = new HashMap<String, String>();
-        noDescription.put("title", "Knees Up");
-        upload(noDescription, KNEES_UP_MP3).expectStatus().isBadRequest();
-
         upload(Map.of("title", "Knees Up", "description", "A reel and a song"), null)
                 .expectStatus().isBadRequest();
 
         assertThat(listTracks()).isEmpty();
+    }
+
+    @Test
+    void long_file_name() {
+        var name = "a".repeat(120) + ".mp3";
+        var file = new org.springframework.core.io.ByteArrayResource(readFixture(KNEES_UP_MP3)) {
+            @Override public String getFilename() { return name; }
+        };
+
+        var body = uploadFile(noSet(), file).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(body.title()).isEqualTo("a".repeat(80));
+    }
+
+    @Test
+    void performances_without_a_set() {
+        var parts = noSet();
+        parts.put("performances", "[{\"key\":\"Em\"}]");
+
+        upload(parts, KNEES_UP_MP3).expectStatus().isBadRequest();
+
+        assertThat(listTracks()).isEmpty();
+    }
+
+    // --- Requirement: A track may have no Set ---------------------------------------------------
+
+    @Test
+    void fetch_play_edit_and_delete_a_track_without_a_set() throws IOException {
+        var id = upload(noSet(), KNEES_UP_MP3).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+
+        var fetched = getTrack(id);
+        assertThat(fetched.set()).isNull();
+        assertThat(fetched.performances()).isEmpty();
+        assertThat(play(id, null).expectStatus().isOk().expectBody(byte[].class).returnResult().getResponseBody())
+                .isEqualTo(new ClassPathResource(KNEES_UP_MP3).getContentAsByteArray());
+        edit(id, Map.of("title", "Knees Up"), UPLOADER_TOKEN).expectStatus().isOk();
+        delete(id, UPLOADER_TOKEN).expectStatus().isNoContent();
+    }
+
+    private Map<String, String> noSet() {
+        var parts = new HashMap<String, String>();
+        parts.put("setId", null);
+        return parts;
+    }
+
+    private static byte[] readFixture(String path) {
+        try {
+            return new ClassPathResource(path).getContentAsByteArray();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Test
@@ -101,12 +161,17 @@ class TrackApiTest extends AbstractApiTest {
 
     @Test
     void blank_title_or_description() {
-        upload(Map.of("title", "  ", "description", "A reel and a song"), KNEES_UP_MP3)
-                .expectStatus().isBadRequest();
-        upload(Map.of("title", "Knees Up", "description", ""), KNEES_UP_MP3)
-                .expectStatus().isBadRequest();
+        var parts = noSet();
+        parts.put("title", "  ");
+        parts.put("description", "");
+        parts.put("setId", "");
 
-        assertThat(listTracks()).isEmpty();
+        var body = upload(parts, KNEES_UP_MP3).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
+
+        assertThat(body.title()).isEqualTo("Knees_Up");
+        assertThat(body.description()).isNull();
+        assertThat(body.set()).isNull();
     }
 
     // --- Requirement: Accepted audio formats ----------------------------------------------------
@@ -392,10 +457,22 @@ class TrackApiTest extends AbstractApiTest {
 
         edit(id, Map.of("description", "A reel and a song"), UPLOADER_TOKEN).expectStatus().isBadRequest();
         edit(id, Map.of("title", "  ", "description", "A reel and a song"), UPLOADER_TOKEN).expectStatus().isBadRequest();
-        edit(id, Map.of("title", "Knees Up (live)"), UPLOADER_TOKEN).expectStatus().isBadRequest();
-        edit(id, Map.of("title", "Knees Up (live)", "description", ""), UPLOADER_TOKEN).expectStatus().isBadRequest();
 
         assertThat(getTrack(id).title()).isEqualTo("Knees Up");
+    }
+
+    @Test
+    void optional_metadata_omitted_clears_the_description_too() {
+        var id = upload(Map.of("title", "Knees Up", "description", "A reel", "artist", "Breabach", "album", "Live"),
+                KNEES_UP_MP3).expectStatus().isCreated().expectBody(TrackDTO.class).returnResult().getResponseBody().id();
+
+        edit(id, Map.of("title", "Knees Up"), UPLOADER_TOKEN).expectStatus().isOk();
+        edit(id, Map.of("title", "Knees Up", "description", " "), UPLOADER_TOKEN).expectStatus().isOk();
+
+        var track = getTrack(id);
+        assertThat(track.description()).isNull();
+        assertThat(track.artist()).isNull();
+        assertThat(track.album()).isNull();
     }
 
     @Test

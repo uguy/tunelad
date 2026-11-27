@@ -84,14 +84,16 @@ class TrackPerformancesTest extends AbstractApiTest {
     }
 
     @Test
-    void setId_missing() {
+    void setId_missing_gives_a_track_without_a_set() {
         twoTuneSet();
         var parts = parts(null);
         parts.put("setId", null);
 
-        upload(parts, KNEES_UP_MP3).expectStatus().isBadRequest();
+        var track = upload(parts, KNEES_UP_MP3).expectStatus().isCreated()
+                .expectBody(TrackDTO.class).returnResult().getResponseBody();
 
-        assertThat(count("track_tracks", null)).isZero();
+        assertThat(track.set()).isNull();
+        assertThat(track.performances()).isEmpty();
     }
 
     @Test

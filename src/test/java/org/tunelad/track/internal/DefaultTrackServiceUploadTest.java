@@ -38,7 +38,7 @@ class DefaultTrackServiceUploadTest {
     private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, artists, mediaStore,
             sets, mock(TransactionalEvents.class), mock(ReactiveTransactionManager.class));
 
-    private final AddTrackCommand command = new AddTrackCommand("Knees Up", null, null, "A reel and a song",
+    private final AddTrackCommand command = new AddTrackCommand("Knees Up", "knees-up.flac", null, null, "A reel and a song",
             "set-1", null, Flux.empty(), TrackFormat.FLAC, new TrackOwner("account-alice", "Alice Liddell"));
 
     @org.junit.jupiter.api.BeforeEach

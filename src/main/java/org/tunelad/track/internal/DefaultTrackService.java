@@ -33,6 +33,8 @@ import java.util.List;
 @Service
 class DefaultTrackService implements TrackService {
 
+    private static final int TITLE_MAX = 80;
+
     private final TrackMapper trackMapper;
 
     private final Tracks tracks;
@@ -67,30 +69,36 @@ class DefaultTrackService implements TrackService {
     @Override
     public Mono<TrackDTO> execute(AddTrackCommand command) {
         // The Set and the Performances are checked before any audio is written: a refused upload stores nothing
+        if (!org.springframework.util.StringUtils.hasText(command.setId())) {
+            if (command.performances() != null) {
+                return Mono.error(new BadRequestException("Performances need a set."));
+            }
+            return store(command, null);
+        }
         return sets.find(command.setId())
                 .switchIfEmpty(Mono.error(() -> new BadRequestException("No set found for id: " + command.setId())))
                 .flatMap(set -> store(command, set));
     }
 
     private Mono<TrackDTO> store(AddTrackCommand command, SetDTO set) {
-        var inputs = command.performances() == null ? defaults(set.tunes().size()) : command.performances();
-        if (inputs.size() != set.tunes().size()) {
-            return Mono.error(new BadRequestException("The set has " + set.tunes().size() + " tunes: one performance each."));
-        }
-        inputs.forEach(PerformanceInput::validate);
         var track = new Track();
-        track.setSetId(set.id());
-        track.setTuneSet(set);
-        track.setPerformances(new java.util.ArrayList<>(java.util.stream.IntStream.range(0, inputs.size())
-                .mapToObj(i -> new Performance(i + 1, set.tunes().get(i).id(), inputs.get(i).offset(),
-                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc(),
-                        org.tunelad.track.IdentificationState.PENDING))
-                .toList()));
+        if (set != null) {
+            var inputs = command.performances() == null ? defaults(set.tunes().size()) : command.performances();
+            if (inputs.size() != set.tunes().size()) {
+                return Mono.error(new BadRequestException("The set has " + set.tunes().size() + " tunes: one performance each."));
+            }
+            inputs.forEach(PerformanceInput::validate);
+            track.setSetId(set.id());
+            track.setTuneSet(set);
+            track.setPerformances(performancesOf(set, inputs));
+        }
+
         // Known up front, so the audio can be stored under the track's id before the track exists
         track.setId(java.util.UUID.randomUUID().toString());
-        track.setTitle(command.title());
-        track.setAlbum(command.album());
-        track.setDescription(command.description());
+        track.setTitle(titleOf(command));
+        track.setAlbum(blankToNull(command.album()));
+        track.setDescription(blankToNull(command.description()));
+        track.setProvidedTextFields(providedTextFields(command));
         track.setFormat(command.format());
         track.setOwner(command.owner());
         var id = track.getId();
@@ -108,6 +116,40 @@ class DefaultTrackService implements TrackService {
                 .onErrorResume(error -> deleteAudio(id).then(Mono.error(error)))
                 // Nobody waits for the result of a cancelled upload: the deletion runs on its own
                 .doOnCancel(() -> deleteAudio(id).subscribe());
+    }
+
+    private static List<Performance> performancesOf(SetDTO set, List<PerformanceInput> inputs) {
+        return new java.util.ArrayList<>(java.util.stream.IntStream.range(0, inputs.size())
+                .mapToObj(i -> new Performance(i + 1, set.tunes().get(i).id(), inputs.get(i).offset(),
+                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc(),
+                        org.tunelad.track.IdentificationState.PENDING))
+                .toList());
+    }
+
+    /** The title given, else the file name without its extension, cut to the title limit; "Untitled" when nothing is left. */
+    private static String titleOf(AddTrackCommand command) {
+        var given = blankToNull(command.title());
+        if (given != null) {
+            return given;
+        }
+        var name = command.fileName() == null ? "" : command.fileName().strip();
+        name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+        var dot = name.lastIndexOf('.');
+        name = (dot > 0 ? name.substring(0, dot) : name).strip();
+        return name.isEmpty() ? "Untitled" : name.substring(0, Math.min(name.length(), TITLE_MAX));
+    }
+
+    private static List<String> providedTextFields(AddTrackCommand command) {
+        var provided = new java.util.ArrayList<String>();
+        if (blankToNull(command.title()) != null) provided.add("title");
+        if (blankToNull(command.description()) != null) provided.add("description");
+        if (blankToNull(command.artist()) != null) provided.add("artist");
+        if (blankToNull(command.album()) != null) provided.add("album");
+        return provided;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static List<PerformanceInput> defaults(int count) {
@@ -131,9 +173,11 @@ class DefaultTrackService implements TrackService {
                         .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
                         .flatMap(artist -> {
                             track.setTitle(command.title());
-                            track.setDescription(command.description());
+                            track.setDescription(blankToNull(command.description()));
                             track.setArtist(artist.orElse(null));
-                            track.setAlbum(command.album());
+                            track.setAlbum(blankToNull(command.album()));
+                            // Whatever an edit leaves, tags read from the audio must not take it back
+                            track.setProvidedTextFields(new java.util.ArrayList<>(List.of("title", "description", "artist", "album")));
                             return tracks.save(track);
                         }))
                 .map(trackMapper::toDto)

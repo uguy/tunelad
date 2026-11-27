@@ -20,7 +20,6 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.ServerWebInputException;
 import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 import org.tunelad.account.AccountRef;
@@ -61,10 +60,13 @@ public class TrackController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload a track",
-            description = "Stores a track with its audio, owned by the authenticated user, and returns it. The audio "
-                    + "format is told by the file name's extension: mp3, m4a, ogg, flac, wav or wma. Files over 100 MB are "
-                    + "refused. BREAKING: the track records an existing set, given as `setId`, and gets one performance "
-                    + "per tune of that set. The optional `performances` part is a JSON array with one object per tune, in "
+            description = "Stores a track with its audio, owned by the authenticated user, and returns it. Only `file` "
+                    + "is required. The audio format is told by the file name's extension: mp3, m4a, ogg, flac, wav or wma. "
+                    + "Files over 100 MB are refused. A track given no `title` is titled with its file name without the extension; "
+                    + "shortly after the upload, the file's tags fill the title, description, artist and album that were left "
+                    + "blank, announced by the `track.indexed` live event. A blank text part counts as omitted. BREAKING: a track's "
+                    + "`description` may now be absent. The optional `setId` makes the track record an existing set, with one "
+                    + "performance per tune of that set; without it the track has no set and no performances. The optional `performances` part is a JSON array with one object per tune, in "
                     + "the set's order, each with optional `startOffsetSeconds` (0 to 86400, default 0), `key` (at most 30 "
                     + "characters) and `notes` (at most 2000), e.g. `[{\"startOffsetSeconds\":0,\"key\":\"Em\"},{\"startOffsetSeconds\":95.5,\"key\":\"G\"}]`.",
             security = @SecurityRequirement(name = "bearerAuth"))
@@ -72,23 +74,20 @@ public class TrackController {
             @ApiResponse(responseCode = "201", description = "Track stored",
                     headers = @Header(name = HttpHeaders.LOCATION, description = "The track's URL, `/api/tracks/{id}`"),
                     content = @Content(schema = @Schema(implementation = TrackDTO.class))),
-            @ApiResponse(responseCode = "400", description = "A required part (title, description, setId, file) is missing, a part is blank, the set does not exist, or the performances are not one valid entry per tune of the set", content = @Content),
+            @ApiResponse(responseCode = "400", description = "The file part is missing, the set does not exist, or the performances are given without a set or are not one valid entry per tune of the set", content = @Content),
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
             @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content),
             @ApiResponse(responseCode = "413", description = "The audio file is larger than 100 MB", content = @Content),
             @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac, wav or wma file", content = @Content)
     })
     public Mono<ResponseEntity<TrackDTO>> create(
-            @RequestPart("title") String title,
-            @RequestPart("description") String description,
-            @RequestPart("setId") String setId,
+            @RequestPart(name = "title", required = false) String title,
+            @RequestPart(name = "description", required = false) String description,
+            @RequestPart(name = "setId", required = false) String setId,
             @RequestPart(name = "performances", required = false) String performances,
             @RequestPart(name = "artist", required = false) String artist,
             @RequestPart(name = "album", required = false) String album,
             @RequestPart("file") FilePart filePart) {
-        if (!StringUtils.hasText(title) || !StringUtils.hasText(description) || !StringUtils.hasText(setId)) {
-            return Mono.error(new ServerWebInputException("A track needs a title, a description and a set."));
-        }
         List<PerformanceInput> inputs;
         try {
             inputs = StringUtils.hasText(performances)
@@ -103,7 +102,8 @@ public class TrackController {
                     "Supported audio formats are mp3, m4a, ogg, flac, wav and wma."));
         }
         return authenticatedAccount()
-                .map(account -> new AddTrackCommand(title, artist, album, description, setId.trim(), inputs, filePart.content(),
+                .map(account -> new AddTrackCommand(title, filePart.filename(), artist, album, description,
+                        StringUtils.hasText(setId) ? setId.trim() : null, inputs, filePart.content(),
                         format.get(), new TrackOwner(account.id(), account.displayName())))
                 .flatMap(service::execute)
                 .map(track -> ResponseEntity.created(URI.create("/api/tracks/" + track.id())).body(track));
@@ -111,14 +111,14 @@ public class TrackController {
 
     @PutMapping(value = "{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Edit a track",
-            description = "Replaces the track's title, description, artist and album; an omitted artist or album is "
-                    + "cleared. An omitted `performances` leaves the performances unchanged; given, it replaces their start offset, key and "
+            description = "Replaces the track's title, description, artist and album; only the title is required, and an omitted description, "
+                    + "artist or album is cleared. BREAKING: the description is no longer required. An omitted `performances` leaves the performances unchanged; given, it replaces their start offset, key and "
                     + "notes, one entry per performance in order. The set, audio, format and owner stay unchanged. Only the track's owner or an administrator "
                     + "may edit it.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Track updated", content = @Content(schema = @Schema(implementation = TrackDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Title or description missing or blank, or performances that are not one valid entry per performance of the track", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Title missing or blank, or performances that are not one valid entry per performance of the track", content = @Content),
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
             @ApiResponse(responseCode = "403", description = "Not the track's owner or an administrator, or a browser session request without a valid CSRF token", content = @Content),
             @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
