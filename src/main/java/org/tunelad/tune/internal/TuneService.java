@@ -1,5 +1,6 @@
 package org.tunelad.tune.internal;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.tunelad.account.AccountRef;
 import org.tunelad.infrastructure.BadRequestException;
@@ -14,6 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 /** Creates, imports and lists Tunes. */
+@Slf4j
 @Service
 public class TuneService implements TuneCatalog {
 
@@ -53,6 +55,15 @@ public class TuneService implements TuneCatalog {
 						.map(tune -> new Imported(tune, true))
 						// two imports of one id at once: the loser's insert did nothing, so read the winner's
 						.switchIfEmpty(Mono.defer(() -> tunes.findBySourceId(sourceId).map(tune -> new Imported(tune, false))))));
+	}
+
+	@Override
+	public Mono<TuneDTO> findOrImport(AccountRef owner, int sourceId) {
+		return importTune(owner, sourceId).map(Imported::tune)
+				.onErrorResume(error -> {
+					log.warn("Could not find or import thesession.org tune {}: {}", sourceId, error.toString());
+					return Mono.empty();
+				});
 	}
 
 	public Flux<TuneDTO> list(DanceType type, String text) {

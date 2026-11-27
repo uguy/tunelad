@@ -53,6 +53,11 @@ public class SetService implements SetCatalog {
 				.flatMap(created -> sets.findByList(list).flatMap(this::toDto).map(set -> new Created(set, created)));
 	}
 
+	@Override
+	public Mono<SetDTO> findOrCreate(AccountRef creator, List<String> tuneIds) {
+		return create(creator, tuneIds).map(Created::set);
+	}
+
 	public Mono<SetDTO> findById(String id) {
 		return sets.findById(id).flatMap(this::toDto)
 				.switchIfEmpty(Mono.error(() -> new NotFoundException("No set found for id: " + id)));

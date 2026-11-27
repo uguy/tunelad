@@ -18,6 +18,7 @@ import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.ApplyTags;
+import org.tunelad.track.command.AttachSet;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.ProposePerformances;
@@ -207,6 +208,34 @@ class DefaultTrackService implements TrackService {
                     track.setPerformances(new java.util.ArrayList<>(proposed));
                     return tracks.savePerformances(track).thenReturn(track);
                 })
+                .map(trackMapper::toDto)
+                .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
+    }
+
+    /**
+     * Locks the track's row like {@link #execute(ProposePerformances)}, so that of two analyses, or an analysis and a
+     * Set given meanwhile, the first wins and the others find a Set and do nothing.
+     */
+    @ReactiveTransactional
+    @Override
+    public Mono<TrackDTO> execute(AttachSet command) {
+        return tracks.findByIdForUpdate(command.trackId())
+                .filter(track -> track.getSetId() == null)
+                .flatMap(track -> sets.find(command.setId())
+                        .switchIfEmpty(Mono.error(() -> new IllegalStateException("No set found for id: " + command.setId())))
+                        .flatMap(set -> {
+                            if (set.tunes().size() != command.startOffsets().size()) {
+                                return Mono.error(new IllegalArgumentException("The set has " + set.tunes().size()
+                                        + " tunes: one start offset each."));
+                            }
+                            var performances = performancesOf(set, defaults(set.tunes().size())).stream()
+                                    .map(p -> p.proposed(command.startOffsets().get(p.position() - 1)))
+                                    .toList();
+                            track.setSetId(set.id());
+                            track.setTuneSet(set);
+                            track.setPerformances(new java.util.ArrayList<>(performances));
+                            return tracks.save(track);
+                        }))
                 .map(trackMapper::toDto)
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
     }

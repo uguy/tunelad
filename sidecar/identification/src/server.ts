@@ -86,9 +86,10 @@ export async function start(port: number, cacheDir: string, log: (message: strin
         return send(ready ? 200 : 503, { status: ready ? 'UP' : 'DOWN' });
       }
       if (request.method === 'POST' && url.pathname === '/identify') {
-        // The tunes of the Track's Set, as thesession.org ids: only these can be reported
-        const tunes = url.searchParams.get('tunes')?.split(',').map(t => t.trim()).filter(Boolean);
-        if (!tunes?.length) throw new HttpError(400, 'The tunes query parameter lists the thesession.org ids to look for.');
+        // The tunes of the Track's Set, as thesession.org ids: only these can be reported. Without them, any tune is
+        const asked = url.searchParams.get('tunes');
+        const tunes = asked === null ? undefined : asked.split(',').map(t => t.trim()).filter(Boolean);
+        if (tunes && !tunes.length) throw new HttpError(400, 'The tunes query parameter lists the thesession.org ids to look for.');
         const body = await readBody(request);
         if (body.length === 0) throw new HttpError(400, 'The request body is the audio.');
         const pcm = await decode(body).catch(error => { throw new HttpError(422, error.message); });

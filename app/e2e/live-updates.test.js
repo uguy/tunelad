@@ -212,6 +212,48 @@ test.describe('the tracks list', () => {
 	});
 });
 
+test.describe('a set derived from the audio', () => {
+	test('shows the tunes of an open track once it has a set', async ({ page }) => {
+		let whole = { ...KNEES_UP, set: null, performances: [] };
+		await page.route('**/api/tracks/track-1', (route) => route.fulfill({ json: whole }));
+		await openTracks(page, { tracks: [KNEES_UP] });
+		await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+		await expect(page.getByText('Knees Up, described').first()).toBeVisible();
+		await expect(page.getByRole('list', { name: 'tunes of Knees Up' })).toHaveCount(0);
+
+		whole = {
+			...KNEES_UP,
+			set: { id: 'set-1', tunes: [] },
+			performances: [
+				{
+					position: 1,
+					tuneId: 'tune-1',
+					tuneName: "Cooley's",
+					danceType: 'reel',
+					startOffsetSeconds: 0,
+					identification: 'identified'
+				},
+				{
+					position: 2,
+					tuneId: 'tune-2',
+					tuneName: 'The Kesh',
+					danceType: 'jig',
+					startOffsetSeconds: 95,
+					identification: 'identified'
+				}
+			]
+		};
+		const tunes = page.getByRole('list', { name: 'tunes of Knees Up' }).getByRole('listitem');
+		// The event is ignored until the details have been fetched once, so it is sent again until it is taken in
+		await expect(async () => {
+			await emit(page, 'track.indexed', KNEES_UP.id);
+			await expect(tunes).toHaveCount(2, { timeout: 500 });
+		}).toPass();
+		await expect(tunes.nth(0)).toContainText("Cooley's");
+		await expect(tunes.nth(1)).toContainText('starts at 1:35');
+	});
+});
+
 test.describe('the live connection', () => {
 	test('is one per tab, however much the user navigates', async ({ page }) => {
 		await openTracks(page);

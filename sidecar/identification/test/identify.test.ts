@@ -21,8 +21,8 @@ before(async () => {
 
 after(() => service.close());
 
-const identify = (tunes: string, body: Uint8Array = fs.readFileSync(FIXTURE)) =>
-  fetch(`${url}/identify?tunes=${tunes}`, { method: 'POST', body });
+const identify = (tunes: string | null, body: Uint8Array = fs.readFileSync(FIXTURE)) =>
+  fetch(tunes === null ? `${url}/identify` : `${url}/identify?tunes=${tunes}`, { method: 'POST', body });
 
 test('health is up once the engine is loaded', async () => {
   const response = await fetch(`${url}/health`);
@@ -47,8 +47,23 @@ test('only reports the tunes asked for', async () => {
   assert.deepEqual(await response.json(), []);
 }, { timeout: 120_000 });
 
-test('refuses a request without tunes', async () => {
-  assert.equal((await fetch(`${url}/identify`, { method: 'POST', body: 'x' })).status, 400);
+test('reports any tune it hears when none is asked for', async () => {
+  const started = Date.now();
+  const response = await identify(null);
+  console.log(`open-ended pass: ${Date.now() - started} ms`);
+  assert.equal(response.status, 200);
+  const detections = await response.json() as { tuneId: string; confidence: number }[];
+  const mossy = detections.find(d => d.tuneId === MOSSY_BANKS);
+  assert.ok(mossy, `The Mossy Banks not in ${JSON.stringify(detections)}`);
+  assert.ok(mossy.confidence > 0.4, `confidence ${mossy.confidence}`);
+}, { timeout: 300_000 });
+
+test('refuses an empty list of tunes', async () => {
+  assert.equal((await identify('')).status, 400);
+});
+
+test('refuses a request without a body', async () => {
+  assert.equal((await identify(null, new Uint8Array())).status, 400);
 });
 
 test('refuses an empty body', async () => {

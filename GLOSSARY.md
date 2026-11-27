@@ -40,7 +40,7 @@ The ABC notation a Tune carries on its own, imported from a source such as these
 ### Identification
 
 **Identification**:
-The automatic analysis of a Track's audio, run in the background after upload. It reads the file's tags (title, artist, album, comment) to fill the Track's fields that no Account provided, and proposes where each Tune of its Set starts, by recognising the Tunes in the audio (Transcriptions are still written by hand). A Track's Performances are pending (not analysed yet, or the analysis could not be done), identified (proposed by the machine), nothing found (an analysis finished without hearing the Tune) or corrected (edited by an Account); manual corrections are never overwritten by a re-run.
+The automatic analysis of a Track's audio, run in the background after upload. It reads the file's tags (title, artist, album, comment) to fill the Track's fields that no Account provided, and proposes where each Tune of its Set starts, by recognising the Tunes in the audio (Transcriptions are still written by hand). A Track's Performances are pending (not analysed yet, or the analysis could not be done), identified (proposed by the machine), nothing found (an analysis finished without hearing the Tune) or corrected (edited by an Account); manual corrections are never overwritten by a re-run. For a Track that has no Set, Identification listens for any Tune and derives the Set itself: the Tunes it is confident about (importing from thesession.org those the catalogue lacks), in the order first heard, become the Track's Set, found or created like any Set, with one identified Performance each. A Set is given once, and never replaces one an Account chose.
 _Avoid_: Recognition, tagging
 
 ### People and lists

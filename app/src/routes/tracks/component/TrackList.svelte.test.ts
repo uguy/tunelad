@@ -150,3 +150,41 @@ describe('waveforms of the tracks list', () => {
 		expect(asks('track-1')).toBe(1);
 	});
 });
+
+describe('the details of a track without a set', () => {
+	it('show the tunes once the track is indexed again with a set', async () => {
+		let whole: Track = { ...track('track-1', 'Knees Up'), set: undefined, performances: [] };
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: RequestInfo | URL) => {
+				const path = new URL(String(input), 'http://localhost').pathname;
+				return path.endsWith('/waveform') ? Response.json(PENDING) : Response.json(whole);
+			})
+		);
+		await render(TrackList, { tracks: [track('track-1', 'Knees Up')] });
+		await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+		await expect.element(page.getByText('Knees Up, described').first()).toBeVisible();
+		await expect.element(page.getByRole('heading', { name: 'Tunes' })).not.toBeInTheDocument();
+
+		whole = {
+			...whole,
+			set: { id: 'set-1', tunes: [{ id: 'tune-1', name: "Cooley's", danceType: 'reel' }] },
+			performances: [
+				{
+					position: 1,
+					tuneId: 'tune-1',
+					tuneName: "Cooley's",
+					danceType: 'reel',
+					startOffsetSeconds: 12,
+					identification: 'identified'
+				}
+			]
+		};
+		source().emit('track.indexed', { type: 'track.indexed', id: 'track-1' });
+
+		await expect.element(page.getByRole('heading', { name: 'Tunes' })).toBeVisible();
+		await expect
+			.element(page.getByRole('list', { name: 'tunes of Knees Up' }))
+			.toHaveTextContent("1. Cooley's reel · starts at 0:12 Identified from the audio");
+	});
+});

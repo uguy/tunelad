@@ -25,17 +25,32 @@ class CadenceSource implements IdentificationSource {
     }
 
     @Override
-    public Flux<DetectedTune> detect(Flux<DataBuffer> audio, Collection<String> tuneIds) {
-        if (tuneIds.isEmpty()) {
-            return Flux.empty();
-        }
+    public Flux<DetectedTune> detectAny(Flux<DataBuffer> audio) {
+        return request(audio, null).sort(Comparator.comparingDouble(DetectedTune::start));
+    }
+
+    private Flux<DetectedTune> request(Flux<DataBuffer> audio, Collection<String> tuneIds) {
         return client.post()
-                .uri(uri -> uri.path("/identify").queryParam("tunes", String.join(",", tuneIds)).build())
+                .uri(uri -> {
+                    uri.path("/identify");
+                    if (tuneIds != null) {
+                        uri.queryParam("tunes", String.join(",", tuneIds));
+                    }
+                    return uri.build();
+                })
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(audio, DataBuffer.class)
                 .retrieve()
                 .bodyToFlux(DetectedTune.class)
-                .timeout(properties.timeout())
+                .timeout(properties.timeout());
+    }
+
+    @Override
+    public Flux<DetectedTune> detect(Flux<DataBuffer> audio, Collection<String> tuneIds) {
+        if (tuneIds.isEmpty()) {
+            return Flux.empty();
+        }
+        return request(audio, tuneIds)
                 // Whatever the sidecar says, only the Tunes asked for are reported, in time order
                 .filter(detected -> tuneIds.contains(detected.tuneId()))
                 .sort(Comparator.comparingDouble(DetectedTune::start));
