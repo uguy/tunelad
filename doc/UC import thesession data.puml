@@ -1,0 +1,16 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Admin -> App : Start the thesession.org import
+App -> App : Download tunes.csv, aliases.csv and recordings.csv at run time (nothing stored in git)
+App -> App : Create or update Tunes by thesession.org id\n(first setting only, aliases, composer)
+App -> App : Create Albums with unclassified Artists and catalogue Tracks\n(no audio; Performances unresolved when the tune is unidentified)
+App -> App : Give a Track a Set only when all its Performances are resolved
+return Import report (created, updated, unresolved)
+Admin -> App : Run it again later with a newer dump (idempotent, adds or updates only)
+
+Bob -> App : Mark an imported Artist as a Band or a Musician
+Bob -> App : Add Musicians to a Band
+@enduml

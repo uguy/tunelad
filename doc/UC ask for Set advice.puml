@@ -1,0 +1,14 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Bob -> App : Add the tunes he plays to his Repertoire
+Alice -> App : Add the tunes she plays to her Repertoire
+Bob -> App : Create a Set (named, ordered Tunes, known to him or not)
+Bob -> App : Ask for advice to build the Set to play with Alice (one or more partners)\noptionally filtered by Dance type (default: the Set's) and key
+App -> App : Take the Tunes in the partners' Repertoires, not already in the Set\nRank by number of partners who play each Tune, then by name
+Bob <-- App : Matching Tunes, each marked "you play it" or "you don't yet"
+Bob -> App : Pick one and add it to his Set
+Bob -> App : Share the Set with Alice (she adds the same Set by reference, no copy)
+@enduml
