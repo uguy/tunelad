@@ -82,7 +82,7 @@ This simple app allows to store an mp3 file with some description and play it vi
   list with add, move up or down and remove buttons, and `POST /api/sets` answers with the existing set when the list has one already
 * Identification: after an upload, the application hears the track's audio and proposes where each of the set's tunes starts
   (the tunes that came from thesession.org; the others cannot be recognised). Each performance says whether it was identified
-  from the audio, corrected by someone, or not identified; a performance that was corrected is never changed by a later run.
+  from the audio, nothing was found for it, it was corrected by someone, or it is not analysed yet; a performance that was corrected is never changed by a later run.
   The owner or an administrator can ask again from the track's details (`POST /api/tracks/{id}/identification`). The analysis runs in a sidecar
   (<<identification-sidecar>>), and uploads work without it
 * Favourites: a heart on every track (list and player bar) for logged-in users, and a page that lists them

@@ -3,7 +3,7 @@ import type { TuneSet } from '../sets/Sets.js';
 import type { PerformanceInput } from './Performances.js';
 
 /** Where a performance stands in identification of the audio. */
-export type IdentificationState = 'pending' | 'identified' | 'corrected';
+export type IdentificationState = 'pending' | 'identified' | 'nothing_found' | 'corrected';
 
 /** A track as the API returns it. */
 export interface Track {

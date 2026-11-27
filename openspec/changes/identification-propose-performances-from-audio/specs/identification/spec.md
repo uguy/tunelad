@@ -10,26 +10,49 @@ After a Track is saved with a Set, the system SHALL start Identification of its 
 - **AND** both Performances of the track have the state `pending`
 
 ### Requirement: Proposals fill Performances
-When Identification finishes, the system SHALL, for each Performance whose Tune the analysis detected in the Track's audio, propose the detection's start as the Performance's start offset and set its state to `identified`. Only Tunes of the Track's Set SHALL be accepted: a detected Tune that is not in the Set is ignored. A Performance whose Tune was not detected SHALL keep its values and its state `pending`.
+When Identification finishes, the system SHALL, for each Performance whose Tune the analysis detected in the Track's audio, propose the detection's start as the Performance's start offset and set its state to `identified`. Only Tunes of the Track's Set SHALL be accepted: a detected Tune that is not in the Set is ignored.
 
 #### Scenario: Proposal accepted
 - **GIVEN** a track of the Set "Cooley's" then "The Kesh" whose Performances are `pending`, and the analysis detects "The Kesh" starting at 95.5 s
 - **WHEN** Identification finishes
 - **THEN** the second Performance has start offset 95.5 and the state `identified`
-- **AND** the first Performance is unchanged and `pending`
 
 #### Scenario: Tune outside the Set
 - **GIVEN** the analysis detects a Tune that is not in the Track's Set
 - **WHEN** Identification finishes
-- **THEN** no Performance is changed
+- **THEN** no Performance takes its start offset
+
+#### Scenario: A later run finds it
+- **GIVEN** a Performance that is `nothing_found`
+- **WHEN** Identification is run again and detects its Tune
+- **THEN** the Performance takes the detection's start and is `identified`
+
+### Requirement: Nothing found
+When Identification finishes, a Performance that was `pending`, whose Tune the analysis looked for (it has a thesession.org id) and did not detect, SHALL keep its values and become `nothing_found`. A Performance that was `identified` or `corrected` SHALL be left as it is. A Performance whose Tune has no thesession.org id is never looked for and SHALL stay as it is; if no Tune of the Set has one, the analysis SHALL not be asked for at all.
 
 #### Scenario: Nothing detected
 - **GIVEN** a track whose Performances are `pending` and the analysis detects none of its Tunes
 - **WHEN** Identification finishes
-- **THEN** the Performances keep their values and stay `pending`
+- **THEN** the Performances keep their values and are `nothing_found`
+
+#### Scenario: Only some Tunes heard
+- **GIVEN** a track of the Set "Cooley's" then "The Kesh" and the analysis detects only "The Kesh"
+- **WHEN** Identification finishes
+- **THEN** the first Performance is `nothing_found` and the second is `identified`
+
+#### Scenario: A later run no longer hears an identified Tune
+- **GIVEN** a Performance that is `identified`
+- **WHEN** Identification is run again and does not detect its Tune
+- **THEN** the Performance keeps its start offset and stays `identified`
+
+#### Scenario: Tunes that cannot be recognised
+- **GIVEN** a Set whose only Tune was made by hand, with no thesession.org id
+- **WHEN** the track is uploaded
+- **THEN** the analysis is not asked for anything
+- **AND** the Performance stays `pending`
 
 ### Requirement: Manual corrections are never overwritten
-A Performance in the state `corrected` SHALL keep its values through any Identification, including a re-run. A proposal SHALL replace only values of Performances that are `pending` or `identified`.
+A Performance in the state `corrected` SHALL keep its values through any Identification, including a re-run. A proposal SHALL replace only values of Performances that are `pending`, `nothing_found` or `identified`.
 
 #### Scenario: Re-run keeps a correction
 - **GIVEN** an Account edited the start offset of a Performance to 90, making it `corrected`
@@ -53,4 +76,4 @@ If the analysis service is unreachable, times out or answers with an error, Iden
 #### Scenario: Service down
 - **GIVEN** the analysis service is unreachable
 - **WHEN** Identification runs
-- **THEN** the Track and its Performances are unchanged and a re-run is possible
+- **THEN** the Track and its Performances are unchanged, still `pending` (not `nothing_found`), and a re-run is possible

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Identifies a Track: hears its audio and proposes the start of each Performance whose Tune was heard. */
@@ -41,9 +42,10 @@ public class IdentificationService {
     }
 
     /**
-     * Proposes the Performances of the Track with this id. Completes empty, having changed nothing, when the track is
-     * gone, has no Set, none of its Tunes comes from thesession.org, or nothing was heard; the Performances an
-     * Account corrected are never changed. Fails when the analysis cannot be done.
+     * Proposes the Performances of the Track with this id, then says "nothing found" for those still pending whose
+     * Tune was looked for. Completes empty, having changed nothing, when the track is gone, has no Set, or none of its
+     * Tunes comes from thesession.org; the Performances an Account corrected are never changed. Fails, leaving everything as it was, when the analysis
+     * cannot be done.
      */
     public Mono<Void> identify(String trackId) {
         return tracks.findById(trackId)
@@ -56,14 +58,20 @@ public class IdentificationService {
         return tunes.findAllById(tuneIds)
                 .filter(tune -> tune.sourceId() != null)
                 .collectMap(TuneDTO::id, tune -> String.valueOf(tune.sourceId()))
+                // None of the Tunes can be recognised: nothing is asked, and nothing changes
                 .filter(sourceIds -> !sourceIds.isEmpty())
                 .flatMap(sourceIds -> source.detect(media.read(track.id()), sourceIds.values().stream().distinct().toList())
                         .collectList()
-                        .map(heard -> proposals(track, sourceIds, heard)))
-                .filter(proposals -> !proposals.isEmpty())
-                .flatMap(proposals -> tracks.execute(new ProposePerformances(track.id(), proposals)))
+                        .map(heard -> new ProposePerformances(track.id(), proposals(track, sourceIds, heard), searched(track, sourceIds))))
+                .flatMap(tracks::execute)
                 .doOnNext(updated -> log.info("Track {} identified", updated.id()))
                 .then();
+    }
+
+    /** The positions of the Performances whose Tune was looked for: those with a thesession.org id. */
+    static Set<Integer> searched(TrackDTO track, Map<String, String> sourceIds) {
+        return track.performances().stream().filter(p -> sourceIds.containsKey(p.tuneId()))
+                .map(PerformanceDTO::position).collect(Collectors.toSet());
     }
 
     /**

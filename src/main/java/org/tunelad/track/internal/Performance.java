@@ -14,6 +14,13 @@ public record Performance(int position, String tuneId, double startOffsetSeconds
 				same ? identification : IdentificationState.CORRECTED);
 	}
 
+	/** An analysis finished without hearing this Tune: only a Performance nothing was proposed for says so. */
+	public Performance notFound() {
+		return identification == IdentificationState.PENDING
+				? new Performance(position, tuneId, startOffsetSeconds, key, notes, abc, IdentificationState.NOTHING_FOUND)
+				: this;
+	}
+
 	/** Identification's proposal: ignored once an Account corrected the Performance. */
 	public Performance proposed(double startOffsetSeconds) {
 		return identification == IdentificationState.CORRECTED ? this

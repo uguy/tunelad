@@ -22,7 +22,8 @@ public interface TrackService {
 
     /**
      * Applies Identification's proposals to the Track's Performances that no Account corrected, marking them
-     * identified, and returns the track. Proposals for unknown positions are ignored. Completes empty when the
+     * identified, and returns the track. When the analysis finished, the Performances still pending become "nothing
+     * found". Proposals for unknown positions are ignored. Completes empty when the
      * track no longer exists (it may have been deleted while the analysis ran).
      */
     Mono<TrackDTO> execute(ProposePerformances command);

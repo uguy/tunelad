@@ -12,7 +12,7 @@ corrects. The roadmap (#815) needs it now that Performances are recorded per Tra
 
 - New `identification` module: after a Track is saved, it sends the audio and the Tune ids of the Track's Set to a **sidecar** and proposes a start offset for each Performance whose Tune is detected.
 - The sidecar is a Node container running Cadence's recognition engine (FolkFriend WASM, note decoder, Viterbi segmenter; 10 s windows, 5 s hop) behind a small HTTP wrapper. The Java module calls it through the `IdentificationSource` port, so the engine can later be replaced (for example by a Java port).
-- Each Performance gets an Identification state: `pending` (nothing proposed), `identified` (proposed by the machine), `corrected` (edited by an Account).
+- Each Performance gets an Identification state: `pending` (not analysed yet, or the analysis could not be done), `identified` (proposed by the machine), `nothing_found` (an analysis finished without hearing its Tune) or `corrected` (edited by an Account).
 - A proposal fills only Performances that are `pending` or `identified`; a `corrected` Performance is never overwritten, including by a re-run.
 - Editing a Performance by hand (offset, key, notes, Transcription) marks it `corrected`.
 - `PerformanceDTO` gains `identification`; the track view shows the state and lets an Account re-run Identification.
@@ -23,7 +23,7 @@ Assumptions (confirmed with the owner):
 - A Track is still uploaded with its Set. Only Tunes of that Set are accepted; a detection of any other Tune is ignored, which also limits false positives.
 - This slice proposes **start offsets only**. Key and Transcription proposals are a later slice (the engine returns Tune and time, not a key or ABC); #823 is to say so.
 - Start offsets are accurate to about 2.5 s (half a hop); they stay editable.
-- Tunes missing from the thesession.org index (the second reel of the test recording seems to be one) can never be identified; their Performances stay `pending`.
+- Tunes missing from the thesession.org index (the second reel of the test recording seems to be one) can never be identified: once an analysis has looked for them, their Performances say `nothing_found`. A Tune with no thesession.org id (made by hand) is never looked for, so its Performances stay `pending`.
 - The sidecar is AGPL-3.0 / GPL-3.0 code (Cadence and its vendored FolkFriend), accepted as a separate container whose source stays public in this repository with its own `LICENSE` and a notice.
 
 REST change is additive, not breaking (new response field, new endpoint). UI and API both touched.

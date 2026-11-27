@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Performance shows its Identification state
-Every Performance in a track's JSON SHALL carry `identification`, one of `pending`, `identified` or `corrected`. Performances created at upload start as `pending`; Performances stored before Identification existed are `corrected`.
+Every Performance in a track's JSON SHALL carry `identification`, one of `pending`, `identified`, `nothing_found` or `corrected`, written in lowercase. Performances created at upload start as `pending`; Performances stored before Identification existed are `corrected`.
 
 #### Scenario: New track
 - **WHEN** an authenticated client uploads a track for a Set

@@ -96,6 +96,17 @@ class DbTracks implements Tracks {
     }
 
     @Override
+    public Mono<Track> findByIdForUpdate(String id) {
+        return client.sql("SELECT id FROM track_tracks WHERE id = :id FOR UPDATE").bind("id", id).fetch().first()
+                .then(Mono.defer(() -> findById(id)));
+    }
+
+    @Override
+    public Mono<Void> savePerformances(Track track) {
+        return replacePerformances(track.getId(), track.getPerformances());
+    }
+
+    @Override
     public Mono<Void> delete(Track track) {
         // its Performances go with it: ON DELETE CASCADE
         return trackRepository.delete(track);

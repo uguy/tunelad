@@ -146,7 +146,7 @@ test('an invalid start is refused before sending', async ({ page, context }) => 
 const IDENTIFIED = {
 	...WHOLE,
 	performances: [
-		{ ...PERFORMANCES[0], identification: 'pending' },
+		{ ...PERFORMANCES[0], identification: 'nothing_found' },
 		{ ...PERFORMANCES[1], identification: 'identified' }
 	]
 };
@@ -158,7 +158,7 @@ test('each performance says where it stands in identification', async ({ page, c
 	await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
 
 	const tunes = page.getByRole('list', { name: 'tunes of Knees Up' }).getByRole('listitem');
-	await expect(tunes.nth(0)).toContainText('Not identified');
+	await expect(tunes.nth(0)).toContainText('Nothing found in the audio');
 	await expect(tunes.nth(1)).toContainText('Identified from the audio');
 });
 

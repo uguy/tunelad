@@ -140,21 +140,27 @@ class DefaultTrackService implements TrackService {
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
     }
 
+    /**
+     * Locks the track's row for the length of the transaction, so that an Account's edit waits for the proposals (or
+     * the other way round) instead of one overwriting the other, and writes only the Performances: the track's own
+     * row, and its version, stay as they are, so an edit that read the track meanwhile does not fail.
+     */
     @ReactiveTransactional
     @Override
     public Mono<TrackDTO> execute(ProposePerformances command) {
         var proposals = command.proposals().stream()
                 .collect(java.util.stream.Collectors.toMap(ProposePerformances.Proposal::position, ProposePerformances.Proposal::startOffsetSeconds, (first, second) -> second));
-        return tracks.findById(command.trackId())
+        return tracks.findByIdForUpdate(command.trackId())
                 .flatMap(track -> {
                     var proposed = track.getPerformances().stream()
-                            .map(p -> proposals.containsKey(p.position()) ? p.proposed(proposals.get(p.position())) : p)
+                            .map(p -> proposals.containsKey(p.position()) ? p.proposed(proposals.get(p.position()))
+                                    : command.searched().contains(p.position()) ? p.notFound() : p)
                             .toList();
                     if (proposed.equals(track.getPerformances())) {
                         return Mono.empty();
                     }
                     track.setPerformances(new java.util.ArrayList<>(proposed));
-                    return tracks.save(track);
+                    return tracks.savePerformances(track).thenReturn(track);
                 })
                 .map(trackMapper::toDto)
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));

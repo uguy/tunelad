@@ -6,6 +6,7 @@ describe('IdentificationBadge', () => {
 	it.each([
 		['pending', 'Not identified'],
 		['identified', 'Identified from the audio'],
+		['nothing_found', 'Nothing found in the audio'],
 		['corrected', 'Corrected']
 	] as const)('says %s in words', async (state, text) => {
 		const screen = await render(IdentificationBadge, { state });

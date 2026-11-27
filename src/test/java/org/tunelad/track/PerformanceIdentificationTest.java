@@ -10,6 +10,7 @@ import org.tunelad.track.command.ProposePerformances.Proposal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,6 +83,64 @@ class PerformanceIdentificationTest extends AbstractApiTest {
         var updated = edit(track, List.of(Map.of(), Map.of("startOffsetSeconds", 95.5)));
 
         assertThat(states(updated)).containsExactly(IdentificationState.PENDING, IdentificationState.IDENTIFIED);
+    }
+
+    @Test
+    void states_are_lowercase_words_in_the_json() {
+        var track = upload();
+        tracks.execute(new ProposePerformances(track.id(), List.of(new Proposal(2, 95.5)), Set.of(1, 2))).block();
+
+        client.get().uri("/api/tracks/{id}", track.id()).exchange().expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.performances[0].identification").isEqualTo("nothing_found")
+                .jsonPath("$.performances[1].identification").isEqualTo("identified");
+        client.get().uri("/api/tunes/{id}/performances", track.performances().get(1).tuneId()).exchange()
+                .expectBody().jsonPath("$[0].identification").isEqualTo("identified");
+    }
+
+    @Test
+    void nothing_found_for_the_performances_left_pending() {
+        var track = upload();
+
+        var updated = tracks.execute(new ProposePerformances(track.id(), List.of(new Proposal(2, 95.5)), Set.of(1, 2))).block();
+
+        assertThat(updated).isNotNull();
+        assertThat(states(updated)).containsExactly(IdentificationState.NOTHING_FOUND, IdentificationState.IDENTIFIED);
+        assertThat(states(get(track.id()))).containsExactly(IdentificationState.NOTHING_FOUND, IdentificationState.IDENTIFIED);
+    }
+
+    @Test
+    void nothing_found_leaves_identified_and_corrected_performances_alone() {
+        var track = upload();
+        tracks.execute(new ProposePerformances(track.id(), List.of(new Proposal(1, 3)))).block();
+        edit(track, List.of(Map.of("startOffsetSeconds", 3), Map.of("key", "Em")));
+        tracks.execute(new ProposePerformances(track.id(), List.of(new Proposal(1, 4)))).block();
+
+        var result = tracks.execute(new ProposePerformances(track.id(), List.of(), Set.of(1, 2))).block();
+
+        assertThat(result).isNull();
+        // Performance 1 stays identified (the edit changed nothing in it), 2 stays corrected
+        assertThat(states(get(track.id()))).containsExactly(IdentificationState.IDENTIFIED, IdentificationState.CORRECTED);
+    }
+
+    @Test
+    void saving_a_nothing_found_performance_unchanged_keeps_the_state() {
+        var track = upload();
+        tracks.execute(new ProposePerformances(track.id(), List.of(), Set.of(1, 2))).block();
+
+        var updated = edit(track, List.of(Map.of(), Map.of()));
+
+        assertThat(states(updated)).containsOnly(IdentificationState.NOTHING_FOUND);
+    }
+
+    @Test
+    void a_proposal_after_nothing_found_identifies() {
+        var track = upload();
+        tracks.execute(new ProposePerformances(track.id(), List.of(), Set.of(1, 2))).block();
+
+        tracks.execute(new ProposePerformances(track.id(), List.of(new Proposal(1, 3)))).block();
+
+        assertThat(states(get(track.id()))).containsExactly(IdentificationState.IDENTIFIED, IdentificationState.NOTHING_FOUND);
     }
 
     @Test

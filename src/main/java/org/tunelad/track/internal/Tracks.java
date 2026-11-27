@@ -10,6 +10,12 @@ public interface Tracks {
 
 	Mono<Track> findById(String id);
 
+	/** Like {@link #findById}, locking the track's row until the transaction ends. Needs a transaction. */
+	Mono<Track> findByIdForUpdate(String id);
+
+	/** Replaces the track's Performances and nothing else: the track's own row, and its version, are not touched. */
+	Mono<Void> savePerformances(Track track);
+
 	/** Every Performance of the Tune across Tracks, ordered by Track title. */
 	Flux<org.tunelad.track.TunePerformanceDTO> findPerformancesByTune(String tuneId);
 

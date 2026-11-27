@@ -35,3 +35,11 @@
 - [x] 6.2 Comment on #823: key and Transcription proposals move to a later slice
 - [x] 6.3 Run `./mvnw clean verify` and fix failures
 - [x] 6.4 Open the PR titled `feat(identification): propose performances from audio` with `Closes #823` in the body
+
+## 7. Nothing found (decided after the first PR)
+
+- [x] 7.1 State `nothing_found` in `IdentificationState`, a Liquibase changeset widening the check constraint, `Performance.notFound()` and the `searched` positions of `ProposePerformances`; the state is written in lowercase in the API (the first version wrote `PENDING`, which the UI could not read)
+- [x] 7.2 `ProposePerformances` locks the track's row and writes the Performances only, so a run finishing during an edit no longer fails it with an optimistic lock error
+- [x] 7.3 `IdentificationService` marks the searched Performances nothing found, and asks nothing when no Tune has a thesession.org id
+- [x] 7.4 Tests: raw JSON values, nothing found for the searched Performances only, a later run finds it, an identified Tune no longer heard is kept, service down stays pending, `./mvnw clean verify`
+- [x] 7.5 UI: badge text for `nothing_found`; vitest and Playwright. Update the specs, design, `GLOSSARY.md` and README. Commit `feat(identification): say when nothing was found`

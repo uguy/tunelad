@@ -11,6 +11,7 @@
 	const labels: Record<IdentificationState, string> = {
 		pending: 'Not identified',
 		identified: 'Identified from the audio',
+		nothing_found: 'Nothing found in the audio',
 		corrected: 'Corrected'
 	};
 </script>

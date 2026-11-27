@@ -168,7 +168,7 @@ class IdentificationApiTest extends AbstractApiTest {
         assertThat(took).isLessThan(Duration.ofSeconds(3));
         assertThat(states(track)).containsOnly(IdentificationState.PENDING);
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
-                assertThat(states(get(track.id()))).containsExactly(IdentificationState.PENDING, IdentificationState.IDENTIFIED));
+                assertThat(states(get(track.id()))).containsExactly(IdentificationState.NOTHING_FOUND, IdentificationState.IDENTIFIED));
     }
 
     @Test
@@ -178,7 +178,7 @@ class IdentificationApiTest extends AbstractApiTest {
         var track = uploadSet();
 
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
-                assertThat(states(get(track.id()))).containsExactly(IdentificationState.PENDING, IdentificationState.IDENTIFIED));
+                assertThat(states(get(track.id()))).containsExactly(IdentificationState.NOTHING_FOUND, IdentificationState.IDENTIFIED));
         var performances = get(track.id()).performances();
         assertThat(performances.get(1).startOffsetSeconds()).isEqualTo(95.5);
         assertThat(performances.get(0).startOffsetSeconds()).isZero();
@@ -194,16 +194,45 @@ class IdentificationApiTest extends AbstractApiTest {
         var track = uploadSet();
         settle(1);
 
-        assertThat(states(get(track.id()))).containsOnly(IdentificationState.PENDING);
+        assertThat(states(get(track.id()))).containsOnly(IdentificationState.NOTHING_FOUND);
         assertThat(get(track.id()).performances()).extracting(PerformanceDTO::startOffsetSeconds).containsOnly(0.0);
     }
 
     @Test
     void nothing_detected() {
         var track = uploadSet();
-        settle(1);
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(states(get(track.id()))).containsOnly(IdentificationState.NOTHING_FOUND));
+    }
 
-        assertThat(states(get(track.id()))).containsOnly(IdentificationState.PENDING);
+    @Test
+    void a_later_run_can_still_find_it() {
+        var track = uploadSet();
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(states(get(track.id()))).containsOnly(IdentificationState.NOTHING_FOUND));
+        SIDECAR.hears("[" + detection(COOLEYS_SOURCE, 3) + "," + detection(KESH_SOURCE, 95.5) + "]");
+
+        rerun(track.id(), UPLOADER_TOKEN).expectStatus().isAccepted();
+
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(states(get(track.id()))).containsOnly(IdentificationState.IDENTIFIED));
+    }
+
+    @Test
+    void a_run_that_no_longer_hears_an_identified_tune_keeps_it() {
+        SIDECAR.hears("[" + detection(KESH_SOURCE, 95.5) + "]");
+        var track = uploadSet();
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(states(get(track.id())).get(1)).isEqualTo(IdentificationState.IDENTIFIED));
+        var before = SIDECAR.calls.get();
+        SIDECAR.hears("[]");
+
+        rerun(track.id(), UPLOADER_TOKEN).expectStatus().isAccepted();
+        settle(before + 1);
+
+        var kesh = get(track.id()).performances().get(1);
+        assertThat(kesh.identification()).isEqualTo(IdentificationState.IDENTIFIED);
+        assertThat(kesh.startOffsetSeconds()).isEqualTo(95.5);
     }
 
     @Test
@@ -218,7 +247,21 @@ class IdentificationApiTest extends AbstractApiTest {
         }
 
         assertThat(SIDECAR.calls.get()).isZero();
+        // Never analysed, so not "nothing found" either
         assertThat(states(get(track.id()))).containsOnly(IdentificationState.PENDING);
+    }
+
+    @Test
+    void only_the_tunes_that_were_looked_for_are_nothing_found() {
+        sourceId(kesh, KESH_SOURCE);
+        db.sql("UPDATE tune_tunes SET source_id = NULL WHERE id = :id").bind("id", cooleys).then().block();
+        SIDECAR.hears("[]");
+
+        var track = uploadSet();
+
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(states(get(track.id()))).containsExactly(IdentificationState.PENDING, IdentificationState.NOTHING_FOUND));
+        assertThat(SIDECAR.tunesAsked.getFirst()).isEqualTo(KESH_SOURCE);
     }
 
     @Test
