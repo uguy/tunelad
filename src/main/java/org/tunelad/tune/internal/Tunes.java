@@ -50,6 +50,13 @@ class Tunes {
 		return client.sql("SELECT " + COLUMNS + " FROM tune_tunes WHERE id = :id").bind("id", id).map(Tunes::map).one();
 	}
 
+	Flux<TuneDTO> findAllById(java.util.Collection<String> ids) {
+		if (ids.isEmpty()) {
+			return Flux.empty();
+		}
+		return client.sql("SELECT " + COLUMNS + " FROM tune_tunes WHERE id IN (:ids)").bind("ids", ids).map(Tunes::map).all();
+	}
+
 	Mono<TuneDTO> findBySourceId(int sourceId) {
 		return client.sql("SELECT " + COLUMNS + " FROM tune_tunes WHERE source_id = :source").bind("source", sourceId).map(Tunes::map).one();
 	}

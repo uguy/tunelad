@@ -1,0 +1,84 @@
+package org.tunelad.set.internal;
+
+import org.springframework.stereotype.Service;
+import org.tunelad.account.AccountRef;
+import org.tunelad.infrastructure.BadRequestException;
+import org.tunelad.infrastructure.NotFoundException;
+import org.tunelad.infrastructure.ReactiveTransactional;
+import org.tunelad.set.SetDTO;
+import org.tunelad.tune.TuneCatalog;
+import org.tunelad.tune.TuneDTO;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/** Creates, finds and lists Sets. */
+@Service
+public class SetService {
+
+	public static final int MAX_TUNES = 20;
+
+	/** A Set and whether this call created it. */
+	public record Created(SetDTO set, boolean created) {}
+
+	private final Sets sets;
+	private final TuneCatalog tunes;
+
+	SetService(Sets sets, TuneCatalog tunes) {
+		this.sets = sets;
+		this.tunes = tunes;
+	}
+
+	/**
+	 * The Set of this ordered list of Tunes: the existing one, or a new one. Fails with {@link BadRequestException}
+	 * for an empty or too long list, or a Tune that does not exist.
+	 */
+	@ReactiveTransactional
+	public Mono<Created> create(AccountRef account, List<String> tuneIds) {
+		if (tuneIds == null || tuneIds.isEmpty() || tuneIds.size() > MAX_TUNES || tuneIds.stream().anyMatch(id -> id == null || id.isBlank())) {
+			return Mono.error(new BadRequestException("A set needs one to " + MAX_TUNES + " tunes."));
+		}
+		var list = List.copyOf(tuneIds);
+		return tunes.findAllById(list.stream().distinct().toList()).count()
+				.filter(found -> found == list.stream().distinct().count())
+				.switchIfEmpty(Mono.error(() -> new BadRequestException("Unknown tune in the list.")))
+				.then(sets.insert(list, account.id()))
+				// a racing identical create makes the loser's insert do nothing: it reads the winner's Set
+				.flatMap(created -> sets.findByList(list).flatMap(this::toDto).map(set -> new Created(set, created)));
+	}
+
+	public Mono<SetDTO> findById(String id) {
+		return sets.findById(id).flatMap(this::toDto)
+				.switchIfEmpty(Mono.error(() -> new NotFoundException("No set found for id: " + id)));
+	}
+
+	/** The Sets, by the names of their Tunes, optionally only those with the Tune. */
+	public Flux<SetDTO> list(String tuneId) {
+		return sets.findAll(tuneId).collectList().flatMapMany(rows -> {
+			var ids = rows.stream().flatMap(row -> row.tuneIds().stream()).distinct().toList();
+			return tunes.findAllById(ids).collect(Collectors.toMap(TuneDTO::id, Function.identity()))
+					.flatMapMany(byId -> Flux.fromIterable(rows.stream().map(row -> dto(row, byId))
+							.sorted(Comparator.comparing(SetService::sortKey)).toList()));
+		});
+	}
+
+	private Mono<SetDTO> toDto(Sets.Row row) {
+		return tunes.findAllById(row.tuneIds().stream().distinct().toList())
+				.collect(Collectors.toMap(TuneDTO::id, Function.identity()))
+				.map(byId -> dto(row, byId));
+	}
+
+	private static SetDTO dto(Sets.Row row, Map<String, TuneDTO> byId) {
+		return new SetDTO(row.id(), row.tuneIds().stream().map(byId::get)
+				.map(tune -> new SetDTO.Entry(tune.id(), tune.name(), tune.danceType())).toList());
+	}
+
+	private static String sortKey(SetDTO set) {
+		return set.tunes().stream().map(entry -> entry.name().toLowerCase()).collect(Collectors.joining("\u0000"));
+	}
+}
