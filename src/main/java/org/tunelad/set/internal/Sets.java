@@ -56,6 +56,11 @@ class Sets {
 		return rows("WHERE s.id = :id", spec -> spec.bind("id", id)).next();
 	}
 
+	/** The Sets with these ids; ids that match none are ignored. */
+	Flux<Row> findAllById(java.util.Collection<String> ids) {
+		return ids.isEmpty() ? Flux.empty() : rows("WHERE s.id IN (:ids)", spec -> spec.bind("ids", ids));
+	}
+
 	/** Every Set, or those with the Tune. */
 	Flux<Row> findAll(String tuneId) {
 		return tuneId == null || tuneId.isBlank()

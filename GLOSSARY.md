@@ -74,4 +74,5 @@ A notice to a connected browser that something it displays (a Track, Favourite o
 - A **Track** is a recording of one **Set** and contains one **Performance** per Tune of that Set, in order.
 - A **Performance** is of exactly one **Tune**; a **Tune** has many Performances, one per recording.
 - A **Set** is a sequence of **Tunes** and has zero or more **Tracks**.
+- A **Track** stored before Sets existed has no **Set** and no **Performances** yet.
 - Deleting a **Track** removes it from every **Playlist** and **Favourite**.

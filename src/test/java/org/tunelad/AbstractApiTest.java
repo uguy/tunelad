@@ -14,7 +14,9 @@ import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.tunelad.account.AccountRef;
+import org.tunelad.set.SetDTO;
 import org.tunelad.track.TrackDTO;
+import org.tunelad.tune.TuneDTO;
 
 import java.time.Duration;
 import java.util.List;
@@ -44,8 +46,11 @@ public abstract class AbstractApiTest {
     @Autowired
     protected DatabaseClient db;
 
+    private String defaultSetId;
+
     @BeforeEach
     void emptyDatabase() {
+        defaultSetId = null;
         client = WebTestClient.bindToServer()
                 .baseUrl("http://localhost:" + port)
                 .responseTimeout(Duration.ofSeconds(30))
@@ -56,7 +61,7 @@ public abstract class AbstractApiTest {
         // emptying the registry under them would make them fail to mark their event completed
         await().atMost(Duration.ofSeconds(30)).until(() -> count("event_publication", "completion_date IS NULL") == 0);
         // Empties the tables of every module, whichever owns them; the schema stays, as Liquibase only creates it at startup.
-        db.sql("TRUNCATE event_publication, account_accounts, track_tracks, track_artists, search_tracks, media_files, favourite_favourites, playlist_playlists, tune_tunes, set_sets CASCADE")
+        db.sql("TRUNCATE event_publication, account_accounts, track_tracks, track_performances, track_artists, search_tracks, media_files, favourite_favourites, playlist_playlists, tune_tunes, set_sets CASCADE")
                 .then()
                 .block(Duration.ofSeconds(30));
     }
@@ -87,6 +92,8 @@ public abstract class AbstractApiTest {
 
     private WebTestClient.ResponseSpec uploadFile(Map<String, String> parts, Resource file, String token) {
         var builder = new MultipartBodyBuilder();
+        // Every track records a Set: uploads get a default one unless the test says otherwise (a null value omits it)
+        if (!parts.containsKey("setId")) builder.part("setId", defaultSetId());
         parts.forEach((name, value) -> {
             if (value != null) builder.part(name, value);
         });
@@ -98,6 +105,28 @@ public abstract class AbstractApiTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(builder.build()))
                 .exchange();
+    }
+
+    /** A Set of one Tune, created on first use in each test. */
+    protected String defaultSetId() {
+        if (defaultSetId == null) {
+            defaultSetId = createSet(createTune("Cooley's", "reel")).id();
+        }
+        return defaultSetId;
+    }
+
+    /** Creates a Tune by hand, as alice, and returns its id. */
+    protected String createTune(String name, String danceType) {
+        return client.post().uri("/api/tunes").headers(h -> h.setBearerAuth(UPLOADER_TOKEN))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("name", name, "danceType", danceType))
+                .exchange().expectStatus().isCreated().expectBody(TuneDTO.class).returnResult().getResponseBody().id();
+    }
+
+    /** Creates, as alice, the Set of these Tunes in order (or finds it). */
+    protected SetDTO createSet(String... tuneIds) {
+        return client.post().uri("/api/sets").headers(h -> h.setBearerAuth(UPLOADER_TOKEN))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("tuneIds", List.of(tuneIds)))
+                .exchange().expectStatus().is2xxSuccessful().expectBody(SetDTO.class).returnResult().getResponseBody();
     }
 
     /** Uploads a track as alice, checks it was created, and returns the stored track from the response. */

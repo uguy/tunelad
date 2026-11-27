@@ -39,6 +39,7 @@ class TwoInstancesTest extends AbstractLiveTest {
             var builder = new MultipartBodyBuilder();
             builder.part("title", "Rainfall");
             builder.part("description", "Rain on tin");
+            builder.part("setId", defaultSetId());
             builder.part("file", new ClassPathResource(KNEES_UP_MP3));
 
             var id = other.post().uri("/api/tracks")

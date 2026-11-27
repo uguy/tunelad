@@ -80,7 +80,15 @@ class KeycloakIntegrationTest {
 
     @Test
     void upload_with_a_token_from_the_realm_records_the_owner() {
+        var token = aliceToken();
+        var tune = client.post().uri("/api/tunes").headers(headers -> headers.setBearerAuth(token))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(java.util.Map.of("name", "Cooley's", "danceType", "reel"))
+                .exchange().expectStatus().isCreated().expectBody(org.tunelad.tune.TuneDTO.class).returnResult().getResponseBody();
+        var set = client.post().uri("/api/sets").headers(headers -> headers.setBearerAuth(token))
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(java.util.Map.of("tuneIds", java.util.List.of(tune.id())))
+                .exchange().expectStatus().isCreated().expectBody(org.tunelad.set.SetDTO.class).returnResult().getResponseBody();
         var builder = new MultipartBodyBuilder();
+        builder.part("setId", set.id());
         builder.part("title", "Knees Up");
         builder.part("description", "A reel and a song");
         builder.part("file", new ClassPathResource("mp3/Knees_Up.mp3"));

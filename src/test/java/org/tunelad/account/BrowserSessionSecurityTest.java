@@ -293,8 +293,20 @@ class BrowserSessionSecurityTest {
         return cookie.getValue();
     }
 
-    private static BodyInserters.MultipartInserter upload() {
+    /** The id of a Set of one new Tune, created by alice with a bearer token. */
+    private String setId() {
+        var auth = (java.util.function.Consumer<HttpHeaders>) headers -> headers.setBearerAuth(TestTokens.bearer("alice", "Alice Liddell"));
+        var tune = client.post().uri("/api/tunes").headers(auth).contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(java.util.Map.of("name", "Cooley's", "danceType", "reel"))
+                .exchange().expectStatus().isCreated().expectBody(org.tunelad.tune.TuneDTO.class).returnResult().getResponseBody();
+        return client.post().uri("/api/sets").headers(auth).contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(java.util.Map.of("tuneIds", java.util.List.of(tune.id())))
+                .exchange().expectStatus().isCreated().expectBody(org.tunelad.set.SetDTO.class).returnResult().getResponseBody().id();
+    }
+
+    private BodyInserters.MultipartInserter upload() {
         var builder = new MultipartBodyBuilder();
+        builder.part("setId", setId());
         builder.part("title", "Knees Up");
         builder.part("description", "A reel and a song");
         builder.part("file", new ClassPathResource(KNEES_UP_MP3));

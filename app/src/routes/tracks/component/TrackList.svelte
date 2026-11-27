@@ -10,6 +10,9 @@
 	import { player } from '#lib/player.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { live } from '#lib/live.svelte.js';
+	import { formatOffset } from '#lib/offset.js';
+	import PerformanceFields from '../PerformanceFields.svelte';
+	import { checkPerformance, toInput, type PerformanceForm } from '../Performances.js';
 	import TrackService, {
 		type Track,
 		type TrackEdit,
@@ -97,15 +100,40 @@
 	/** Track ids whose description is shown. */
 	let expanded = $state<Record<string, boolean>>({});
 
+	/** The tracks as `GET /api/tracks/{id}` gives them, with their set and performances, fetched when needed. */
+	let details = $state<Record<string, Track>>({});
+
+	async function loadDetail(trackId: string): Promise<Track | null> {
+		const track = await trackService.findOne(trackId);
+		if (track && alive) details[trackId] = track;
+		return track;
+	}
+
+	function toggle(trackId: string) {
+		expanded[trackId] = !expanded[trackId];
+		if (expanded[trackId] && !details[trackId]) loadDetail(trackId);
+	}
+
 	/** The id of the track being edited, and the form's values; one track at a time. */
 	let editing = $state<string | null>(null);
 	let form = $state<TrackEdit>({ title: '', description: '', artist: '', album: '' });
+	/** The performance fields of the track being edited, one per tune of its set. */
+	let performanceForms = $state<PerformanceForm[]>([]);
 	let saving = $state(false);
 	/** Error message per track id, for the last refused change. */
 	let errors = $state<Record<string, string>>({});
 
-	function startEdit(track: Track) {
+	function formOf(track: Track): PerformanceForm[] {
+		return (track.performances ?? []).map((performance) => ({
+			start: performance.startOffsetSeconds > 0 ? formatOffset(performance.startOffsetSeconds) : '',
+			key: performance.key ?? '',
+			notes: performance.notes ?? ''
+		}));
+	}
+
+	async function startEdit(track: Track) {
 		editing = track.id;
+		performanceForms = [];
 		form = {
 			title: track.title ?? '',
 			description: track.description ?? '',
@@ -113,6 +141,9 @@
 			album: track.album ?? ''
 		};
 		errors[track.id] = '';
+		// The list comes from search, which has no performances: the track is fetched whole
+		const whole = details[track.id] ?? (await loadDetail(track.id));
+		if (editing === track.id && whole) performanceForms = formOf(whole);
 	}
 
 	function cancelEdit() {
@@ -120,6 +151,11 @@
 	}
 
 	async function saveEdit(track: Track) {
+		const invalid = performanceForms.map(checkPerformance).find(Boolean);
+		if (invalid) {
+			errors[track.id] = invalid;
+			return;
+		}
 		saving = true;
 		try {
 			const updated = await trackService.update(track.id, {
@@ -127,8 +163,10 @@
 				description: form.description,
 				// An empty field clears the artist or album
 				artist: form.artist || null,
-				album: form.album || null
+				album: form.album || null,
+				performances: performanceForms.length ? performanceForms.map(toInput) : undefined
 			});
+			details[track.id] = updated;
 			editing = null;
 			onupdated?.(updated);
 		} catch (e) {
@@ -247,7 +285,7 @@
 							class="ml-auto inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink"
 							aria-label="show track {track.title} detail button"
 							aria-expanded={!!expanded[track.id]}
-							onclick={() => (expanded[track.id] = !expanded[track.id])}
+							onclick={() => toggle(track.id)}
 						>
 							{expanded[track.id] ? 'Less' : 'More'}
 							<Icon
@@ -266,6 +304,27 @@
 								<p><span class="text-ink-muted">Album:</span> {track.album}</p>
 							{/if}
 							<p class="mt-1 whitespace-pre-line">{track.description}</p>
+							{#if details[track.id]?.performances?.length}
+								<h3 class="mt-3 font-medium">Tunes</h3>
+								<ol class="mt-1 space-y-1" aria-label="tunes of {track.title}">
+									{#each details[track.id].performances ?? [] as performance (performance.position)}
+										<li>
+											<span class="text-ink-muted tabular-nums">{performance.position}.</span>
+											{performance.tuneName}
+											<span class="text-ink-muted capitalize">{performance.danceType}</span>
+											<span class="text-ink-muted">
+												· starts at <span class="tabular-nums">
+													{formatOffset(performance.startOffsetSeconds)}
+												</span>{#if performance.key}
+													· key {performance.key}{/if}
+											</span>
+											{#if performance.notes}
+												<p class="ml-5 whitespace-pre-line text-ink-muted">{performance.notes}</p>
+											{/if}
+										</li>
+									{/each}
+								</ol>
+							{/if}
 						</div>
 					{/if}
 
@@ -293,6 +352,12 @@
 									Album <input class={inputClass} bind:value={form.album} />
 								</label>
 							</div>
+							{#if performanceForms.length}
+								<PerformanceFields
+									names={(details[track.id]?.performances ?? []).map((p) => p.tuneName)}
+									bind:values={performanceForms}
+								/>
+							{/if}
 							<div class="flex gap-2">
 								<button type="submit" class="btn-accent" disabled={saving}>Save</button>
 								<button type="button" class="btn-quiet" onclick={cancelEdit}>Cancel</button>
