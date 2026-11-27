@@ -340,7 +340,7 @@ class TrackApiTest extends AbstractApiTest {
                 .expectBody(TrackDTO.class).returnResult().getResponseBody();
 
         var expected = new TrackDTO(before.id(), "Knees Up (live)", "Breabach", "Live",
-                "Recorded at Celtic Connections", before.format(), before.owner());
+                "Recorded at Celtic Connections", before.format(), before.owner(), before.set(), before.performances());
         assertThat(updated).isEqualTo(expected);
         assertThat(getTrack(before.id())).isEqualTo(expected);
     }

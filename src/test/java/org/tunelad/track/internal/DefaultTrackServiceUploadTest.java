@@ -34,15 +34,18 @@ class DefaultTrackServiceUploadTest {
     private final Tracks tracks = mock(Tracks.class);
     private final Artists artists = mock(Artists.class);
     private final MediaStore mediaStore = mock(MediaStore.class);
+    private final org.tunelad.set.SetCatalog sets = mock(org.tunelad.set.SetCatalog.class);
     private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, artists, mediaStore,
-            mock(TransactionalEvents.class), mock(ReactiveTransactionManager.class));
+            sets, mock(TransactionalEvents.class), mock(ReactiveTransactionManager.class));
 
     private final AddTrackCommand command = new AddTrackCommand("Knees Up", null, null, "A reel and a song",
-            Flux.empty(), TrackFormat.FLAC, new TrackOwner("account-alice", "Alice Liddell"));
+            "set-1", null, Flux.empty(), TrackFormat.FLAC, new TrackOwner("account-alice", "Alice Liddell"));
 
     @org.junit.jupiter.api.BeforeEach
     void noArtist() {
         when(artists.findOrCreate(any())).thenReturn(Mono.empty());
+        when(sets.find("set-1")).thenReturn(Mono.just(new org.tunelad.set.SetDTO("set-1", java.util.List.of(
+                new org.tunelad.set.SetDTO.Entry("tune-1", "Cooley's", org.tunelad.tune.DanceType.REEL)))));
     }
 
     @Test

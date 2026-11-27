@@ -55,7 +55,7 @@ class SearchProjectionTest {
 
         // At-least-once delivery: the same track arrives again (here with a changed title, to see it was handled)
         var again = new TrackDTO(track.id(), "Knees Up Again", track.artist(), track.album(), track.description(),
-                track.format(), track.owner());
+                track.format(), track.owner(), null, java.util.List.of());
         scenario.publish(new NewTrackSaved(again))
                 .andWaitForStateChange(() -> searchTracks.findById(track.id()).block(),
                         stored -> stored != null && stored.title().equals("Knees Up Again"))
@@ -68,7 +68,7 @@ class SearchProjectionTest {
         searchTracks.save(SearchTrack.of(track)).block();
 
         var edited = new TrackDTO(track.id(), "Hornpipe Set", null, null, "Two hornpipes", track.format(),
-                track.owner());
+                track.owner(), null, java.util.List.of());
         scenario.publish(new TrackUpdated(edited))
                 .andWaitForStateChange(() -> searchTracks.findById(track.id()).block(),
                         stored -> stored != null && stored.title().equals("Hornpipe Set"))
@@ -115,7 +115,7 @@ class SearchProjectionTest {
         var track = kneesUp(UUID.randomUUID().toString());
         searchTracks.save(SearchTrack.of(track)).block();
         var edited = new TrackDTO(track.id(), "Hornpipe Set", null, null, "Two hornpipes", track.format(),
-                track.owner());
+                track.owner(), null, java.util.List.of());
 
         scenario.publish(new TrackUpdated(edited))
                 .andWaitForEventOfType(TrackIndexed.class)
@@ -137,6 +137,6 @@ class SearchProjectionTest {
 
     private static TrackDTO kneesUp(String id) {
         return new TrackDTO(id, "Knees Up", "Breabach", "Frenzy of the Meeting", "A reel and a song", TrackFormat.MP3,
-                ALICE);
+                ALICE, null, java.util.List.of());
     }
 }

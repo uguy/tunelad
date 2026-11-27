@@ -1,13 +1,22 @@
 package org.tunelad.track.internal.db;
 
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
+import org.tunelad.set.SetCatalog;
+import org.tunelad.set.SetDTO;
 import org.tunelad.track.internal.Artist;
 import org.tunelad.track.internal.Artists;
+import org.tunelad.track.internal.Performance;
 import org.tunelad.track.internal.Track;
 import org.tunelad.track.internal.Tracks;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
@@ -19,19 +28,25 @@ class DbTracks implements Tracks {
 
     private final Artists artists;
 
-    DbTracks(R2dbcTrackRepository trackRepository, Artists artists) {
+    private final SetCatalog sets;
+
+    private final DatabaseClient client;
+
+    DbTracks(R2dbcTrackRepository trackRepository, Artists artists, SetCatalog sets, DatabaseClient client) {
         this.trackRepository = trackRepository;
         this.artists = artists;
+        this.sets = sets;
+        this.client = client;
     }
 
     @Override
     public Flux<Track> findAll() {
-        return withArtists(trackRepository.findAll());
+        return hydrate(trackRepository.findAll());
     }
 
     @Override
     public Flux<Track> findAllById(java.util.Collection<String> ids) {
-        return ids.isEmpty() ? Flux.empty() : withArtists(trackRepository.findAllById(ids));
+        return ids.isEmpty() ? Flux.empty() : hydrate(trackRepository.findAllById(ids));
     }
 
     @Override
@@ -40,28 +55,98 @@ class DbTracks implements Tracks {
             track.setId(UUID.randomUUID().toString());
         }
         var artist = track.getArtist();
+        var set = track.getTuneSet();
+        var setId = track.getSetId();
+        var performances = track.getPerformances();
         track.setArtistId(artist == null ? null : artist.id());
-        return trackRepository.save(track).doOnNext(saved -> saved.setArtist(artist));
+        return trackRepository.save(track)
+                .flatMap(saved -> storeSetId(saved.getId(), setId)
+                        .then(replacePerformances(saved.getId(), performances)).thenReturn(saved))
+                .doOnNext(saved -> {
+                    saved.setSetId(setId);
+                    saved.setArtist(artist);
+                    saved.setTuneSet(set);
+                    saved.setPerformances(performances);
+                });
     }
 
     @Override
     public Mono<Track> findById(String id) {
-        return withArtists(trackRepository.findById(id).flux()).next();
+        return hydrate(trackRepository.findById(id).flux()).next();
     }
 
     @Override
     public Mono<Void> delete(Track track) {
+        // its Performances go with it: ON DELETE CASCADE
         return trackRepository.delete(track);
     }
 
-    /** Loads the Artists of all the tracks with one query, rather than one per track. */
-    private Flux<Track> withArtists(Flux<Track> found) {
+    private Mono<Void> storeSetId(String trackId, String setId) {
+        var spec = client.sql("UPDATE track_tracks SET set_id = :set WHERE id = :track").bind("track", trackId);
+        return (setId == null ? spec.bindNull("set", String.class) : spec.bind("set", setId)).then();
+    }
+
+    private Mono<Map<String, String>> setIdsOf(List<String> trackIds) {
+        return client.sql("SELECT id, set_id FROM track_tracks WHERE id IN (:ids) AND set_id IS NOT NULL")
+                .bind("ids", trackIds)
+                .map(row -> Map.entry(row.get("id", String.class), row.get("set_id", String.class)))
+                .all().collectMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    private Mono<Void> replacePerformances(String trackId, List<Performance> performances) {
+        return client.sql("DELETE FROM track_performances WHERE track_id = :track").bind("track", trackId).then()
+                .thenMany(Flux.fromIterable(performances).concatMap(p -> {
+                    var spec = client.sql("""
+                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes)
+                                    VALUES (:track, :position, :tune, :offset, :key, :notes)""")
+                            .bind("track", trackId).bind("position", p.position()).bind("tune", p.tuneId())
+                            .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()));
+                    spec = p.key() == null ? spec.bindNull("key", String.class) : spec.bind("key", p.key());
+                    spec = p.notes() == null ? spec.bindNull("notes", String.class) : spec.bind("notes", p.notes());
+                    return spec.then();
+                }))
+                .then();
+    }
+
+    /** Loads the Artists, Sets and Performances of all the tracks with one query each, rather than one per track. */
+    private Flux<Track> hydrate(Flux<Track> found) {
         return found.collectList().flatMapMany(list -> {
-            var ids = list.stream().map(Track::getArtistId).filter(Objects::nonNull).distinct().toList();
-            return artists.findAllById(ids)
-                    .collectMap(Artist::id, Function.identity())
-                    .flatMapMany(byId -> Flux.fromIterable(list).doOnNext(track ->
-                            track.setArtist(track.getArtistId() == null ? null : byId.get(track.getArtistId()))));
+            if (list.isEmpty()) {
+                return Flux.empty();
+            }
+            var artistIds = list.stream().map(Track::getArtistId).filter(Objects::nonNull).distinct().toList();
+            var trackIds = list.stream().map(Track::getId).toList();
+            return setIdsOf(trackIds).flatMap(setIdByTrack -> Mono.zip(
+                            artists.findAllById(artistIds).collectMap(Artist::id, Function.identity()),
+                            sets.findAllById(setIdByTrack.values().stream().distinct().toList())
+                                    .collectMap(SetDTO::id, Function.identity()),
+                            performancesOf(trackIds))
+                    .map(loaded -> {
+                        list.forEach(track -> {
+                            track.setArtist(track.getArtistId() == null ? null : loaded.getT1().get(track.getArtistId()));
+                            track.setSetId(setIdByTrack.get(track.getId()));
+                            track.setTuneSet(track.getSetId() == null ? null : loaded.getT2().get(track.getSetId()));
+                            track.setPerformances(loaded.getT3().getOrDefault(track.getId(), new ArrayList<>()));
+                        });
+                        return list;
+                    })).flatMapMany(Flux::fromIterable);
         });
+    }
+
+    private Mono<Map<String, List<Performance>>> performancesOf(List<String> trackIds) {
+        if (trackIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        return client.sql("""
+                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes
+                        FROM track_performances WHERE track_id IN (:ids) ORDER BY track_id, position""")
+                .bind("ids", trackIds)
+                .map(row -> Map.entry(row.get("track_id", String.class), new Performance(
+                        row.get("position", Integer.class), row.get("tune_id", String.class),
+                        row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
+                        row.get("key", String.class), row.get("notes", String.class))))
+                .all()
+                .collect(HashMap::new, (map, entry) ->
+                        map.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(entry.getValue()));
     }
 }

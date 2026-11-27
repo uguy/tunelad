@@ -1,17 +1,30 @@
 package org.tunelad.track.internal;
 
-import org.mapstruct.Mapper;
-import org.tunelad.infrastructure.ModelMapper;
+import org.springframework.stereotype.Component;
+import org.tunelad.set.SetDTO;
+import org.tunelad.track.PerformanceDTO;
 import org.tunelad.track.TrackDTO;
 
-@Mapper(componentModel = "spring")
-public interface TrackMapper extends ModelMapper<TrackDTO, Track> {
+import java.util.List;
 
-    default Artist map(String value){
-        return new Artist(null, value);
+/** Builds the API's view of a Track from the stored one: its Performances are named after the Tunes of its Set. */
+@Component
+public class TrackMapper {
+
+    public TrackDTO toDto(Track track) {
+        var set = track.getTuneSet();
+        return new TrackDTO(track.getId(), track.getTitle(), track.getArtist() == null ? null : track.getArtist().name(),
+                track.getAlbum(), track.getDescription(), track.getFormat(), track.getOwner(), set, performances(track, set));
     }
-    default String map(Artist value){
-        // A track without an artist name has no artist: its columns are all null
-        return value == null ? null : value.name();
+
+    private static List<PerformanceDTO> performances(Track track, SetDTO set) {
+        if (set == null) {
+            return List.of();
+        }
+        return track.getPerformances().stream().map(performance -> {
+            var tune = set.tunes().get(performance.position() - 1);
+            return new PerformanceDTO(performance.position(), performance.tuneId(), tune.name(), tune.danceType(),
+                    performance.startOffsetSeconds(), performance.key(), performance.notes());
+        }).toList();
     }
 }

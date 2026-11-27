@@ -126,7 +126,8 @@ class TrackSearchApiTest extends AbstractApiTest {
         var listed = trackTitled("Knees Up");
         assertThat(listed.owner()).isNotNull();
         // Records compare every field: id, title, description, artist, album, format and owner
-        assertThat(search("knees")).containsExactly(listed);
+        // Search results do not carry the Set and Performances (out of scope of the track-set change): absent, so null
+        assertThat(search("knees")).containsExactly(withoutSet(listed));
     }
 
     // --- Requirement: Edits and deletions reach search shortly after ----------------------------
@@ -157,7 +158,7 @@ class TrackSearchApiTest extends AbstractApiTest {
 
         await().atMost(SEARCHABLE_WITHIN).until(() -> !search("hornpipe").isEmpty());
         // Records compare every field: id, title, description, artist, album, format and owner
-        assertThat(search("hornpipe")).containsExactly(trackTitled("Hornpipe Set"));
+        assertThat(search("hornpipe")).containsExactly(withoutSet(trackTitled("Hornpipe Set")));
     }
 
     @Test
@@ -219,5 +220,10 @@ class TrackSearchApiTest extends AbstractApiTest {
 
     private static List<String> titles(List<TrackDTO> tracks) {
         return tracks.stream().map(TrackDTO::title).toList();
+    }
+
+    private static TrackDTO withoutSet(TrackDTO track) {
+        return new TrackDTO(track.id(), track.title(), track.artist(), track.album(), track.description(), track.format(),
+                track.owner(), null, null);
     }
 }

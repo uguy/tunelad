@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Embedded;
 import org.springframework.data.relational.core.mapping.Table;
 import org.tunelad.account.AccountRef;
+import org.tunelad.set.SetDTO;
 import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
 
@@ -43,6 +44,19 @@ public class Track {
     private Publisher<DataBuffer> data;
 
     private TrackFormat format;
+
+    /** The Set this track records, of the set module, by id; null for tracks stored before Sets existed. Not mapped
+     * with the other columns (Spring Data takes a property named setId for the setter of id): DbTracks stores it itself. */
+    @Transient
+    private String setId;
+
+    /** Not a column: the Set read from the set module. */
+    @Transient
+    private SetDTO tuneSet;
+
+    /** Not a column: stored in track_performances, one per Tune of the Set, in order. */
+    @Transient
+    private List<Performance> performances = new ArrayList<>();
 
     @Embedded.Nullable(prefix = "owner_")
     private TrackOwner owner;

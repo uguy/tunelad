@@ -6,21 +6,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.tunelad.account.AccountRef;
+import org.tunelad.infrastructure.BadRequestException;
 import org.tunelad.infrastructure.ForbiddenException;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.infrastructure.ReactiveTransactional;
 import org.tunelad.infrastructure.TransactionalEvents;
 import org.tunelad.media.MediaStore;
+import org.tunelad.set.SetCatalog;
+import org.tunelad.set.SetDTO;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteTrackCommand;
+import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.UpdateTrackCommand;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
 import org.tunelad.track.event.TrackUpdated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -34,17 +40,20 @@ class DefaultTrackService implements TrackService {
 
     private final MediaStore mediaStore;
 
+    private final SetCatalog sets;
+
     private final TransactionalEvents events;
 
     /** For uploads, whose transaction covers only part of the work; the other methods use the annotation. */
     private final TransactionalOperator transactionalOperator;
 
     DefaultTrackService(TrackMapper trackMapper, Tracks tracks, Artists artists, MediaStore mediaStore,
-                        TransactionalEvents events, @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
+                        SetCatalog sets, TransactionalEvents events, @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
         this.trackMapper = trackMapper;
         this.tracks = tracks;
         this.artists = artists;
         this.mediaStore = mediaStore;
+        this.sets = sets;
         this.events = events;
         this.transactionalOperator = TransactionalOperator.create(transactionManager);
     }
@@ -56,7 +65,25 @@ class DefaultTrackService implements TrackService {
      */
     @Override
     public Mono<TrackDTO> execute(AddTrackCommand command) {
+        // The Set and the Performances are checked before any audio is written: a refused upload stores nothing
+        return sets.find(command.setId())
+                .switchIfEmpty(Mono.error(() -> new BadRequestException("No set found for id: " + command.setId())))
+                .flatMap(set -> store(command, set));
+    }
+
+    private Mono<TrackDTO> store(AddTrackCommand command, SetDTO set) {
+        var inputs = command.performances() == null ? defaults(set.tunes().size()) : command.performances();
+        if (inputs.size() != set.tunes().size()) {
+            return Mono.error(new BadRequestException("The set has " + set.tunes().size() + " tunes: one performance each."));
+        }
+        inputs.forEach(PerformanceInput::validate);
         var track = new Track();
+        track.setSetId(set.id());
+        track.setTuneSet(set);
+        track.setPerformances(new java.util.ArrayList<>(java.util.stream.IntStream.range(0, inputs.size())
+                .mapToObj(i -> new Performance(i + 1, set.tunes().get(i).id(), inputs.get(i).offset(),
+                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes()))
+                .toList()));
         // Known up front, so the audio can be stored under the track's id before the track exists
         track.setId(java.util.UUID.randomUUID().toString());
         track.setTitle(command.title());
@@ -81,6 +108,10 @@ class DefaultTrackService implements TrackService {
                 .doOnCancel(() -> deleteAudio(id).subscribe());
     }
 
+    private static List<PerformanceInput> defaults(int count) {
+        return java.util.Collections.nCopies(count, PerformanceInput.DEFAULT);
+    }
+
     /** Deletes the audio of an upload that failed; a failure to do so is logged, not raised over the first error. */
     private Mono<Void> deleteAudio(String id) {
         return mediaStore.delete(id)
@@ -92,6 +123,7 @@ class DefaultTrackService implements TrackService {
     @Override
     public Mono<TrackDTO> execute(UpdateTrackCommand command) {
         return changeableTrack(command.id(), command.by())
+                .doOnNext(track -> changePerformances(track, command.performances()))
                 .flatMap(track -> artists.findOrCreate(command.artist())
                         // A blank name has no Artist: the track loses the one it had
                         .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
@@ -113,6 +145,22 @@ class DefaultTrackService implements TrackService {
                 // The audio goes now, not on an event: playback only looks at the stored audio
                 .flatMap(track -> tracks.delete(track).then(mediaStore.delete(track.getId())))
                 .then(events.publish(new TrackDeleted(command.id())));
+    }
+
+    /** Replaces the values of the track's Performances; null leaves them. Fails with 400 before anything changes. */
+    private static void changePerformances(Track track, List<PerformanceInput> inputs) {
+        if (inputs == null) {
+            return;
+        }
+        if (inputs.size() != track.getPerformances().size()) {
+            throw new BadRequestException("The track has " + track.getPerformances().size() + " performances: one entry each.");
+        }
+        inputs.forEach(PerformanceInput::validate);
+        var changed = new java.util.ArrayList<Performance>();
+        for (int i = 0; i < inputs.size(); i++) {
+            changed.add(track.getPerformances().get(i).with(inputs.get(i).offset(), inputs.get(i).cleanKey(), inputs.get(i).cleanNotes()));
+        }
+        track.setPerformances(changed);
     }
 
     /** The track, if it exists (else 404) and the account may change it (else 403). */

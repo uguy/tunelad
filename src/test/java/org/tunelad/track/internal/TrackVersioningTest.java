@@ -11,7 +11,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tracks are saved with optimistic locking: an edit made on a stale copy is refused, not silently lost. */
-@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
+@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES, extraIncludes = "tune")
 @Import(TestContainerDefinitions.class)
 class TrackVersioningTest {
 
