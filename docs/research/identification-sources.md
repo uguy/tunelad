@@ -69,3 +69,18 @@ Cadence (`Batpapa/Cadence`, AGPL-3.0) run headless in Node with a throwaway vite
 What made the difference against the bare CLI: the transcriptor's note decoder (pitch classes summed over instruments, drone removal), the query tuned for pitch classes in every key, and the segmenter that merges 21 windows into one detection.
 
 Consequence: recognition is feasible, but the engine is **Cadence's TypeScript and WASM code (AGPL-3.0 and GPL-3.0)**, not the Rust CLI. See the proposal's design for how to host it.
+
+### Spike result on two more recordings (Dervish, "At the End of the Day")
+
+Same harness, WMA converted to 48 kHz mono by ffmpeg, both 3-tune sets, about 8 s of run time each. Ground truth was not checked against a tune list; detections are as the engine named them.
+
+| Track | Duration | Detections (start to end, confidence) |
+|---|---|---|
+| Touching Cloth | 235 s | the roscommon 7.5 to 72.5 (0.75), scotch mary 77.5 to 132.5 (0.69), touching cloth 137.5 to 235 (0.71) |
+| Jim Coleman's Set | 256 s | miss johnson 0 to 87.5 (0.75), jim coleman's 92.5 to 147.5 (0.48), the controversial 157.5 to 255 (0.40) |
+
+- Both give three clean, contiguous detections in order, with top-candidate scores of 0.5 to 0.9 in most windows.
+- Confidence falls in the last tune of "Jim Coleman's Set": "the controversial" competes with "jerome's farewell to gibraltar" window by window (scores within 0.05 to 0.15), which suggests a similar tune in the index. Constraining matches to the Track's Set would resolve this when the Set names one of them.
+- Boundaries fall between windows (about 5 s steps); consecutive detections are 5 s apart, so the true change is somewhere in that gap.
+- One window (245 s) had no candidates.
+- Still to confirm with the owner: that these are the tunes actually played.
