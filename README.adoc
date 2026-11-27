@@ -73,6 +73,10 @@ This simple app allows to store an mp3 file with some description and play it vi
   and devices (they are private: only your own connections hear of them), with no reload and no polling. The server streams them as Server-Sent Events
   (`GET /api/live`), through https://nats.io[NATS] so that every running instance of the application reaches its own
   browsers
+* Tunes: a shared collection of traditional tunes with their dance type (`/tunes`, `GET /api/tunes`), created by hand or imported
+  from thesession.org by id (`POST /api/tunes/import`). A tune's page shows its reference transcription as sheet music or as ABC
+  text, and plays it as flute audio synthesized in the browser (abcjs, loaded only on that page; the flute samples are served by the
+  app, one file per note, and fetched as needed)
 * Favourites: a heart on every track (list and player bar) for logged-in users, and a page that lists them
   (`/tracks/favourites`, `GET /api/me/favourites`)
 * Playlists: private ordered lists of tracks, created, renamed and deleted from `/tracks/playlists`. Add a track from the

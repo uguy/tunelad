@@ -7,7 +7,7 @@ A collection of traditional Irish music: recordings annotated with the tunes the
 ### Music
 
 **Tune**:
-A traditional Irish piece, identified by details that never change between recordings: name, aliases, author and Dance type. It may carry a usual key as a hint, and one Reference transcription. Identified by its thesession.org id; an Account can create one by hand when no source matches.
+A traditional Irish piece, identified by details that never change between recordings: name, aliases, author and Dance type. It may carry a usual key as a hint, and one Reference transcription. Imported from thesession.org by id, which it then keeps; an Account can create one by hand when no source matches.
 _Avoid_: Piece, melody, Setting
 
 **Dance type**:

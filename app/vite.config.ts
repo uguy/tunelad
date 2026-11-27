@@ -96,7 +96,13 @@ export default defineConfig({
 					// precaches as `/`. Precaching the prerendered index.html too (as `./`) makes Workbox throw
 					// add-to-cache-list-conflicting-entries and the service worker never registers.
 					// node_modules and server/ are the plugin's defaults, which a custom list replaces.
-					globIgnores: ['**/node_modules/**/*', 'server/**', 'prerendered/pages/index.html'],
+					// The flute samples are fetched note by note when a tune is played, never precached.
+					globIgnores: [
+						'**/node_modules/**/*',
+						'server/**',
+						'prerendered/pages/index.html',
+						'**/soundfonts/**'
+					],
 					// Navigations the service worker must leave to the server instead of serving the SPA shell
 					navigateFallbackDenylist: [/^\/login\//, /^\/oauth2\//, /^\/logout/, /^\/api\//]
 				},
