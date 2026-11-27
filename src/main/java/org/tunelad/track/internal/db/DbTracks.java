@@ -53,7 +53,7 @@ class DbTracks implements Tracks {
     @Override
     public Flux<TunePerformanceDTO> findPerformancesByTune(String tuneId) {
         return client.sql("""
-                        SELECT t.id AS track_id, t.title, a.name AS artist, p.position, p.start_offset_seconds,
+                        SELECT t.id AS track_id, t.title, a.id AS artist_id, a.name AS artist, a.kind AS artist_kind, p.position, p.start_offset_seconds,
                                p.key, p.notes, p.abc, p.identification
                         FROM track_performances p
                                  JOIN track_tracks t ON t.id = p.track_id
@@ -62,7 +62,8 @@ class DbTracks implements Tracks {
                         ORDER BY lower(t.title), t.id, p.position""")
                 .bind("tune", tuneId)
                 .map(row -> new TunePerformanceDTO(row.get("track_id", String.class), row.get("title", String.class),
-                        row.get("artist", String.class), row.get("position", Integer.class),
+                        row.get("artist", String.class), row.get("artist_id", String.class),
+                        org.tunelad.track.ArtistKind.fromColumn(row.get("artist_kind", String.class)), row.get("position", Integer.class),
                         row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
                         row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class),
                         org.tunelad.track.IdentificationState.fromColumn(row.get("identification", String.class))))

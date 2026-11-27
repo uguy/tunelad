@@ -98,3 +98,18 @@ ALTER TABLE track_tracks
     ADD COLUMN provided_text_fields TEXT[] NOT NULL DEFAULT '{}';
 UPDATE track_tracks SET provided_text_fields = ARRAY['title', 'description', 'artist', 'album'];
 --rollback ALTER TABLE track_tracks DROP COLUMN provided_text_fields;
+
+--changeset tunelad:track-artist-kinds
+-- An Artist is a musician, a band, or unclassified (null). A band has musicians as members.
+ALTER TABLE track_artists
+    ADD COLUMN kind TEXT CHECK (kind IN ('musician', 'band'));
+
+CREATE TABLE track_band_members
+(
+    band_id     TEXT NOT NULL REFERENCES track_artists (id) ON DELETE CASCADE,
+    musician_id TEXT NOT NULL REFERENCES track_artists (id) ON DELETE CASCADE,
+    PRIMARY KEY (band_id, musician_id)
+);
+CREATE INDEX track_band_members_musician_idx ON track_band_members (musician_id);
+--rollback DROP TABLE track_band_members;
+--rollback ALTER TABLE track_artists DROP COLUMN kind;
