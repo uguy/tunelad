@@ -98,7 +98,7 @@ class WaveformTest {
         var key = UUID.randomUUID().toString();
         storeWithoutAnnouncing(key, "audio/tune.wav");
         waveforms.savePending(key).block();
-        var withoutFfmpeg = computerWith(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30)));
+        var withoutFfmpeg = computerWith(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60)));
 
         withoutFfmpeg.compute(key).block();
 
@@ -108,7 +108,7 @@ class WaveformTest {
     @Test
     void computing_the_waveform_of_deleted_audio_does_nothing() {
         var key = UUID.randomUUID().toString();
-        var computer = computerWith(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30)));
+        var computer = computerWith(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60)));
 
         computer.compute(key).block();
 
@@ -168,7 +168,7 @@ class WaveformTest {
         storeWithoutAnnouncing(key, "audio/tune.wav");
         waveforms.savePending(key).block();
 
-        computerWith(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30))).compute(key).block();
+        computerWith(new FfmpegProperties("/nonexistent/ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60))).compute(key).block();
 
         await().during(Duration.ofMillis(700)).atMost(Duration.ofSeconds(3)).until(() -> !announced.contains(key));
     }
@@ -179,7 +179,7 @@ class WaveformTest {
         // Audio without a waveform row, as after its deletion while the computation was under way
         storeWithoutAnnouncing(key, "mp3/Knees_Up.mp3");
 
-        computerWith(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30))).compute(key).block();
+        computerWith(new FfmpegProperties("ffmpeg", Duration.ofSeconds(30), Duration.ofSeconds(60))).compute(key).block();
 
         assertThat(waveforms.findById(key).blockOptional()).isEmpty();
         await().during(Duration.ofMillis(700)).atMost(Duration.ofSeconds(3)).until(() -> !announced.contains(key));

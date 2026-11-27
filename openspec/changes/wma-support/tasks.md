@@ -27,10 +27,10 @@ Commit: `feat(media): store a playable rendition state for audio browsers cannot
 
 Commit: `feat(media): convert wma to an aac rendition with ffmpeg`
 
-- [ ] 4.1 Add `tunelad.media.ffmpeg.transcode-timeout` (default `5m`) to `FfmpegProperties`; verify the binding in a properties test.
-- [ ] 4.2 Add `RenditionMaker`, which streams the audio to ffmpeg, writes an `.m4a` temporary file with `+faststart`, and returns its content as `Flux<DataBuffer>` while deleting the file at the end; all blocking work on `Schedulers.boundedElastic()`. Verify with a test, assuming ffmpeg is present, that a generated WMA gives audio ffprobe reports as AAC with a duration near 4 s, and that noise fails with `UndecodableAudioException` and leaves no temporary file.
-- [ ] 4.3 Add `RenditionComputer`, an `@ApplicationModuleListener` on `AudioStored` that stores `<key>:play` as `audio/mp4`, saves `READY` or `FAILED`, leaves `PENDING` with a single warning when ffmpeg is missing, and publishes `AudioPrepared` in a transaction of its own only when a row changed; verify with tests for ready, failed, ffmpeg-missing, deleted-meanwhile and "no event for browser formats".
-- [ ] 4.4 Add `RenditionBackfill` on `ApplicationReadyEvent`, one at a time and in the background; verify that a row left `PENDING` becomes `READY` when the backfill runs.
+- [x] 4.1 Add `tunelad.media.ffmpeg.transcode-timeout` (default `5m`) to `FfmpegProperties`; verify the binding in a properties test.
+- [x] 4.2 Add `RenditionMaker`, which streams the audio to ffmpeg, writes an `.m4a` temporary file with `+faststart`, and returns its content as `Flux<DataBuffer>` while deleting the file at the end; all blocking work on `Schedulers.boundedElastic()`. Verify with a test, assuming ffmpeg is present, that a generated WMA gives audio ffprobe reports as AAC with a duration near 4 s, and that noise fails with `UndecodableAudioException` and leaves no temporary file.
+- [x] 4.3 Add `RenditionComputer`, an `@ApplicationModuleListener` on `AudioStored` that stores `<key>:play` as `audio/mp4`, saves `READY` or `FAILED`, leaves `PENDING` with a single warning when ffmpeg is missing, and publishes `AudioPrepared` in a transaction of its own only when a row changed; verify with tests for ready, failed, ffmpeg-missing, deleted-meanwhile and "no event for browser formats".
+- [x] 4.4 Add `RenditionBackfill` on `ApplicationReadyEvent`, one at a time and in the background; verify that a row left `PENDING` becomes `READY` when the backfill runs.
 
 ## 5. Playing the rendition
 
