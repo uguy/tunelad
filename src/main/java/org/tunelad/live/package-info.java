@@ -4,7 +4,7 @@
  * application hears them, and each instance streams them to its connected browsers as Server-Sent Events.
  */
 @org.springframework.modulith.ApplicationModule(
-		allowedDependencies = { "search::event", "media::event", "favourite::event", "playlist::event", "comment::event", "account" }
+		allowedDependencies = { "search::event", "media::event", "favourite::event", "playlist::event", "comment::event", "tune::event", "set::event", "track::event", "account" }
 )
 @org.springframework.lang.NonNullApi
 package org.tunelad.live;

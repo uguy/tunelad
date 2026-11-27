@@ -5,7 +5,7 @@
 ## 2. Backend events
 
 - [x] 2.1 `tune::event.TuneChanged` and `set::event.SetChanged` (named interface packages); publish on Tune create/import (only when created), on bulk import end (one event, no id) and on Set create. Verify: service/integration tests that each action publishes exactly one event and an import of an existing Tune publishes none. Commit `feat(tune): publish tune and set changes`.
-- [ ] 2.2 `LiveBridge` publishes `tune.changed`, `set.changed` and `performance.changed` (from `NewTrackSaved`, `TrackUpdated`, `TrackDeleted`) to everyone; `live` `allowedDependencies` and Javadoc updated; `GET /api/live` OpenAPI description lists the types. Verify: live tests cover every scenario of `specs/live` (anonymous and authenticated receive, no content, id-less bulk import event, second instance receives); `ModularApplicationTests` passes. Commit `feat(live): publish events for the new entities`.
+- [x] 2.2 `LiveBridge` publishes `tune.changed`, `set.changed` and `performance.changed` (from `NewTrackSaved`, `TrackUpdated`, `TrackDeleted`) to everyone; `live` `allowedDependencies` and Javadoc updated; `GET /api/live` OpenAPI description lists the types. Verify: live tests cover every scenario of `specs/live` (anonymous and authenticated receive, no content, id-less bulk import event, second instance receives); `ModularApplicationTests` passes. Commit `feat(live): publish events for the new entities`.
 
 ## 3. UI
 

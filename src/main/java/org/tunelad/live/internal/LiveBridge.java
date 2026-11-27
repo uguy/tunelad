@@ -10,12 +10,17 @@ import org.tunelad.media.event.AudioPrepared;
 import org.tunelad.media.event.WaveformComputed;
 import org.tunelad.playlist.event.PlaylistChanged;
 import org.tunelad.search.event.TrackIndexed;
+import org.tunelad.set.event.SetChanged;
+import org.tunelad.track.event.NewTrackSaved;
+import org.tunelad.track.event.TrackDeleted;
+import org.tunelad.track.event.TrackUpdated;
+import org.tunelad.tune.event.TuneChanged;
 import org.tunelad.search.event.TrackUnindexed;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Turns the events of the modules that own the state into live events, published on NATS: for everyone when they
- * concern the shared library, and for the connections of one account when they concern its favourites or
+ * concern the shared library (Tracks, Tunes, Sets, Performances, Comments), and for the connections of one account when they concern its favourites or
  * playlists, which are private.
  * <p>
  * It listens to {@code search} and {@code media}, which announce a change once it is written, and not to the events
@@ -72,6 +77,38 @@ class LiveBridge {
     @ApplicationModuleListener
     void on(CommentChanged event) {
         publishToEveryone("comment.changed", event.subjectId());
+    }
+
+    /** The Tune's id, or none after a bulk import: the browser refetches the Tunes, which are public. */
+    @ApplicationModuleListener
+    void on(TuneChanged event) {
+        publishToEveryone("tune.changed", event.tuneId());
+    }
+
+    /** The Set's id: the browser refetches the Sets, which are public. */
+    @ApplicationModuleListener
+    void on(SetChanged event) {
+        publishToEveryone("set.changed", event.setId());
+    }
+
+    /**
+     * The Track's id, for its Performances, which are public. A Track event is raised in the transaction that wrote
+     * the Performances, so a browser refetching on the hint sees them. An edit of the Track's metadata alone also
+     * announces it: a harmless extra refetch.
+     */
+    @ApplicationModuleListener
+    void on(NewTrackSaved event) {
+        publishToEveryone("performance.changed", event.trackId());
+    }
+
+    @ApplicationModuleListener
+    void on(TrackUpdated event) {
+        publishToEveryone("performance.changed", event.trackId());
+    }
+
+    @ApplicationModuleListener
+    void on(TrackDeleted event) {
+        publishToEveryone("performance.changed", event.trackId());
     }
 
     private void publishToEveryone(String type, String id) {
