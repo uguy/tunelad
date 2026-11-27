@@ -1,0 +1,84 @@
+# identification Specification
+
+## Purpose
+Propose where each Tune of a Track's Set starts by analysing the uploaded audio in the background, without delaying the upload. Each Performance says whether it is pending, identified from the audio, nothing found, or corrected by an Account, and an Account's correction is never overwritten by a later run. The Owner of a Track or an Administrator can run the analysis again through the REST API; the UI shows each Performance's state and offers the re-run.
+
+## Requirements
+
+### Requirement: Identification runs after upload
+After a Track is saved with a Set, the system SHALL start Identification of its audio in the background, without delaying the upload response. Until it finishes, every Performance of the Track SHALL have the state `pending`.
+
+#### Scenario: Upload returns before analysis ends
+- **GIVEN** a Set of "Cooley's" then "The Kesh" exists and the sources are slow
+- **WHEN** an authenticated client uploads a track for it
+- **THEN** the response status is 201 Created
+- **AND** both Performances of the track have the state `pending`
+
+### Requirement: Proposals fill Performances
+When Identification finishes, the system SHALL, for each Performance whose Tune the analysis detected in the Track's audio, propose the detection's start as the Performance's start offset and set its state to `identified`. Only Tunes of the Track's Set SHALL be accepted: a detected Tune that is not in the Set is ignored.
+
+#### Scenario: Proposal accepted
+- **GIVEN** a track of the Set "Cooley's" then "The Kesh" whose Performances are `pending`, and the analysis detects "The Kesh" starting at 95.5 s
+- **WHEN** Identification finishes
+- **THEN** the second Performance has start offset 95.5 and the state `identified`
+
+#### Scenario: Tune outside the Set
+- **GIVEN** the analysis detects a Tune that is not in the Track's Set
+- **WHEN** Identification finishes
+- **THEN** no Performance takes its start offset
+
+#### Scenario: A later run finds it
+- **GIVEN** a Performance that is `nothing_found`
+- **WHEN** Identification is run again and detects its Tune
+- **THEN** the Performance takes the detection's start and is `identified`
+
+### Requirement: Nothing found
+When Identification finishes, a Performance that was `pending`, whose Tune the analysis looked for (it has a thesession.org id) and did not detect, SHALL keep its values and become `nothing_found`. A Performance that was `identified` or `corrected` SHALL be left as it is. A Performance whose Tune has no thesession.org id is never looked for and SHALL stay as it is; if no Tune of the Set has one, the analysis SHALL not be asked for at all.
+
+#### Scenario: Nothing detected
+- **GIVEN** a track whose Performances are `pending` and the analysis detects none of its Tunes
+- **WHEN** Identification finishes
+- **THEN** the Performances keep their values and are `nothing_found`
+
+#### Scenario: Only some Tunes heard
+- **GIVEN** a track of the Set "Cooley's" then "The Kesh" and the analysis detects only "The Kesh"
+- **WHEN** Identification finishes
+- **THEN** the first Performance is `nothing_found` and the second is `identified`
+
+#### Scenario: A later run no longer hears an identified Tune
+- **GIVEN** a Performance that is `identified`
+- **WHEN** Identification is run again and does not detect its Tune
+- **THEN** the Performance keeps its start offset and stays `identified`
+
+#### Scenario: Tunes that cannot be recognised
+- **GIVEN** a Set whose only Tune was made by hand, with no thesession.org id
+- **WHEN** the track is uploaded
+- **THEN** the analysis is not asked for anything
+- **AND** the Performance stays `pending`
+
+### Requirement: Manual corrections are never overwritten
+A Performance in the state `corrected` SHALL keep its values through any Identification, including a re-run. A proposal SHALL replace only values of Performances that are `pending`, `nothing_found` or `identified`.
+
+#### Scenario: Re-run keeps a correction
+- **GIVEN** an Account edited the start offset of a Performance to 90, making it `corrected`
+- **WHEN** Identification is re-run and detects that Tune starting at 95.5 s
+- **THEN** the start offset is still 90 and the state is still `corrected`
+
+### Requirement: Re-run Identification
+The system SHALL let the Owner of a Track or an Administrator re-run Identification with `POST /api/tracks/{id}/identification`, responding 202 Accepted. Other Accounts get 403 Forbidden, an unknown Track 404 Not Found.
+
+#### Scenario: Owner re-runs
+- **WHEN** the Owner requests a re-run
+- **THEN** the response status is 202 Accepted and Identification runs again
+
+#### Scenario: Not the Owner
+- **WHEN** an Account that is neither Owner nor Administrator requests a re-run
+- **THEN** the response status is 403 Forbidden
+
+### Requirement: The analysis service can fail
+If the analysis service is unreachable, times out or answers with an error, Identification SHALL end without failing the Track, leave the Performances unchanged and allow a re-run.
+
+#### Scenario: Service down
+- **GIVEN** the analysis service is unreachable
+- **WHEN** Identification runs
+- **THEN** the Track and its Performances are unchanged, still `pending` (not `nothing_found`), and a re-run is possible

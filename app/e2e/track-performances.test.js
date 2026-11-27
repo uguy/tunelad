@@ -140,3 +140,84 @@ test('an invalid start is refused before sending', async ({ page, context }) => 
 	await expect(page.getByRole('alert')).toContainText('The start must be a time');
 	expect(puts).toHaveLength(0);
 });
+
+// --- Identification: where each performance stands, and asking again ------------------------------
+
+const IDENTIFIED = {
+	...WHOLE,
+	performances: [
+		{ ...PERFORMANCES[0], identification: 'nothing_found' },
+		{ ...PERFORMANCES[1], identification: 'identified' }
+	]
+};
+
+test('each performance says where it stands in identification', async ({ page, context }) => {
+	await openTracks(page, context);
+	await page.route('**/api/tracks/track-1', (route) => route.fulfill({ json: IDENTIFIED }));
+
+	await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+
+	const tunes = page.getByRole('list', { name: 'tunes of Knees Up' }).getByRole('listitem');
+	await expect(tunes.nth(0)).toContainText('Nothing found in the audio');
+	await expect(tunes.nth(1)).toContainText('Identified from the audio');
+});
+
+test('the edit form shows the state next to each tune', async ({ page, context }) => {
+	await openTracks(page, context);
+	await page.route('**/api/tracks/track-1', (route) => route.fulfill({ json: IDENTIFIED }));
+
+	await page.getByRole('button', { name: 'edit track Knees Up' }).click();
+
+	await expect(page.getByRole('group', { name: /The Kesh/ })).toContainText(
+		'Identified from the audio'
+	);
+});
+
+test('the owner asks for identification again', async ({ page, context }) => {
+	await openTracks(page, context);
+	await page.route('**/api/tracks/track-1', (route) => route.fulfill({ json: IDENTIFIED }));
+	const posts = [];
+	await page.route('**/api/tracks/track-1/identification', (route) => {
+		posts.push(route.request().headers()['x-xsrf-token']);
+		return route.fulfill({ status: 202 });
+	});
+
+	await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+	await page.getByRole('button', { name: 'identify the tunes of Knees Up again' }).click();
+
+	await expect(page.getByRole('status')).toContainText('Listening to the track');
+	expect(posts).toEqual(['csrf-123']);
+});
+
+test('a refused request is reported', async ({ page, context }) => {
+	await openTracks(page, context);
+	await page.route('**/api/tracks/track-1', (route) => route.fulfill({ json: IDENTIFIED }));
+	await page.route('**/api/tracks/track-1/identification', (route) =>
+		route.fulfill({ status: 403 })
+	);
+
+	await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+	await page.getByRole('button', { name: 'identify the tunes of Knees Up again' }).click();
+
+	await expect(page.getByRole('alert')).toContainText('You may not change this track.');
+});
+
+test('someone else cannot ask again', async ({ page, context }) => {
+	await openTracks(page, context);
+	await page.route('**/api/tracks/search*', (route) =>
+		route.fulfill({ json: [{ ...LISTED, owner: { id: 'account-bob', displayName: 'Bob Smith' } }] })
+	);
+	await page.route('**/api/tracks/track-1', (route) =>
+		route.fulfill({
+			json: { ...IDENTIFIED, owner: { id: 'account-bob', displayName: 'Bob Smith' } }
+		})
+	);
+	await page.reload();
+
+	await page.getByRole('button', { name: 'show track Knees Up detail button' }).click();
+
+	await expect(page.getByRole('list', { name: 'tunes of Knees Up' })).toBeVisible();
+	await expect(
+		page.getByRole('button', { name: 'identify the tunes of Knees Up again' })
+	).toHaveCount(0);
+});

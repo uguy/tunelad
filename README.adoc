@@ -80,6 +80,11 @@ This simple app allows to store an mp3 file with some description and play it vi
   app, one file per note, and fetched as needed)
 * Sets: ordered lists of tunes, one shared set per distinct ordered list (`/sets`, `GET /api/sets`). A set is built from the tunes page
   list with add, move up or down and remove buttons, and `POST /api/sets` answers with the existing set when the list has one already
+* Identification: after an upload, the application hears the track's audio and proposes where each of the set's tunes starts
+  (the tunes that came from thesession.org; the others cannot be recognised). Each performance says whether it was identified
+  from the audio, nothing was found for it, it was corrected by someone, or it is not analysed yet; a performance that was corrected is never changed by a later run.
+  The owner or an administrator can ask again from the track's details (`POST /api/tracks/{id}/identification`). The analysis runs in a sidecar
+  (<<identification-sidecar>>), and uploads work without it
 * Favourites: a heart on every track (list and player bar) for logged-in users, and a page that lists them
   (`/tracks/favourites`, `GET /api/me/favourites`)
 * Playlists: private ordered lists of tracks, created, renamed and deleted from `/tracks/playlists`. Add a track from the
@@ -182,6 +187,19 @@ Live updates travel between instances of the application through NATS (core, wit
 starts it on `nats://localhost:4222`, which is the default of `tunelad.live.nats.url`. Without it the application still
 starts and works, but the track list, waveforms, favourites and playlists only refresh on reload, until NATS is reachable again (no restart
 needed).
+
+[[identification-sidecar]]
+=== Identification (which tunes a track holds)
+
+Identification is done by a sidecar service, `sidecar/identification`, that runs the recognition engine of
+https://github.com/Batpapa/Cadence[Cadence] (FolkFriend and a note decoder in WebAssembly, in Node). `docker compose up -d`
+builds and starts it on `http://localhost:8090`, which is the default of `tunelad.identification.url`. The first start downloads the
+tune index (about 33 MB, built from thesession.org) into a volume, so `/health` answers `503` for a few seconds until it is loaded.
+Without the sidecar, uploads still work and tracks stay not identified: ask again once it runs. Its API, settings and licences
+(AGPL-3.0 and GPL-3.0 code, kept in their own folder) are in `sidecar/identification/README.md` and its `NOTICE`.
+
+Offsets are accurate to a few seconds, a tune missing from the thesession.org index is never recognised, and the analysis
+takes about 5 % of the track's duration. How it was chosen: `docs/research/identification-sources.md`.
 
 === Keycloak (local login)
 

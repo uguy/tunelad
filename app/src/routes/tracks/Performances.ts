@@ -1,4 +1,5 @@
 import { parseOffset } from '#lib/offset.js';
+import type { IdentificationState } from './Tracks.js';
 
 /** The longest key and notes the server accepts. */
 export const MAX_KEY = 30;
@@ -11,6 +12,8 @@ export interface PerformanceForm {
 	key: string;
 	notes: string;
 	abc: string;
+	/** Shown, never sent: where the performance stands in identification. */
+	identification?: IdentificationState;
 }
 
 /** A Performance as the server takes it. */

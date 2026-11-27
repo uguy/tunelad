@@ -40,7 +40,7 @@ The ABC notation a Tune carries on its own, imported from a source such as these
 ### Identification
 
 **Identification**:
-The automatic analysis of a Track's audio, run in the background after upload, that proposes its Performances and Transcriptions using sources such as FolkFriend and irishtune.info. A Track's Performances are pending, identified (proposed by the machine) or corrected (edited by an Account); manual corrections are never overwritten by a re-run.
+The automatic analysis of a Track's audio, run in the background after upload, that proposes where each Tune of its Set starts, by recognising the Tunes in the audio (Transcriptions are still written by hand). A Track's Performances are pending (not analysed yet, or the analysis could not be done), identified (proposed by the machine), nothing found (an analysis finished without hearing the Tune) or corrected (edited by an Account); manual corrections are never overwritten by a re-run.
 _Avoid_: Recognition, tagging
 
 ### People and lists

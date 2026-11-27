@@ -20,6 +20,27 @@ permissions:
 
 jobs:
 
+  # The identification sidecar (Node, runs Cadence's recognition engine) has its own tests and image
+  sidecar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sidecar/identification
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sidecar/identification/package-lock.json
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: npm ci
+      - name: Test
+        run: npm test
+      - name: Build the image
+        run: docker build -t tunelad-identification .
+
   build:    
     runs-on: ubuntu-latest
     steps:

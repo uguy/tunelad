@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
+	import IdentificationBadge from '../../tracks/IdentificationBadge.svelte';
 	import { formatOffset } from '#lib/offset.js';
 	import TuneService, { type Tune, type TunePerformance } from '../Tunes.js';
 
@@ -98,6 +99,7 @@
 								in {performance.trackTitle}
 							</span>
 						</a>
+						<IdentificationBadge state={performance.identification} />
 					</p>
 					{#if performance.notes}
 						<p class="text-sm whitespace-pre-line text-ink-muted">{performance.notes}</p>

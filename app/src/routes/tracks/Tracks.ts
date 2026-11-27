@@ -2,6 +2,9 @@ import * as api from '#lib/api.js';
 import type { TuneSet } from '../sets/Sets.js';
 import type { PerformanceInput } from './Performances.js';
 
+/** Where a performance stands in identification of the audio. */
+export type IdentificationState = 'pending' | 'identified' | 'nothing_found' | 'corrected';
+
 /** A track as the API returns it. */
 export interface Track {
 	id: string;
@@ -28,6 +31,7 @@ export interface Performance {
 	key?: string | null;
 	notes?: string | null;
 	abc?: string | null;
+	identification?: IdentificationState;
 }
 
 /** The waveform of a track's audio: its peaks, from 0 to 1, once `READY`; none while `PENDING` or when `FAILED`. */
@@ -199,6 +203,16 @@ export default class TrackService {
 		const res = await api.request(this.#fetchFunc, 'PUT', `tracks/${encodeURIComponent(id)}`, edit);
 		if (!res.ok) throw new TrackChangeError(res.status);
 		return await res.json();
+	}
+
+	/** Asks the server to hear the track's audio again; throws a {@link TrackChangeError} if refused. */
+	async identify(id: string): Promise<void> {
+		const res = await api.request(
+			this.#fetchFunc,
+			'POST',
+			`tracks/${encodeURIComponent(id)}/identification`
+		);
+		if (!res.ok) throw new TrackChangeError(res.status);
 	}
 
 	/**

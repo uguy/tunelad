@@ -14,5 +14,7 @@ A Track is a recording of a Set of Tunes, and each recording of a Tune differs i
 ## Consequences
 
 - Tune identity comes from the thesession.org id; irishtune.info only adds references and aliases.
-- Identification (FolkFriend) proposes Performances and Transcriptions, and manual corrections always win. Whether FolkFriend copes with full band recordings, and the licence and ABC coverage of the thesession.org data dump, are unverified. Transcription must stay editable by hand so the model does not depend on them.
+- Identification proposes Performances and manual corrections always win. Spikes (`docs/research/identification-sources.md`): the bare FolkFriend CLI fails on a real duo recording, whereas Cadence's pipeline (note decoder, tuned query, Viterbi segmenter) identifies a tune of it reliably. Identification therefore runs Cadence's engine in a Node sidecar container behind a port; irishtune.info has no API or licence and is not used. The first slice proposes start offsets only; key and Transcription stay entered by hand until a later slice, so the model does not depend on the engine.
+- The sidecar contains AGPL-3.0 and GPL-3.0 code. It is kept as a separate container with its source public in this repository and its own licence; the rest of the repository keeps its licence.
+- Tunes absent from the thesession.org index cannot be identified.
 - Existing `Track` (bare artist name, no Tunes) and `playlist` code do not yet match this model.

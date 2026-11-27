@@ -18,6 +18,8 @@ public record TunePerformanceDTO(
 		@Schema(description = "Notes on melodic variation", nullable = true)
 		String notes,
 		@Schema(description = "The transcription, in ABC notation", nullable = true)
-		String abc
+		String abc,
+		@Schema(description = "Whether the values were proposed from the audio (identified), edited by an account (corrected), not found by the last analysis (nothing_found), or not analysed yet (pending)", example = "identified")
+		IdentificationState identification
 ) {
 }

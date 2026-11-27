@@ -72,3 +72,21 @@ CREATE INDEX track_performances_tune_idx ON track_performances (tune_id);
 ALTER TABLE track_performances
     ADD COLUMN abc TEXT;
 --rollback ALTER TABLE track_performances DROP COLUMN abc;
+
+--changeset tunelad:track-performance-identification
+-- The Identification state of a Performance: 'pending' (nothing proposed), 'identified' (proposed from the audio) or
+-- 'corrected' (edited by an Account). Performances stored before Identification existed count as corrected.
+ALTER TABLE track_performances
+    ADD COLUMN identification TEXT NOT NULL DEFAULT 'corrected'
+        CONSTRAINT track_performances_identification_check CHECK (identification IN ('pending', 'identified', 'corrected'));
+--rollback ALTER TABLE track_performances DROP COLUMN identification;
+
+--changeset tunelad:track-performance-nothing-found
+-- A fourth Identification state: an analysis finished without hearing the Performance's Tune.
+ALTER TABLE track_performances DROP CONSTRAINT track_performances_identification_check;
+ALTER TABLE track_performances
+    ADD CONSTRAINT track_performances_identification_check
+        CHECK (identification IN ('pending', 'identified', 'nothing_found', 'corrected'));
+--rollback UPDATE track_performances SET identification = 'pending' WHERE identification = 'nothing_found';
+--rollback ALTER TABLE track_performances DROP CONSTRAINT track_performances_identification_check;
+--rollback ALTER TABLE track_performances ADD CONSTRAINT track_performances_identification_check CHECK (identification IN ('pending', 'identified', 'corrected'));

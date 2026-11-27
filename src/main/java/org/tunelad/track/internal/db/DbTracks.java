@@ -54,7 +54,7 @@ class DbTracks implements Tracks {
     public Flux<TunePerformanceDTO> findPerformancesByTune(String tuneId) {
         return client.sql("""
                         SELECT t.id AS track_id, t.title, a.name AS artist, p.position, p.start_offset_seconds,
-                               p.key, p.notes, p.abc
+                               p.key, p.notes, p.abc, p.identification
                         FROM track_performances p
                                  JOIN track_tracks t ON t.id = p.track_id
                                  LEFT JOIN track_artists a ON a.id = t.artist_id
@@ -64,7 +64,8 @@ class DbTracks implements Tracks {
                 .map(row -> new TunePerformanceDTO(row.get("track_id", String.class), row.get("title", String.class),
                         row.get("artist", String.class), row.get("position", Integer.class),
                         row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
-                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class)))
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class),
+                        org.tunelad.track.IdentificationState.fromColumn(row.get("identification", String.class))))
                 .all();
     }
 
@@ -95,6 +96,17 @@ class DbTracks implements Tracks {
     }
 
     @Override
+    public Mono<Track> findByIdForUpdate(String id) {
+        return client.sql("SELECT id FROM track_tracks WHERE id = :id FOR UPDATE").bind("id", id).fetch().first()
+                .then(Mono.defer(() -> findById(id)));
+    }
+
+    @Override
+    public Mono<Void> savePerformances(Track track) {
+        return replacePerformances(track.getId(), track.getPerformances());
+    }
+
+    @Override
     public Mono<Void> delete(Track track) {
         // its Performances go with it: ON DELETE CASCADE
         return trackRepository.delete(track);
@@ -116,10 +128,11 @@ class DbTracks implements Tracks {
         return client.sql("DELETE FROM track_performances WHERE track_id = :track").bind("track", trackId).then()
                 .thenMany(Flux.fromIterable(performances).concatMap(p -> {
                     var spec = client.sql("""
-                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes, abc)
-                                    VALUES (:track, :position, :tune, :offset, :key, :notes, :abc)""")
+                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes, abc, identification)
+                                    VALUES (:track, :position, :tune, :offset, :key, :notes, :abc, :identification)""")
                             .bind("track", trackId).bind("position", p.position()).bind("tune", p.tuneId())
-                            .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()));
+                            .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()))
+                            .bind("identification", p.identification().column());
                     spec = p.key() == null ? spec.bindNull("key", String.class) : spec.bind("key", p.key());
                     spec = p.notes() == null ? spec.bindNull("notes", String.class) : spec.bind("notes", p.notes());
                     spec = p.abc() == null ? spec.bindNull("abc", String.class) : spec.bind("abc", p.abc());
@@ -158,13 +171,14 @@ class DbTracks implements Tracks {
             return Mono.just(Map.of());
         }
         return client.sql("""
-                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes, abc
+                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes, abc, identification
                         FROM track_performances WHERE track_id IN (:ids) ORDER BY track_id, position""")
                 .bind("ids", trackIds)
                 .map(row -> Map.entry(row.get("track_id", String.class), new Performance(
                         row.get("position", Integer.class), row.get("tune_id", String.class),
                         row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
-                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class))))
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class),
+                        org.tunelad.track.IdentificationState.fromColumn(row.get("identification", String.class)))))
                 .all()
                 .collect(HashMap::new, (map, entry) ->
                         map.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(entry.getValue()));
