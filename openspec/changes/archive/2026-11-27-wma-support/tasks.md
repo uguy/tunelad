@@ -54,7 +54,7 @@ Commit: `feat(ui): show wma audio being prepared and play it when ready`
 - [x] 7.1 Update the `README.adoc` features list (WMA support, the rendition, and that ffmpeg is needed to play WMA) and the ffmpeg note at line 110; verify the text matches the implemented behaviour.
 - [x] 7.2 Run `./mvnw clean verify` and verify it passes with the frontend lint and check, backend, vitest and Playwright tests.
 - [x] 7.3 Check `GLOSSARY.md`: the Track definition and the "audio" wording stay accurate (a rendition is an implementation detail, not a domain term); update it in this change if that proves wrong.
-- [ ] 7.4 Push the branch and open a PR titled `feat(media): support wma uploads through an aac rendition` to `main`, only after 7.2 passes, with `Closes #837` in the body; verify the `workflow-pr-title` check is green.
+- [x] 7.4 Push the branch and open a PR titled `feat(media): support wma uploads through an aac rendition` to `main`, only after 7.2 passes, with `Closes #837` in the body; verify the `workflow-pr-title` check is green.
 
 ## Workflow follow-up
 
