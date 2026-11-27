@@ -1,6 +1,7 @@
 package org.tunelad.track;
 
 import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.ApplyTags;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
@@ -27,6 +28,12 @@ public interface TrackService {
      * track no longer exists (it may have been deleted while the analysis ran).
      */
     Mono<TrackDTO> execute(ProposePerformances command);
+
+    /**
+     * Fills the Track's title, artist, album and description that no Account provided from the tags read from its
+     * audio, and returns the track. Completes empty when nothing changed, or when the track no longer exists.
+     */
+    Mono<TrackDTO> execute(ApplyTags command);
 
     Flux<TrackDTO> findAll();
 

@@ -17,6 +17,7 @@ import org.tunelad.set.SetDTO;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.ApplyTags;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.ProposePerformances;
@@ -205,6 +206,48 @@ class DefaultTrackService implements TrackService {
                     }
                     track.setPerformances(new java.util.ArrayList<>(proposed));
                     return tracks.savePerformances(track).thenReturn(track);
+                })
+                .map(trackMapper::toDto)
+                .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
+    }
+
+    /**
+     * Locks the track's row like {@link #execute(ProposePerformances)}: an edit either ran first, and made every field
+     * provided, or runs after and replaces what the tags set.
+     */
+    @ReactiveTransactional
+    @Override
+    public Mono<TrackDTO> execute(ApplyTags command) {
+        return tracks.findByIdForUpdate(command.trackId())
+                .flatMap(track -> {
+                    var provided = track.getProvidedTextFields();
+                    var changed = false;
+                    var title = blankToNull(command.title());
+                    if (title != null && !provided.contains("title")) {
+                        title = title.strip().substring(0, Math.min(title.strip().length(), TITLE_MAX));
+                        changed |= !title.equals(track.getTitle());
+                        track.setTitle(title);
+                    }
+                    var description = blankToNull(command.description());
+                    if (description != null && !provided.contains("description")) {
+                        changed |= !description.equals(track.getDescription());
+                        track.setDescription(description);
+                    }
+                    var album = blankToNull(command.album());
+                    if (album != null && !provided.contains("album")) {
+                        changed |= !album.equals(track.getAlbum());
+                        track.setAlbum(album);
+                    }
+                    var artistName = blankToNull(command.artist());
+                    if (artistName == null || provided.contains("artist")) {
+                        return changed ? tracks.save(track) : Mono.<Track>empty();
+                    }
+                    var anyChange = changed;
+                    return artists.findOrCreate(artistName).flatMap(artist -> {
+                        var artistChanged = track.getArtist() == null || !track.getArtist().id().equals(artist.id());
+                        track.setArtist(artist);
+                        return anyChange || artistChanged ? tracks.save(track) : Mono.<Track>empty();
+                    });
                 })
                 .map(trackMapper::toDto)
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));

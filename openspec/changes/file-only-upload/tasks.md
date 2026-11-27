@@ -11,16 +11,16 @@
 - [x] 2.3 `TrackController.create`: only `file` required, blank text parts treated as absent, filename passed on (path stripped); update the OpenAPI summary, description and responses
 - [x] 2.4 `TrackEdit` and `UpdateTrackCommand`: description optional and cleared when blank, all four fields recorded as provided; update the OpenAPI text and `TrackDTO` description schema
 - [x] 2.5 Tests (`TrackApiTest`, `TrackPerformancesTest`): file only, long and blank names, blank parts, missing file, performances without a Set, edit with description emptied, a Set-less Track played, edited and deleted
-- [ ] 2.6 Commit `feat(track): upload a track from its audio file alone`
+- [x] 2.6 Commit `feat(track): upload a track from its audio file alone`
 
 ## 3. Backend: tags (`media`, `identification`, `track`)
 
-- [ ] 3.1 `media`: `MediaTags` public interface, `AudioTags` record and ffprobe implementation with `FfprobeProperties`; unavailable, failing or timed-out probe yields empty tags
-- [ ] 3.2 `track::command`: `ApplyTags` command and `TrackService.execute(ApplyTags)` under `findByIdForUpdate`, filling only fields not provided, through `Artists.findOrCreate`, publishing `TrackUpdated` only on change
-- [ ] 3.3 `identification`: `TagsOnUpload` listener on `NewTrackSaved`, failures logged and never raised
-- [ ] 3.4 `TestAudio`: tagged fixtures built with ffmpeg for mp3, m4a, ogg, flac and WMA
-- [ ] 3.5 Tests: tag fill per format, partial and blank tags, shared Artist, uploader's values kept, edit before and after, redelivered event, no tags, unreadable audio, ffprobe missing, no analysis request for a Set-less Track, `track.indexed` and search by the tag title
-- [ ] 3.6 `ModularApplicationTests` still passes
+- [x] 3.1 `media`: `MediaTags` public interface, `AudioTags` record and ffprobe implementation with `FfprobeProperties`; unavailable, failing or timed-out probe yields empty tags
+- [x] 3.2 `track::command`: `ApplyTags` command and `TrackService.execute(ApplyTags)` under `findByIdForUpdate`, filling only fields not provided, through `Artists.findOrCreate`, publishing `TrackUpdated` only on change
+- [x] 3.3 `identification`: `TagsOnUpload` listener on `NewTrackSaved`, failures logged and never raised
+- [x] 3.4 `TestAudio`: tagged fixtures built with ffmpeg for mp3, m4a, ogg, flac and WMA
+- [x] 3.5 Tests: tag fill per format, partial and blank tags, shared Artist, uploader's values kept, edit before and after, redelivered event, no tags, unreadable audio, ffprobe missing, no analysis request for a Set-less Track, `track.indexed` and search by the tag title
+- [x] 3.6 `ModularApplicationTests` still passes
 - [ ] 3.7 Commit `feat(identification): fill a track's blank metadata from the file's tags`
 
 ## 4. Frontend
