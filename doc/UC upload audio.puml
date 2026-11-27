@@ -1,0 +1,19 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Bob -> App : Upload an audio file (optionally pick a catalogue Track it is)
+return Uploaded
+App -> App : Read the file's tags (title, artist, album, comment) into the fields Bob left blank
+App -> App : Identification: listen to the audio, guess the Tunes played\n(importing from thesession.org those the catalogue lacks)
+App -> App : Give the Track its Set and one Performance per Tune
+App -> App : Suggest a matching catalogue Track on an imported Album
+Bob -> App : Accept the suggestion
+return The audio is attached to the catalogue Track
+App -> App : Index the Track to make it searchable
+
+Bob -> App : Read all detail about the Set played in the Track
+return Track details
+Bob -> App : Correct a Performance (marks it corrected, never overwritten by a re-run)
+@enduml

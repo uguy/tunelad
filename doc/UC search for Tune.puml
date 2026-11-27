@@ -1,0 +1,17 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Bob -> App : Search for a Tune by name or alias, Dance type and key
+return A list of matching Tunes
+Bob -> App : View Tune detail
+return The Tune detail (sheet and ABC, composer, Performances and related Tracks,\nrecorded by Musicians and Bands, played by Accounts)
+Bob -> App : Listen to the ABC (browser synth, tempo control)
+Bob -> App : Listen to a Track where this Tune is played
+Bob -> App : Add this Tune to his Repertoire
+Bob -> App : Add this Tune to one of his Sets
+Bob -> App : Comment on the Tune
+Bob -> App : Add the Track to his Favourites
+Bob -> App : Browse more Tracks and Albums of the same Artist
+@enduml

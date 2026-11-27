@@ -1,0 +1,116 @@
+@startuml
+'https://plantuml.com/class-diagram
+' Mirrors GLOSSARY.md. "User" of earlier drafts is the Account.
+
+class Account {
+}
+
+interface Artist {
+    name: string
+    ' unclassified until an Account marks it Band or Musician
+}
+class Band {
+}
+class Musician {
+}
+Band --|> Artist : is a
+Musician --|> Artist : is a
+Band o-- "*" Musician : members
+
+class Album {
+    title: string
+    cover: Image  [optional]
+    releaseDate: Date  [optional]
+}
+Album --> Artist : by
+
+class Track {
+    title: string
+    description: string
+    tags: string[]
+    source: string
+}
+class Audio {
+}
+note right of Track
+  Audio or a place on an Album is enough.
+  A Track with no Audio is a catalogue Track:
+  audio uploaded later is attached on accept.
+end note
+Track --> "0..1" Audio : has
+Track --> "0..1" Album : can be part of
+Track --> Artist : performed by
+Track --> "0..1" Set : is a recording of
+Account --> Track : owns (uploaded)
+
+class Tune {
+    name: string
+    aliases: string[]
+    author: string
+    danceType: DanceType
+    usualKey: string
+    referenceTranscription: abc
+    thesessionId: int  [optional]
+}
+enum DanceType {
+JIG
+REEL
+HORNPIPE
+SLIDE
+POLKA
+SLIP_JIG
+WALTZ
+BARNDANCE
+STRATHSPEY
+MARCH
+MAZURKA
+THREE_TWO
+}
+Tune --> DanceType
+
+class Performance {
+    order: int
+    startOffset: duration
+    key: string
+    variationNotes: string
+    transcription: abc
+    state: pending | identified | nothing found | corrected
+    listedName: string  [only when unresolved]
+}
+Track *-- "*" Performance
+Performance --> "0..1" Tune : of (none while unresolved)
+
+class Set {
+    name: string  [optional]
+}
+note right of Set
+  Own identity, visible to all Accounts.
+  From a Track: mirrors its Performances.
+  From an Account: its owner edits it.
+  Two Sets may hold the same Tunes.
+end note
+Set o-- "*" Tune : ordered
+Set --> "0..1" Track : derived from
+Set --> "0..1" Account : owner
+
+Account o-- "*" Set : sets (created or added by reference)
+Account o-- "*" Tune : Repertoire (plays, public to Accounts)
+
+class Playlist {
+    name: string
+}
+class Favourites {
+}
+Account *-- Playlist : has (private)
+Account *-- Favourites : has (private)
+Playlist o-- "*" Track : group
+Favourites o-- "*" Track : group
+
+class Comment {
+    text: string
+}
+Account --> Comment : writes
+Comment --> Track : on
+Comment --> Tune : on
+Comment --> Set : on
+@enduml

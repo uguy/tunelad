@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: proposed (the one-Set-per-ordered-list rule is superseded by ADR 0002)
 ---
 
 # A Tune is fixed, a Performance owns the Transcription, and a Set is unique per ordered list of Tunes
