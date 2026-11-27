@@ -93,6 +93,28 @@
 	:focus-visible {
 		@apply outline-2 outline-offset-2 outline-accent;
 	}
+
+	/* Nothing slides or fades for users who ask for less motion */
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+
+	/* Form fields take the theme's colours, not the forms plugin's light ones */
+	[type='text'],
+	[type='search'],
+	[type='email'],
+	[type='url'],
+	textarea,
+	select {
+		@apply border-line bg-surface text-ink placeholder:text-ink-muted;
+	}
 }
 
 @layer components {

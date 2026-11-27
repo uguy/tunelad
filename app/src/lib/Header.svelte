@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import AccountMenu from '#lib/AccountMenu.svelte';
+	import Icon from '#lib/Icon.svelte';
+	import ThemeSwitch from '#lib/ThemeSwitch.svelte';
 	import { session } from '#lib/session.svelte.js';
 
 	// Who is logged in, for the account menus (desktop and mobile)
@@ -16,73 +18,39 @@
 		{ path: '/about', label: 'About' }
 	] as const;
 
-	const linkClass = 'text-white/70 hover:text-white border-transparent';
-	const currentLinkClass = 'text-white border-accent';
+	/** The Tracks link also stands for the pages of the collections below it. */
+	function isCurrent(path: string) {
+		const here = page.url.pathname;
+		return path === '/' ? here === '/' : here === path || here.startsWith(`${path}/`);
+	}
 
 	let mobileMenuVisible = $state(false);
-	function toggleMobileMenuVisible() {
-		mobileMenuVisible = !mobileMenuVisible;
-	}
+
+	// A page change closes the mobile menu
+	$effect(() => {
+		void page.url.pathname;
+		mobileMenuVisible = false;
+	});
 </script>
 
 <header class="sticky top-0 z-50">
-	<nav class="bg-header shadow-md">
+	<nav class="border-b border-on-header/10 bg-header shadow-md">
 		<div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
 			<div class="relative flex h-14 items-center justify-between">
 				<div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
-					<!-- Mobile menu button-->
 					<button
 						type="button"
-						class="inline-flex items-center justify-center rounded-md p-2 text-white/70 hover:bg-white/10 hover:text-white"
+						class="inline-flex size-11 items-center justify-center rounded-md text-on-header/70 hover:bg-on-header/10 hover:text-on-header"
 						aria-controls="mobile-menu"
 						aria-expanded={mobileMenuVisible}
-						onclick={toggleMobileMenuVisible}
+						onclick={() => (mobileMenuVisible = !mobileMenuVisible)}
 					>
 						<span class="sr-only">Open main menu</span>
-
-						{#if !mobileMenuVisible}
-							<!--
-                          Icon when menu is closed.
-                          Heroicon name: outline/bars-3
-                          Menu open: "hidden", Menu closed: "block"
-                        -->
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="block w-6 h-6"
-								aria-hidden="true"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-								/>
-							</svg>
-						{:else}
-							<!--
-                          Icon when menu is open.
-                          Heroicon name: outline/x-mark
-                          Menu open: "block", Menu closed: "hidden"
-                        -->
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="block w-6 h-6"
-								aria-hidden="true"
-							>
-								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						{/if}
+						<Icon name={mobileMenuVisible ? 'close' : 'menu'} class="h-6 w-6" />
 					</button>
 				</div>
 				<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-					<a href={resolve('/')} class="flex flex-shrink-0 items-center gap-2">
+					<a href={resolve('/')} class="flex shrink-0 items-center gap-2">
 						<img
 							src="/images/icon-72x72.png"
 							alt="Tune Lad"
@@ -90,19 +58,19 @@
 							width="64"
 							height="64"
 						/>
-						<span class="hidden text-lg font-bold tracking-tight text-white md:inline">
+						<span class="hidden text-lg font-bold tracking-tight text-on-header md:inline">
 							Tune Lad
 						</span>
 					</a>
 					<div class="hidden sm:ml-8 sm:flex">
 						<div class="flex h-full space-x-1">
 							{#each links as link (link.path)}
-								{@const current = page.url.pathname === link.path}
+								{@const current = isCurrent(link.path)}
 								<a
 									href={resolve(link.path)}
-									class="{current
-										? currentLinkClass
-										: linkClass} flex items-center border-b-2 px-4 text-sm font-semibold transition-colors"
+									class="flex items-center border-b-2 px-4 text-sm font-semibold transition-colors {current
+										? 'border-accent text-on-header'
+										: 'border-transparent text-on-header/70 hover:text-on-header'}"
 									aria-current={current ? 'page' : undefined}
 								>
 									{link.label}
@@ -111,7 +79,8 @@
 						</div>
 					</div>
 				</div>
-				<div class="hidden sm:ml-6 sm:flex sm:items-center">
+				<div class="hidden sm:ml-6 sm:flex sm:items-center sm:gap-2">
+					<ThemeSwitch />
 					<AccountMenu />
 				</div>
 			</div>
@@ -121,17 +90,19 @@
 		<div class={mobileMenuVisible ? 'sm:hidden' : 'hidden'} id="mobile-menu">
 			<div class="space-y-1 px-2 pt-2 pb-3">
 				{#each links as link (link.path)}
-					{@const current = page.url.pathname === link.path}
+					{@const current = isCurrent(link.path)}
 					<a
 						href={resolve(link.path)}
-						class="{current
-							? 'bg-white/10 text-white'
-							: 'text-white/70 hover:bg-white/10 hover:text-white'} block px-3 py-2 rounded-md text-base font-medium"
+						class="block rounded-md px-3 py-2 text-base font-medium {current
+							? 'bg-on-header/10 text-on-header'
+							: 'text-on-header/70 hover:bg-on-header/10 hover:text-on-header'}"
 						aria-current={current ? 'page' : undefined}
 					>
 						{link.label}
 					</a>
 				{/each}
+				<div class="my-2 border-t border-on-header/10"></div>
+				<ThemeSwitch mobile />
 				<AccountMenu mobile />
 			</div>
 		</div>

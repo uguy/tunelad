@@ -5,6 +5,7 @@
 	import Footer from '#lib/Footer.svelte';
 
 	import PlayerBar from '#lib/PlayerBar.svelte';
+	import Toast from '#lib/ui/Toast.svelte';
 	import { player } from '#lib/player.svelte.js';
 	import { live } from '#lib/live.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -38,6 +39,8 @@
 	</main>
 	<Footer />
 </div>
+
+<Toast />
 
 <!-- In the root layout, so it stays mounted, and keeps playing, while the user moves between pages -->
 {#if player.source}

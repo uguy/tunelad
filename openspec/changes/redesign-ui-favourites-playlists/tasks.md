@@ -9,10 +9,10 @@
 
 ## 2. Shared components and app shell redesign
 
-- [ ] 2.1 Build `Menu.svelte` (disclosure menu: `aria-expanded`, Escape and outside click close, arrow keys), `EmptyState.svelte`, `Toast.svelte` and `PageHeader.svelte` in `app/src/lib/ui/`; verify with vitest-browser component tests for keyboard and ARIA behaviour
-- [ ] 2.2 Rebuild `Header.svelte` and `AccountMenu.svelte` on `Menu`: nav, theme switch (System, Light, Dark with an accessible name and active state), account menu (account, favourites, playlists, log out), mobile menu; remove the hard-coded colours; verify with Playwright (theme switch persists across reload, system theme default via `colorScheme` emulation, account menu entries, anonymous header) and update `account.test.js` for the menu
-- [ ] 2.3 Restyle `Footer`, `+layout`, `PlayerBar`, `Waveform` and the global focus, spacing and reduced-motion rules with the `frontend-design` skill; verify with `bun run lint`, `bun run check`, the existing player and waveform tests, and a Playwright check of no horizontal scroll at 360 px
-- [ ] 2.4 Commit: `feat(ui): redesign the app shell, header and player bar`
+- [x] 2.1 Build `Menu.svelte` (disclosure menu: `aria-expanded`, Escape and outside click close, arrow keys), `EmptyState.svelte`, `Toast.svelte` and `PageHeader.svelte` in `app/src/lib/ui/`; verify with vitest-browser component tests for keyboard and ARIA behaviour
+- [x] 2.2 Rebuild `Header.svelte` and `AccountMenu.svelte` on `Menu`: nav, theme switch (System, Light, Dark with an accessible name and active state), account menu (account, favourites, playlists, log out), mobile menu; remove the hard-coded colours; verify with Playwright (theme switch persists across reload, system theme default via `colorScheme` emulation, account menu entries, anonymous header) and update `account.test.js` for the menu
+- [x] 2.3 Restyle `Footer`, `+layout`, `PlayerBar`, `Waveform` and the global focus, spacing and reduced-motion rules with the `frontend-design` skill; verify with `bun run lint`, `bun run check`, the existing player and waveform tests, and a Playwright check of no horizontal scroll at 360 px
+- [x] 2.4 Commit: `feat(ui): redesign the app shell, header and player bar`
 
 ## 3. Page redesign
 

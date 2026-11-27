@@ -59,7 +59,7 @@
 
 <section
 	aria-label="player"
-	class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur"
+	class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 shadow-[0_-2px_12px_rgb(0_0_0/0.12)] backdrop-blur"
 >
 	<!-- On small screens, the progress is a thin bar along the top edge -->
 	<div class="h-0.5 bg-line sm:hidden" aria-hidden="true">
@@ -82,7 +82,7 @@
 			</button>
 			<button
 				type="button"
-				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-strong"
+				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-strong"
 				aria-label={player.paused ? 'Play' : 'Pause'}
 				onclick={() => player.toggle()}
 			>
@@ -175,7 +175,7 @@
 		<div class="mx-auto max-w-6xl px-3 pb-2 sm:px-6 lg:px-8">
 			<input
 				aria-label="link at current time"
-				class="w-full rounded border-line px-2 py-1 text-sm"
+				class="w-full rounded border-line bg-surface px-2 py-1 text-sm text-ink"
 				readonly
 				value={copy.fallbackLink}
 				onfocus={(e) => e.currentTarget.select()}
