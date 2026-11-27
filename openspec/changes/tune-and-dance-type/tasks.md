@@ -24,4 +24,4 @@
 
 - [x] 5.1 Update `GLOSSARY.md` Tune definition (identity wording, see design) and README.adoc features (sheet music view and MIDI playback). Commit `docs(tune): document tunes`
 - [x] 5.2 Run `./mvnw clean verify`
-- [ ] 5.3 Open the PR titled `feat(tune): add tunes with dance types`, body including `Closes #817`
+- [x] 5.3 Open the PR titled `feat(tune): add tunes with dance types`, body including `Closes #817`
