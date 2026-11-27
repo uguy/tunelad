@@ -134,6 +134,10 @@ logging:
   level:
     org.springframework.modulith.observability.ModuleEntryInterceptor: TRACE
 tunelad:
+  identification:
+    # The sidecar that hears which tunes a recording holds (docker compose starts it; see sidecar/identification)
+    url: http://localhost:8090
+    timeout: 10m
   live:
     nats:
       # Live UI updates travel between application instances through NATS (docker compose starts one)

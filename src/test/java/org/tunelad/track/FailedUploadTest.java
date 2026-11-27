@@ -170,6 +170,11 @@ class FailedUploadTest extends AbstractApiTest {
         }
 
         @Override
+        public Flux<DataBuffer> read(String key) {
+            return delegate.read(key);
+        }
+
+        @Override
         public Mono<Void> delete(String key) {
             return delegate.delete(key);
         }

@@ -113,6 +113,11 @@ public class ChunkedMediaStore implements MediaStore {
                 .as(transactionalOperator::transactional);
     }
 
+    @Override
+    public Flux<DataBuffer> read(String key) {
+        return find(key).flatMapMany(media -> media.length() == 0 ? Flux.empty() : media.content(0, media.length() - 1));
+    }
+
     /** Deletes the audio and, with it, its chunks and waveform. */
     @Override
     public Mono<Void> delete(String key) {

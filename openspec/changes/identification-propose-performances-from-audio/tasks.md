@@ -19,10 +19,10 @@
 
 ## 4. Identification module
 
-- [ ] 4.1 `identification` package with `package-info.java` (`allowedDependencies`), `IdentificationSource` port, `CadenceSource` (`WebClient`, streamed audio, timeouts) and its properties
-- [ ] 4.2 Listener on `NewTrackSaved` running Identification asynchronously, keeping only detections of the Set's Tunes and applying them through `ProposePerformances`
-- [ ] 4.3 `POST /api/tracks/{id}/identification` (202/403/404) with OpenAPI annotations
-- [ ] 4.4 Tests with a stubbed sidecar: upload returns first, proposal applied, Tune outside the Set ignored, nothing detected, service down, re-run keeps corrections, permissions. Run `ModularApplicationTests`. Commit `feat(identification): propose performances from audio`
+- [x] 4.1 `identification` package with `package-info.java` (`allowedDependencies`), `IdentificationSource` port, `CadenceSource` (`WebClient`, streamed audio, timeouts) and its properties
+- [x] 4.2 Listener on `NewTrackSaved` running Identification asynchronously, keeping only detections of the Set's Tunes and applying them through `ProposePerformances`
+- [x] 4.3 `POST /api/tracks/{id}/identification` (202/403/404) with OpenAPI annotations
+- [x] 4.4 Tests with a stubbed sidecar: upload returns first, proposal applied, Tune outside the Set ignored, nothing detected, service down, re-run keeps corrections, permissions. Run `ModularApplicationTests`. Commit `feat(identification): propose performances from audio`
 
 ## 5. UI
 
