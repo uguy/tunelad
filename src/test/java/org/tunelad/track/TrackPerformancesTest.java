@@ -66,8 +66,8 @@ class TrackPerformancesTest extends AbstractApiTest {
         var track = uploadOk(null);
 
         assertThat(track.performances()).containsExactly(
-                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, null, null),
-                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 0, null, null));
+                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, null, null, null),
+                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 0, null, null, null));
     }
 
     @Test
@@ -79,8 +79,8 @@ class TrackPerformancesTest extends AbstractApiTest {
                  {"startOffsetSeconds": 95.5, "key": "G", "notes": "plays the B part twice"}]""");
 
         assertThat(get(track.id()).performances()).containsExactly(
-                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, "Em", null),
-                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 95.5, "G", "plays the B part twice"));
+                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, "Em", null, null),
+                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 95.5, "G", "plays the B part twice", null));
     }
 
     @Test
@@ -197,6 +197,44 @@ class TrackPerformancesTest extends AbstractApiTest {
 
         assertThat(get(track.id()).performances().get(0).key()).isEqualTo("Em");
         assertThat(get(track.id()).title()).isEqualTo("Knees Up");
+    }
+
+    // --- A Performance carries a Transcription ----------------------------------------------------
+
+    @Test
+    void write_a_transcription() {
+        twoTuneSet();
+        var track = uploadOk(null);
+
+        var updated = edit(track, List.of(Map.of(), Map.of("abc", "X:1\nK:G\nGABc|")));
+
+        assertThat(updated.performances().get(1).abc()).isEqualTo("X:1\nK:G\nGABc|");
+        assertThat(updated.performances().get(0).abc()).isNull();
+        assertThat(get(track.id()).performances().get(1).abc()).isEqualTo("X:1\nK:G\nGABc|");
+    }
+
+    @Test
+    void clear_a_transcription() {
+        twoTuneSet();
+        var track = uploadOk("[{\"abc\": \"X:1\\nK:G\\nGABc|\"}, {}]");
+        assertThat(track.performances().get(0).abc()).isNotNull();
+
+        var updated = edit(track, List.of(Map.of(), Map.of()));
+
+        assertThat(updated.performances().get(0).abc()).isNull();
+        assertThat(get(track.id()).performances().get(0).abc()).isNull();
+    }
+
+    @Test
+    void transcription_too_long() {
+        twoTuneSet();
+        var track = uploadOk("[{\"abc\": \"X:1\"}, {}]");
+
+        edit(track.id(), Map.of("title", "T", "description", "D",
+                "performances", List.of(Map.of("abc", "a".repeat(20_001)), Map.of())), UPLOADER_TOKEN)
+                .expectStatus().isBadRequest();
+
+        assertThat(get(track.id()).performances().get(0).abc()).isEqualTo("X:1");
     }
 
     @Test

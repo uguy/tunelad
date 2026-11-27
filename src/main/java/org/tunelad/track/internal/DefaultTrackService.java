@@ -82,7 +82,7 @@ class DefaultTrackService implements TrackService {
         track.setTuneSet(set);
         track.setPerformances(new java.util.ArrayList<>(java.util.stream.IntStream.range(0, inputs.size())
                 .mapToObj(i -> new Performance(i + 1, set.tunes().get(i).id(), inputs.get(i).offset(),
-                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes()))
+                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc()))
                 .toList()));
         // Known up front, so the audio can be stored under the track's id before the track exists
         track.setId(java.util.UUID.randomUUID().toString());
@@ -158,7 +158,7 @@ class DefaultTrackService implements TrackService {
         inputs.forEach(PerformanceInput::validate);
         var changed = new java.util.ArrayList<Performance>();
         for (int i = 0; i < inputs.size(); i++) {
-            changed.add(track.getPerformances().get(i).with(inputs.get(i).offset(), inputs.get(i).cleanKey(), inputs.get(i).cleanNotes()));
+            changed.add(track.getPerformances().get(i).with(inputs.get(i).offset(), inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc()));
         }
         track.setPerformances(changed);
     }
