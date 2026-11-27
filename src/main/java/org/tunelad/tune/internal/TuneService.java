@@ -5,15 +5,17 @@ import org.tunelad.account.AccountRef;
 import org.tunelad.infrastructure.BadRequestException;
 import org.tunelad.infrastructure.NotFoundException;
 import org.tunelad.tune.DanceType;
+import org.tunelad.tune.TuneCatalog;
 import org.tunelad.tune.TuneDTO;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
 import java.util.List;
 
 /** Creates, imports and lists Tunes. */
 @Service
-public class TuneService {
+public class TuneService implements TuneCatalog {
 
 	/** A Tune and whether this call created it. */
 	public record Imported(TuneDTO tune, boolean created) {}
@@ -55,6 +57,11 @@ public class TuneService {
 
 	public Flux<TuneDTO> list(DanceType type, String text) {
 		return tunes.search(type, text);
+	}
+
+	@Override
+	public Flux<TuneDTO> findAllById(Collection<String> ids) {
+		return tunes.findAllById(ids);
 	}
 
 	public Mono<TuneDTO> findById(String id) {
