@@ -55,3 +55,17 @@ File: `Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3` (set of two r
 - Only one recording was tested.
 
 Consequence: FolkFriend through the bare CLI is **not** good enough to base Identification on, at least for duos. Before building the sidecar, decide between testing Cadence's transcriptor path, testing more recordings, or changing the approach (see the proposal's open questions).
+
+### Spike result with Cadence's pipeline (positive)
+
+Cadence (`Batpapa/Cadence`, AGPL-3.0) run headless in Node with a throwaway vitest harness that copies `ffWorker.ts`'s init and window loop: the vendored FolkFriend WASM (SIMD), the transcriptor WASM, the same index, `TranscriptorEngine` and `IncrementalViterbiSegmenter`, 10 s windows and 5 s hop, on the same duo recording. 8 s of run time for 152 s of audio.
+
+- **"The Mossy Banks" is the top candidate in every window from 5 s to 105 s**, with scores 0.47 to 0.76 and the runner-up usually 0.1 to 0.2 lower. The segmenter returns one detection for it, 7.5 s to 112.5 s.
+- No stable candidate after 110 s: the second reel never appears. "Raven's Rock" is probably absent from the thesession.org index (a name search for "raven" finds nothing), so no engine built on this index can name it.
+- The segmenter's last detection, "the boys of the lough" (142.5 s to 150 s, confidence 0.45), is probably a false positive at the end of the file.
+- The start offset 7.5 s is the middle of the first window, not measured against the audio; precision is about half a hop.
+- Only one recording was tested.
+
+What made the difference against the bare CLI: the transcriptor's note decoder (pitch classes summed over instruments, drone removal), the query tuned for pitch classes in every key, and the segmenter that merges 21 windows into one detection.
+
+Consequence: recognition is feasible, but the engine is **Cadence's TypeScript and WASM code (AGPL-3.0 and GPL-3.0)**, not the Rust CLI. See the proposal's design for how to host it.
