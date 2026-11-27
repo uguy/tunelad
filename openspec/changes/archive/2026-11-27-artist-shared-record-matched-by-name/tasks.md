@@ -18,4 +18,4 @@
 ## 4. Verify and PR
 
 - [x] 4.1 Run `./mvnw clean verify`; verify it passes
-- [ ] 4.2 Push and open the PR titled `feat(track): add shared artists`, body ending with `Closes #816`; verify the `workflow-pr-title` check passes
+- [x] 4.2 Push and open the PR titled `feat(track): add shared artists`, body ending with `Closes #816`; verify the `workflow-pr-title` check passes
