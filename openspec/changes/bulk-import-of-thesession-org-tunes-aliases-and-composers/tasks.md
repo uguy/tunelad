@@ -23,8 +23,8 @@
 
 ## 5. Wrap up
 
-- [ ] 5.1 Update `GLOSSARY.md` if a term changed (Tune's author now may come from the dump)
-- [ ] 5.2 Update `README.adoc` features
+- [x] 5.1 Update `GLOSSARY.md` if a term changed (Tune's author now may come from the dump)
+- [x] 5.2 Update `README.adoc` features
 - [ ] 5.3 Confirm thesession.org's terms of reuse and adjust the credit accordingly
-- [ ] 5.4 Run `./mvnw clean verify`
+- [x] 5.4 Run `./mvnw clean verify`
 - [ ] 5.5 Open the PR titled `feat(tune): bulk import thesession.org tunes, aliases and composers` with `Closes #846` in the body
