@@ -30,14 +30,14 @@
 - [x] 4.3 `TrackList` and the edit form: no empty description, artist or album lines, no Tunes section without a Set, description optional in the form
 - [x] 4.4 Tests: vitest for the form and list; Playwright e2e with `page.route` for a file-only upload and the list updating when `track.indexed` arrives; update existing e2e that expect a required title
 - [x] 4.5 `bun run format`, lint and check; run `svelte-autofixer` on the changed components
-- [ ] 4.6 Commit `feat(ui): upload a track with only its audio file`
+- [x] 4.6 Commit `feat(ui): upload a track with only its audio file`
 
 ## 5. Docs
 
-- [ ] 5.1 `GLOSSARY.md`: Track records a Set only when it has one; Identification also reads the file's tags
-- [ ] 5.2 Check `docs/adr` for a decision this contradicts; add an ADR for reading tags in `media` and recording provided fields only if the check says one is needed
-- [ ] 5.3 `README.adoc`: features (file-only upload, tags) and ffprobe next to ffmpeg in the requirements
-- [ ] 5.4 Commit `docs(track): describe the file-only upload`
+- [x] 5.1 `GLOSSARY.md`: Track records a Set only when it has one; Identification also reads the file's tags
+- [x] 5.2 Check `docs/adr` for a decision this contradicts; add an ADR for reading tags in `media` and recording provided fields only if the check says one is needed
+- [x] 5.3 `README.adoc`: features (file-only upload, tags) and ffprobe next to ffmpeg in the requirements
+- [x] 5.4 Commit `docs(track): describe the file-only upload`
 
 ## 6. Verify and ship
 
