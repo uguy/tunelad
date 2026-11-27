@@ -1,0 +1,16 @@
+{
+  "name": "tunelad-identification-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Recognises which tunes are played in a recording; runs Cadence's recognition engine behind a small HTTP API",
+  "license": "AGPL-3.0-or-later",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --no-experimental-strip-types --import tsx src/server.ts",
+    "test": "node --no-experimental-strip-types --import tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "tsx": "4.21.0"
+  }
+}

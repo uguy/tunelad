@@ -1,0 +1,567 @@
+// ── Content (shareable) ─────────────────────────────────────────────────────
+
+export interface FileEntry {
+  name: string;
+  /** base64 — EMPTY when the bytes live outside the blob, see `external`. */
+  data: string;
+  mimeType: string;
+}
+
+/** Where an attachment's bytes are when they are NOT in `data`.
+ *
+ *  Ten audio files were 82% of one real user's whole synced state (34.6 MB),
+ *  and base64 added a third on top of that — while every mutation clones and
+ *  rewrites the state, and every push sends it to Drive whole. Above a size
+ *  threshold the bytes therefore move out: to this device's own database
+ *  (attachmentDb.ts) and to a file in the Drive companion folder.
+ *
+ *  The PRESENCE of this field is the whole state — there is no mode enum to
+ *  keep in step with reality, and `data` is left empty exactly as
+ *  `generatedBy: 'tuneset'` already leaves it for a score rebuilt on display. */
+export interface ExternalFile {
+  /** Identity of the BYTES, and the only stable one an attachment has: its
+   *  position in a list is not, since reordering and removing a sibling both
+   *  move it. Keys the local row and names nothing else. */
+  id: string;
+  /** The file in `cadence-data-ext/attachments`. Absent means "not uploaded
+   *  yet" — added while offline or without a token — and therefore that these
+   *  bytes exist on this device ALONE. Nothing may free them in that state. */
+  driveFileId?: string;
+  /** Size of the real file, so the storage screen can total what is held
+   *  without opening a single blob. */
+  bytes: number;
+}
+
+/** One saved setting of the audio player, on the audio attachment it plays.
+ *  Times in seconds of the file; `end` is brought back inside the file's real
+ *  length when it is applied (audioPresets.ts), since the file may have been
+ *  replaced since. */
+export interface AudioPreset {
+  /** Stable: the default preset is named by it, and deleting another preset
+   *  must not move it. */
+  id: string;
+  name: string;
+  start: number;
+  end: number;
+  /** % — 100 is the recording's own speed. */
+  tempo: number;
+  /** Semitones. */
+  transpose: number;
+  /** Cents. */
+  pitch: number;
+  repeat: boolean;
+}
+
+/** What a link attachment DOES when it is opened: `embed` plays it in a modal
+ *  iframe, `link` leaves the app for a new tab. Never read off the field
+ *  directly — `linkMode()` in embedService is the single reader, because an
+ *  absent one means `embed` (every link stored before 2026-09-22 was one). */
+export type LinkMode = 'embed' | 'link';
+
+export interface EmbedEntry {
+  id: string;
+  url: string;       // original URL as pasted by user
+  /** The row's label, whatever it came from. For an embed it is the name typed
+   *  in the dialog, else the platform's own (`autoTitle`); for an external link
+   *  it is typed by hand, and mandatory — nothing can be read off a
+   *  cross-origin page, and a bare URL is not a name. */
+  title?: string;
+  /** An embed's title as oEmbed gave it, kept beside `title` since 2026-09-28
+   *  so a name typed over it can be emptied back to it. The typed name goes in
+   *  `title` rather than here on purpose: a device on an older bundle reads
+   *  `title` alone, and shows the user's name without knowing this exists.
+   *  Never read directly — `embedAutoTitle()` in embedService, since every
+   *  embed stored before this date has only a `title`, and that title IS the
+   *  platform's. */
+  autoTitle?: string;
+  /** The resolved iframe src, stored to avoid re-fetching. For an embed that
+   *  is a plain FILE (since 2026-09-29, opened by Cadence's own viewers — see
+   *  remoteFile.ts), the file's own URL: an older bundle knows nothing but the
+   *  iframe, and an mp3 or a PDF in one still plays or shows. Which of the two
+   *  an embed is comes from `isFileEmbed()`, never from this field.
+   *  LEGACY until 2027-03-29 — bundles that only know iframes, not shipped since 2026-09-29 (50a419d): writing a file's own URL here (embedService.ts checkEmbed). */
+  embedUrl?: string;
+  /** Written explicitly on both sides since 2026-09-22 — see LinkMode. */
+  mode?: LinkMode;
+  /** A link to an audio FILE only (`isFileEmbed`): the player's presets, as on
+   *  an attached audio file (2026-10-10). On the link for the same reason —
+   *  they travel with the card. Kept through an edit of the link, its URL
+   *  included: the player brings each one inside the file it finds. */
+  audioPresets?: AudioPreset[];
+  defaultAudioPreset?: string;
+}
+
+/** A pointer to another card, independent of the role that pointer plays.
+ *  Two roles carry it today: an attachment (a mention, alongside files and
+ *  embeds) and a tuneset's `tunes` list (the set's definition). Resolution
+ *  order is id → guid → externalId — see resolveCardRef. */
+export interface CardRef {
+  id: string;          // local UUID — fast path
+  guid: string;        // stable guid — cross-device
+  externalId?: string; // TheSession etc. — portable
+  title: string;       // snapshot of card name, fallback if unresolved
+  /** How many times this tune is played HERE. A property of the tune's place in
+   *  this set, not of the tune: the same reel can go round twice in one set and
+   *  three times in another. Absent = once.
+   *
+   *  Only a tuneset's `tunes` list reads it — a reference among a card's
+   *  attachments is a mention, and a mention is not played. */
+  repeat?: number;
+}
+
+export type CardReferenceAttachment = { type: 'card' } & CardRef;
+
+export type Attachment =
+  | ({ type: 'file' } & FileEntry & {
+      /** Multi-tune ABC files only: which splitAbcTunes() index to open by
+       *  default — a per-attachment "favorite version", set explicitly from
+       *  the preview modal. Absent = today's default (index 0). */
+      preferredIndex?: number;
+      /** How this attachment came to be, when it was not added by hand.
+       *
+       *  'thesession' — fetched from the source (tuneResultToCard's ABC file).
+       *  Lets "Refresh ABC" find and replace it precisely instead of guessing
+       *  by filename, which breaks as soon as the card is renamed.
+       *
+       *  'tuneset' — a set's fused score, DERIVED from its member tunes. Its
+       *  `data` is deliberately empty: only the intent to have this attachment
+       *  is stored, and the notation is rebuilt at the moment it is shown, so
+       *  it can never go stale and costs nothing in the synced blob. This is
+       *  also the marker that makes it non-editable and unique on a card —
+       *  never its name, which a user could give to a file of their own.
+       *
+       *  Absent on manually-added or pre-existing attachments. */
+      generatedBy?: 'thesession' | 'tuneset';
+      /** Set on a clip cut from an analysis: which detection it is, as
+       *  `{first 8 characters of the session id}·{start in whole seconds}`. How
+       *  the analysis tells the clip is already attached, whatever the file has
+       *  since been renamed to. It was a tag inside the name until schema V8. */
+      clipOf?: string;
+      /** Set when the bytes are not in `data` — see ExternalFile. Read it
+       *  through attachmentStore.ts, never by hand: resolving an attachment
+       *  means "this device, then Drive", and that decision lives there. */
+      external?: ExternalFile;
+      /** Audio files only: settings of the audio player saved by name — a
+       *  part of the tune, slowed down, transposed (2026-10-10). Written by
+       *  the player's "Save", read and cleaned through audioPresets.ts. */
+      audioPresets?: AudioPreset[];
+      /** Which of `audioPresets` the player opens on, by its id. Absent = on
+       *  "no preset", the whole file at neutral settings. */
+      defaultAudioPreset?: string;
+    })
+  | ({ type: 'embed' } & EmbedEntry)
+  | CardReferenceAttachment;
+
+/** The file variant on its own. Anything that produces or resolves a file
+ *  attachment says so with this rather than with the whole union, which would
+ *  make `{ ...att, clipOf }` a type error and force a cast at every call. */
+export type FileAttachment = Extract<Attachment, { type: 'file' }>;
+
+/** What can be resolved to bytes: a stored file attachment, or any bare entry
+ *  carrying the same two fields. The discriminant is irrelevant here — what
+ *  decides is whether `external` is set — so the resolvers ask for this and
+ *  not for `Attachment`, and a row component holding a plain FileEntry can
+ *  call them without being handed a `type` it never had. */
+export type ResolvableFile = FileEntry & { external?: ExternalFile };
+
+export interface Card {
+  id: string;
+  guid: string;
+  name: string;
+  defaultImportance: number; // default: 1
+  tags: string[];
+  externalId?: string; // e.g. "thesession:1197"
+  /** Open specialisation — deliberately a bare string, never a closed union:
+   *  Cadence is generalist first, and a new kind of card must not require
+   *  touching this file. Absent = an ordinary card, which is what every card
+   *  created before 2026-09 and every non-music card is. Known values live in
+   *  cardTypeService.ts (`tune`, `tuneset`); an unknown one degrades to
+   *  "ordinary" rather than breaking a view. */
+  type?: string;
+  /** A tuneset's DEFINITION: its tunes, in playing order. Read only when
+   *  `type` is 'tuneset' — `type` is the truth, this is merely its payload, so
+   *  an absent list on a tuneset is an empty set (not "not a set"). Retyping a
+   *  card away from 'tuneset' DROPS the list (applyCardType); one arriving on
+   *  a non-set card through an import is ignored rather than read. Deliberately
+   *  separate from `content.attachments`: a set must be able to reference a
+   *  card WITHOUT that card becoming one of its tunes. */
+  tunes?: CardRef[];
+  /** When true, `name` is DERIVED from `tunes` and rewritten on every state
+   *  change (stateNormalise) — the card's tunes joined with " / ". Read only
+   *  on a set, and dropped alongside `tunes` when a card stops being one.
+   *
+   *  `name` still holds the real, current string: the value is materialised,
+   *  not computed at each read, so the 39-odd places that display, sort,
+   *  search, export and snapshot a card name keep working untouched. Typing a
+   *  name by hand clears this flag — otherwise the rename would be silently
+   *  undone by the next normalisation. */
+  computedName?: boolean;
+  /** Other names the card is known by — "Reaping the Rye" for Cooley's. Filled
+   *  from the source on import and on "Refresh aliases", then the user's to
+   *  edit. Searched like `name`. Absent and empty mean the same; read and write
+   *  through aliasService.ts, which holds the rules. */
+  aliases?: string[];
+  content: {
+    notes: string;
+    attachments: Attachment[];
+  };
+}
+
+export interface DeckEntry {
+  cardId: string;
+  importance?: number; // deck-specific importance; falls back to card.defaultImportance when absent
+}
+
+export interface Deck {
+  id: string;
+  name: string;
+  entries: DeckEntry[];
+  favorite?: boolean;
+}
+
+// ── Personal data ────────────────────────────────────────────────────────────
+
+/** Maps directly to FSRS grades: 1=Again · 2=Hard · 3=Good · 4=Easy */
+export type SessionRating = 'again' | 'hard' | 'good' | 'easy';
+
+export interface SessionEntry {
+  ts: number;           // timestamp in ms
+  rating: SessionRating;
+  /** Set when this rating was filed from somewhere that still exists and has
+   *  to find it again — to show it as already given, to take it back, or to
+   *  follow it when what it describes is corrected (2026-09-23).
+   *
+   *  OPAQUE here, and deliberately so: whoever files the entry owns the
+   *  string's shape and is the only one that reads into it, which is what
+   *  keeps a card's history from knowing about any module. Everything in the
+   *  core compares it and nothing more — see services/reviewEntries.ts.
+   *
+   *  Absent on every rating given in the study flow or typed on the card page,
+   *  and on everything filed before ids existed. An id whose owner is gone is
+   *  dropped rather than left dangling, and the rating stays. */
+  id?: string;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+}
+
+export interface CardWork {
+  profileId: string;
+  cardId: string;
+  history: SessionEntry[];
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  folderIds: string[];
+  deckIds: string[];
+}
+
+// ── User = entire state for one person ───────────────────────────────────────
+
+export interface User {
+  // Identity
+  id: string;
+  name: string;
+  language: 'en' | 'fr';
+
+  // Study settings
+  availabilityThreshold: number;
+  /** The study modal's "Weight by importance": the Optimal and Stochastic
+   *  draws favour important cards (default true). STUDY DRAW ONLY since
+   *  2026-11-18 (the user's call) — it used to weight every deck, folder and
+   *  sidebar metric too, and its switch sat in the general settings as well.
+   *  The metrics are always weighted now. Name kept: it is serialized. */
+  weightByImportance: boolean;
+  /** Exclude mastered cards from study picks (default true). Off = study as if
+   *  the mastery threshold were 100% — study flow only, deck metrics keep the
+   *  real threshold. */
+  excludeMastered?: boolean;
+  forgettingRate: number; // λ: scales S → S/λ for scheduling; 1 = FSRS default, >1 = faster forgetting
+
+  // Score playback — how ABC sounds, wherever a score is opened. Global rather
+  // than per card: it describes the listener (which instrument they want to
+  // hear, how fast they can follow), not the tune.
+  /** Percentage of the written tempo a score opens at. Absent = 100. */
+  abcTempoPercent?: number;
+  /** General MIDI program. Absent = whatever the ABC itself asks for. */
+  abcInstrument?: number;
+  /** How dates and times are written (services/dateFormat.ts): 'dmy', 'mdy' or
+   *  'ymd'. Absent = the browser's own convention, which is what every screen
+   *  did before the setting existed. Synced: it is how this person reads. */
+  dateFormat?: string;
+  /** Names under the bottom bar's icons (header.tsx). Absent = shown, so both
+   *  values are written explicitly (see `navLabels` in userService, the single
+   *  reader). Synced, not per device (the author's call, 2026-10-29): someone
+   *  who knows what the icons mean knows it on every device. */
+  navLabels?: boolean;
+  /** Write a set's repeats out in its fused score. Absent = no, which is the
+   *  default: the counts still live on each tune and still show as ×N in the
+   *  card view, they are only spelled out in the notation when this is on. */
+  abcIncludeRepeats?: boolean;
+  /** Which face a score opens on, in the viewer and in an incipit alike.
+   *  Absent = 'sheet' — see `abcOpenMode` in abcService, the single reader.
+   *  Someone who edits ABC by hand all day sets it once instead of pressing
+   *  the same tab on every score. */
+  abcOpenMode?: AbcOpenMode;
+  /** Tapping a note while nothing plays sounds it — on the score and in the
+   *  ABC text alike. Absent = on; turning it off is written as an explicit
+   *  `false`. */
+  abcTapPlaysNote?: boolean;
+  /** Check the ABC face's text as it is typed — wavy lines under what abcjs
+   *  objects to, and the list of its warnings. Absent = off; see
+   *  `showAbcSyntaxCheck` in abcService. */
+  abcShowSyntaxCheck?: boolean;
+  /** The Play-along offers the file's version being played when it is not
+   *  the one on screen. Absent = on; turning it off is written as an
+   *  explicit `false` — see `suggestPlayedVersion` in abcService. */
+  abcSuggestPlayedVersion?: boolean;
+
+  // Score engraving — how ABC READS. Measured on 2026-09-21: with no
+  // `staffwidth` abcjs lays every score out at its own default of 740 units
+  // and the box then stretches or crushes the result, so the engraved staff
+  // came out at 3,9 mm on a phone and 13,6 mm on a wide screen — against the
+  // 7 mm of printed music. The width is now the box's own, and what adapts is
+  // how many bars a line holds. See `engraveOptions` in fileViewer.
+  //
+  // abcBarsPerLine lived here until 2026-10-24 — how many bars a line aimed
+  // for. The score follows the lines of the ABC now (abcLineBreaks.ts). A value
+  // stored by whoever set it stays in their synced blob, harmlessly, and is
+  // simply not read.
+  /** Absent = the app's theme decides — see `abcPaper` in abcService. */
+  abcPaper?: AbcPaper;
+  // The metronome is NOT here, deliberately (2026-09-22): it belongs to the
+  // session, not to the reader. You put a click on while you are learning a
+  // passage and you do not want the next score you open to start clicking.
+  // It lives in the viewer and starts off every time.
+  /** How much a score swings when it OPENS, as abcjs counts it: 50 is
+   *  straight, 60 is 3:2, 66 is a 2:1 triplet feel, 75 is a dotted eighth
+   *  against a sixteenth and is its ceiling. Absent = straight. Set in the
+   *  playback preferences only; the viewer's own button changes the score that
+   *  is open and writes nothing. `X/4` and compound `X/8` metres swing — see
+   *  meterCanSwing.
+   *
+   *  A NEW field, not `abcSwing` given a new meaning (2026-10-22). `abcSwing`
+   *  was the viewer button's last state, written on every press, so a device
+   *  still on an older bundle goes on writing it there — read as the default,
+   *  each of its presses would have reset the opening swing of every other
+   *  device through Drive. `abcSwing` is no longer read and is left alone in
+   *  stored data; its value was where the button was left, not a default
+   *  anyone chose, so it is not carried over. */
+  abcSwingAtOpen?: number;
+
+  // abcZoomPercent lived here until 2026-09-21 — how big the notation was
+  // drawn, as a percentage. The score zoom is gone (see fileViewer's note on
+  // why, and what to know before rebuilding it). A value stored by whoever
+  // used it stays in their synced blob, harmlessly, and is simply not read.
+
+  // Misc.
+  /** How many times a tune is played through when it JOINS a set — three is
+   *  the Irish convention, and the number is the tradition's, not the tune's.
+   *  Absent = DEFAULT_TUNE_REPEAT. Stamped onto the reference at insertion,
+   *  never read back as a fallback: changing this must not silently re-voice
+   *  every set already built, nor make an exported set mean something else on
+   *  the machine that opens it. */
+  defaultTuneRepeat?: number;
+  /** Whether turning a card into a set also gives it the fused score. Absent =
+   *  yes, so both values are written explicitly (see `addTunesetAbcOnConvert`
+   *  in abcService, the single reader). Applies to the two MANUAL conversions
+   *  — the card view's type selector and the library's bulk change — and to
+   *  nothing else: it is not an invariant, and a set someone stripped the
+   *  score from must stay stripped. */
+  addTunesetAbcOnConvert?: boolean;
+  /** Whether the library's tag filter finds a set by its tunes' tags too.
+   *  Absent = yes, so both values are written explicitly (see
+   *  `setsMatchTuneTags` in cardRefService, the single reader). Only the
+   *  filter reads it: nothing is ever copied into the set's own `tags`. */
+  setsMatchTuneTags?: boolean;
+  /** Where to show a tune's opening bars — see `components/incipit.tsx`.
+   *  Absent = 'card', the default: the reminder is the feature, and one that
+   *  has to be switched on is one nobody finds. */
+  incipitDisplay?: IncipitDisplay;
+  /** Size in KILOBYTES from which a newly attached file's bytes are kept
+   *  outside the synced blob (see ExternalFile). Absent = the default in
+   *  attachmentStore.
+   *
+   *  Applies AT THE MOMENT A FILE IS ATTACHED and nowhere else — lowering it
+   *  does not reach back and move what is already there, which would be an
+   *  automatic repair of the kind refused for `addTunesetAbcOnConvert`.
+   *  Converting what already exists is its own button, in the storage
+   *  settings, because it spends someone's Drive and needs their say-so. */
+  attachmentThresholdKb?: number;
+
+  /** Which extensions are switched on — see services/extensions.ts, the
+   *  single reader. An extension only offers things (an import source, a
+   *  module); switching one off hides them and touches no data. */
+  extensions?: UserExtensions;
+  /** Each extension's own options, by extension then by option id — the
+   *  list and the defaults are declared in services/extensions.ts. Absent =
+   *  that option's default. */
+  extensionOptions?: Partial<Record<keyof UserExtensions, Record<string, boolean>>>;
+  /** The guided walkthroughs this user has finished, by scenario id → when
+   *  (ms). Absent = none. A preference-like record of who they are, kept by a
+   *  reset like the extensions are (see walkthrough/scenarios.ts). */
+  walkthroughs?: Record<string, number>;
+
+  // Profiles
+  profileIds: string[];
+  currentProfileId: string;
+  profiles: Record<string, Profile>;
+
+  // Content
+  cards: Record<string, Card>;
+  decks: Record<string, Deck>;
+  cardWorks: Record<string, CardWork>; // key: `${profileId}:${cardId}`
+  folders: Record<string, Folder>;
+  rootFolderIds: string[];
+  rootDeckIds: string[];
+
+  /** Per-module extension data, synced with the rest of this blob (Drive,
+   *  IndexedDB) — e.g. the Sessions feature's recorded-session metadata
+   *  (see session/model.ts's TuneAnalyserModuleData). Loosely typed here
+   *  (types.ts is foundational and shouldn't depend on any one module's
+   *  shape); each module casts its own key via its own typed accessor. Keep
+   *  entries small — this whole object is structuredClone'd on every
+   *  mutate() call across the app (store.ts) — large/binary data (audio,
+   *  crash-recovery scratch) belongs in a module's own local-only database
+   *  instead, never here. */
+  modules?: Record<string, unknown>;
+
+  // Schema versioning
+  schemaVersion?: number;
+}
+
+/** One flag per extension. Absent = ON: every user made before extensions
+ *  existed (2026-10-26) had all of it, and keeps it. A brand-new user is
+ *  written with an explicit `false` instead (main.ts's blankUser). */
+export interface UserExtensions {
+  /** Irish traditional music: TheSession and irishtune.info as card sources,
+   *  the tune analyser and Trending modules. */
+  irishTrad?: boolean;
+}
+
+/** AppState is the active User — kept as alias to minimise call-site changes. */
+export type AppState = User;
+
+// ── Routing ──────────────────────────────────────────────────────────────────
+
+/** `sequential` walks the deck's own entry order (the one set by drag-and-drop
+ *  in the deck view) and loops at the end. Unlike the other three it is only
+ *  offered when studying an actual deck: a folder or library pool has no order
+ *  the user deliberately chose. */
+export type StudyStrategy = 'random' | 'optimal' | 'stochastic' | 'sequential';
+
+export type FilterState = 'include' | 'exclude';
+
+export type LibrarySort = 'alpha' | 'lastReviewed' | 'lastAdded' | 'importance' | 'recall' | 'difficulty';
+
+export type TrendingGainMode = 'absolute' | 'percent';
+
+/** How the tune ranking is ordered. Here rather than beside its component for
+ *  the same reason `LibrarySort` is: it travels in the route. */
+export type TuneSort = 'alpha' | 'lastHeard' | 'count';
+
+/** Where a tune's opening bars are shown. `card` is the card page alone;
+ *  `study` means the card page AND a review — it is a superset, not a third
+ *  place, so the three values read as one dial from less to more. */
+export type IncipitDisplay = 'none' | 'card' | 'study';
+
+/** Which face a score shows FIRST — the drawn stave or the ABC source. Both
+ *  the full viewer and an incipit read it, and both keep their own switch, so
+ *  this decides where you land and never where you can go. */
+export type AbcOpenMode = 'sheet' | 'text';
+
+/** The face a score viewer is showing: one of the two a score opens on, or
+ *  both at once — the stave and its ABC side by side (2026-11-04). Never
+ *  stored: "both" is a tab, not a preference. */
+export type ScoreFace = AbcOpenMode | 'both';
+
+/** The paper a score is drawn on. Not a theme of its own: `white` is the sheet
+ *  of paper this viewer always forced, `dark` is the app's own surface with the
+ *  ink inverted, `sepia` is the warm page people read long from. Absent means
+ *  the app's theme decides — see `abcPaper` in abcService, the single reader. */
+export type AbcPaper = 'dark' | 'sepia' | 'white';
+
+export type Route =
+  | { view: 'folder'; folderId: string | null }
+  // `reviewedFrom`/`reviewedTo` are YYYY-MM-DD and bound a card's REVIEWS, not
+  // the card itself: a card matches when the current profile reviewed it at
+  // least once inside the range. Either end may stand alone (an open interval).
+  // Local days, resolved to [00:00, 23:59:59.999] where they are read.
+  // `types` has no OR flag of its own: a card holds ONE type, so several
+  // included types can only ever mean "any of these" — see LibraryView.
+  // `decks` also carries deck FOLDERS, keyed `folder:<id>` (components/
+  // filterChips.ts) — one map, so one AND/OR toggle covers both. The sessions
+  // route's `analyses` does the same for analysis folders. A key naming
+  // something deleted since is ignored where it is read, not rejected here.
+  // `cards` limits the library to those card ids; absent = every card. Generic
+  // on purpose — any screen can hand over a set of cards (the analyser's tunes
+  // tab is the first), and the library does not know or say where it came from.
+  // It is state like the filters, kept in the route, so coming back from a card
+  // lands on the same limited list; it goes when the user removes it.
+  | { view: 'library'; search?: string; tags?: [string, FilterState][]; decks?: [string, FilterState][]; types?: [string, FilterState][]; sources?: [string, FilterState][]; sort?: LibrarySort; sortAsc?: boolean; tagOr?: boolean; deckOr?: boolean; reviewedFrom?: string; reviewedTo?: string; cards?: string[] }
+  | { view: 'deck'; deckId: string }
+  | { view: 'card'; cardId: string; contextDeckId?: string }
+  // `skippedCardIds` is the cards set aside by a skip in the round under way.
+  // It travels in the route and NOT in the user's data: it describes this
+  // sitting, not what is known — a reload resumes the round, a new session
+  // starts a fresh one, and nothing of it reaches IndexedDB or Drive.
+  // `ratedTs` is the instant of the rating given on this card in this visit —
+  // what going back to it finds again, to show and correct (2026-10-27). The
+  // same kind of thing: a mark on the history entry, never in the data.
+  | { view: 'study'; deckId?: string; cardIds?: string[]; studyTitle?: string; strategy: StudyStrategy; currentCardId?: string | null; contextDeckId?: string | null; skippedCardIds?: string[]; ratedTs?: number }
+  | { view: 'modules' }
+  // `annotationId` points at one detection inside the session — a "detected in"
+  // link from a card, where two passes through the same tune are two distinct
+  // destinations. It marks the row it names; it does not select it, which stays
+  // the play head's job (see SessionSummary).
+  // `search` is the library screen's search box, carried the same way the card
+  // library carries its filters: a search is a place you were, so back returns
+  // to the list you were looking at rather than to an empty one.
+  // Everything that shapes the library screen travels in the route, exactly as
+  // the card library's filters do: leaving for a detection and coming back has
+  // to land on the list you left, not on its defaults. Absent means the
+  // default, so a plain `{view:'sessions'}` stays a plain one.
+  | {
+      view: 'sessions'; sessionId?: string; annotationId?: string; search?: string;
+      tab?: 'sessions' | 'tunes';
+      /** Which folder the analyses list is open on; absent = the root. */
+      folder?: string;
+      sort?: TuneSort; sortAsc?: boolean; others?: [string, FilterState][]; othersOr?: boolean;
+      analyses?: [string, FilterState][]; analysesOr?: boolean;
+      /** Read only: routes saved before the two sections became "Tags".
+       *  LEGACY until 2027-04-19 — the dances/modes filters, not written since 2026-10-19 (ffbc51f): these two and DetectionsLibrary.tsx's fallback on them. */
+      dances?: [string, FilterState][]; modes?: [string, FilterState][];
+      /** Tune types and keys, one section since 2026-10-19. */
+      tags?: [string, FilterState][]; tagsOr?: boolean;
+      /** Tunes, sets, or both, in the detections tab (2026-10-19). */
+      kinds?: [string, FilterState][];
+      /** "Detected between", YYYY-MM-DD local days, either end alone (2026-11-05). */
+      detectedFrom?: string; detectedTo?: string;
+      /** The detections tab's "Cards" section (2026-11-05): decks (folders as
+       *  `folder:<id>`, as in the library's `decks`) and the cards' own tags. */
+      decks?: [string, FilterState][]; decksOr?: boolean;
+      cardTags?: [string, FilterState][]; cardTagsOr?: boolean;
+      /** The detections' row unfolded, a tune id or a set's key (2026-11-20). */
+      open?: string;
+    }
+  // `from`/`to` are YYYY-MM-DD, snapped to the closest synced snapshot on load.
+  // Deliberately excludes the deck-picker target — that stays session-only, never persisted.
+  // `deflate` absent means ON — see DEFLATE_BY_DEFAULT. A refusal is therefore
+  // written as an explicit `false`, never as an omission.
+  | { view: 'trending'; from?: string; to?: string; gainMode?: TrendingGainMode; minTunebooks?: number; deflate?: boolean };
+
+export interface AppContext {
+  user: AppState;
+  route: Route;
+  /** `from`: what was clicked to leave this page (store.ts's navigate). */
+  navigate: (route: Route, from?: string) => void;
+  back: () => void;
+  forward: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  mutate: (fn: (user: AppState) => void) => Promise<void>;
+}

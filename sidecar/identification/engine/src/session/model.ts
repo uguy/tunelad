@@ -1,0 +1,697 @@
+// ── Session recording & recognition data model ───────────────────────────────
+// Tune IDs are TheSession.org tune IDs (same space as Card.externalId "thesession:{id}").
+
+import type { DetectionConfirmation } from './detectionState';
+
+export type ConfidenceBucket = 'high' | 'medium' | 'low';
+
+export interface DetectionEvidence {
+  t: number;      // window start, seconds since session start
+  tEnd?: number;  // window end — absent on annotations persisted before the end-vote (2026-07)
+  score: number;  // top-1 Needleman-Wunsch score [0,1]
+  margin: number; // top-1 − top-2 score
+}
+
+export interface DetectionAlternate {
+  tuneId: string;
+  settingId: string;
+  displayName: string;
+  dance: string;
+  meter: string;
+  meanScore: number;
+  /** How many semitones above `settingId` as written the recording plays it
+   *  (2026-11-07): the key the recogniser found it in, the score-weighted
+   *  majority of its windows (WindowCandidate.transpose), from -5 to +6.
+   *  Absent = as written — and on every analysis made before, and on a tune
+   *  named by hand, which nothing heard. Read it through keyOffsetOf(). */
+  transpose?: number;
+  /** On `viterbiPick` only (2026-11-08): the pitch the detection was played at,
+   *  in semitones above its tune's MAIN setting as written, tuning included
+   *  (the score-weighted mean of its windows' WindowCandidate.pitch) — what
+   *  tells two detections of a tune in two keys apart whatever setting each
+   *  was recognised in. Absent on analyses made before, on a tune named by
+   *  hand, and when no window carried a pitch. Read it through
+   *  samePlayedPitch() (recognition/pitchSplit.ts). */
+  pitch?: number;
+}
+
+export interface Detection {
+  id: string;
+  tuneId: string;      // TheSession tune ID
+  settingId: string;
+  /** The tune's name, LOWERCASE — that is how the recognition index holds it,
+   *  and `normalizeDisplayName` only moves the trailing article back to the
+   *  front ("kesh, the" → "the kesh"), it does not re-case anything.
+   *
+   *  So every view that shows this must add `capitalize`, and they all do
+   *  (DetectionCard, AlternatesPopover, the library's search results). Written
+   *  here rather than left as folklore: it was missed at the fourth display
+   *  site, which shipped "the kesh" (2026-09-10).
+   *
+   *  Not fixed at the source on purpose — re-casing a name is guesswork the
+   *  moment it contains "McGuire" or "O'Neill's", and CSS `capitalize` at
+   *  least fails identically everywhere. */
+  displayName: string;
+  dance: string;       // reel, jig, …
+  meter: string;
+  /** Seconds since session start covered by the OBSERVATION WINDOWS that led
+   *  to this detection (see DetectedTuneSegment's doc in viterbiDetector.ts)
+   *  — not necessarily the exact instant the tune actually started/stopped.
+   *  Analysis windows overlap each other by design, so this detection's
+   *  range can and does legitimately overlap the next detection's — that
+   *  overlap is real signal (a transition/uncertainty zone), not a bug to be
+   *  trimmed away. */
+  start: number;
+  end: number | null;  // null = still open (live)
+  confidence: number;  // [0,1] — consistency-weighted (win rate over the detection's span), NOT comparable to alternates' meanScore below
+  bucket: ConfidenceBucket;
+  /** Mean raw match score whenever this tune appeared as a window candidate —
+   *  same metric as `alternates[].meanScore`, so the two are directly comparable
+   *  in the detection-options panel (unlike `confidence`, which only this tune has). */
+  meanScore: number;
+  evidence: DetectionEvidence[];
+  /** Up to detectionTemporalConfig.ts's maxAlternates other tunes seen as
+   *  window candidates over this detection's span, ranked by mean score —
+   *  EXCLUDES viterbiPick's own tuneId (computeAlternates never scores the
+   *  segment against itself). Together with viterbiPick, this is the full
+   *  set of choices the "explore alternatives" picker offers (DetectionCard.tsx). */
+  alternates: DetectionAlternate[];
+  /** Snapshot of what the Viterbi decoder itself currently picks for this
+   *  segment — same shape as an entry in `alternates` (and directly
+   *  comparable by meanScore), captured fresh on every segmenter-driven
+   *  update (viterbiSegmenter.ts's toDetection), so it keeps tracking the
+   *  algorithm's actual live answer even after the user has overridden the
+   *  DISPLAYED identity below via selectAlternate() (tuneId/settingId/
+   *  displayName/dance/meter, gated the same way as userConfirmed). Always
+   *  favored over any alternate with a higher meanScore when nothing has
+   *  been overridden — "Viterbi decides" takes transition costs/hysteresis
+   *  into account, not just this one span's raw mean score. */
+  viterbiPick: DetectionAlternate;
+  /** True once the user has explicitly vouched for this detection's identity
+   *  via selectAlternate() — or rated it, which vouches too (2026-10-10). While
+   *  the recording runs this is a confirmation laid over the decoder's
+   *  detections rather than a flag on one of them: it holds the user's tune
+   *  and is never retracted, whatever the decoder makes of the stretch — see
+   *  detectionState.ts.
+   *
+   *  Confirming the algorithm's OWN pick counts (2026-09-04): "this detection
+   *  is right" is a statement about the result, not about disagreeing with it,
+   *  and it earns the same freeze — the whole point is that the decoder stops
+   *  moving it. Until then the card shows the confidence badge; once set, a
+   *  green check. Un-confirming (picking the selected tune again) is what
+   *  hands it back to the algorithm. */
+  userConfirmed: boolean;
+  /** Tunes the user named by hand for this detection ("Another tune…",
+   *  2026-09-13) — kept as variants in their own right, so one that has been
+   *  un-ticked is still in the list to tick again rather than gone with the
+   *  choice. Never scored. Optional: absent on every detection that never had
+   *  one, and on every session saved before it existed, which read as none. */
+  manualAlternates?: DetectionAlternate[];
+  /** Added by hand from a finished analysis's summary, in a stretch the
+   *  recogniser left empty (2026-09-21) — see manualDetection() below.
+   *
+   *  It matters because NO WINDOW EVER OBSERVED THIS TUNE: there is no decoder
+   *  answer behind it, so `viterbiPick` is this detection's own identity for
+   *  want of anything truer, `alternates` and `evidence` are empty, and
+   *  `meanScore` is 0. Anything that presents those as results has to check
+   *  this flag first — the alternates picker does, and shows "manual" where it
+   *  would otherwise print a score and a "Viterbi" badge over the user's own
+   *  typing.
+   *
+   *  `confidence`/`bucket` are the exception, and deliberately so: they are
+   *  set to 1/'high', which is not a fabricated measurement but the honest
+   *  reading of the field — "how sure are we this tune was played here" — when
+   *  the answer comes from the person who played it. That is what keeps a
+   *  hand-added detection looking like a confirmed one (green everywhere)
+   *  rather than like a weak result (2026-09-21, user request).
+   *
+   *  Absent on every detection the recogniser produced, which is all of them
+   *  before this existed — no migration, the same convention as `finalized`
+   *  and `manualAlternates`. */
+  manual?: true;
+  /** User marker: "I liked this tune when I heard it" — has no bearing on
+   *  recognition or on any card, purely a personal reminder. */
+  liked: boolean;
+  /** The user's free note on this detection, markdown (2026-11-16, promised to
+   *  the group on 11-11) — what happened on that tune, who started it. Same
+   *  rules as Analysis.notes: absent = no note, a cleared note is deleted
+   *  rather than stored empty. Absent on every detection before it existed —
+   *  no migration. A merge keeps both notes (SessionSummary), a re-analysis
+   *  loses them, as it loses the hearts, and says so first. */
+  notes?: string;
+  /** The user's word on whether this detection OPENS a set (2026-10-20) — the
+   *  one mark the set breaks hang on, read by timelineModel.ts's withChains.
+   *  Absent: the rule decides (a silence of GAP_MIN_S or more before it opens
+   *  a set). `true`: a set starts here though nothing stopped — a cut. `false`:
+   *  it carries on the set before it across a silence — a link. Where a set
+   *  ENDS is never stored: it is wherever the next one opens, so the two can
+   *  never contradict each other (the user's call).
+   *
+   *  Only the user's decisions are stored, like a confirmation; absent on every
+   *  detection before this existed — no migration. Ignored with set
+   *  detection off, and on the first detection, which always opens. */
+  opensSet?: boolean;
+  /** The bounds the recogniser found, once the analysis has put them on the
+   *  passes of the tune (boundSuggest.ts, 2026-11-01) — the same as the
+   *  bounds when they did not move. Kept so the bound editor can offer them
+   *  back, and what tells an aligned join from one that is not (the shorter
+   *  silence threshold, timelineModel's gapMinBetween). Absent where nothing
+   *  could be aligned, and on every analysis made before this existed. A
+   *  bound moved by hand afterwards leaves it as it is. */
+  detected?: { start: number; end: number };
+  /** The tempo it was played at, in QUAVERS a second — the median of the
+   *  tempo readings inside it (liveTempo.ts, tempoSummary.ts's withTempo).
+   *  Quavers, not beats: the beat is the metre's, and the metre is the shown
+   *  tune's, which the user can change afterwards. Written when the analysis is
+   *  saved — an import, a re-analysis, a live recording with the tempo shown
+   *  (2026-11-01) — and absent where too little pulse was heard, on a detection
+   *  added by hand, and on every analysis made before. A bound moved
+   *  afterwards leaves it as it is. */
+  quaverRate?: number;
+  /** false while the Viterbi detector could still revise this detection's
+   *  bounds or existence as more windows arrive (see viterbiSegmenter.ts) —
+   *  the UI gates the actions that act on the bounds (delete, merge, edit,
+   *  clip) on this. Rating and confirming do not wait for it (2026-10-10). Always true for file imports (all windows are known
+   *  upfront) and for annotations persisted before this field existed
+   *  (read as `ann.finalized ?? true`, no migration). */
+  finalized: boolean;
+}
+
+/** Emitted by the recognition pipeline (viterbiSegmenter.ts's
+ *  IncrementalViterbiSegmenter) as annotations are created/revised/settled —
+ *  the session orchestrators (liveSession.ts, importSession.ts) merge these
+ *  into their detection map. */
+export type DetectionEvent =
+  | { type: 'open'; detection: Detection }
+  | { type: 'update'; detection: Detection }
+  | { type: 'close'; detection: Detection }
+  /** A provisional detection that was shown (opened) while it was still the
+   *  live tail (see minSegmentWindows in detectionTemporalConfig.ts) but
+   *  never actually reached the confirmation threshold before being
+   *  superseded — remove it from the detection list entirely, as if it had
+   *  never appeared (2026-08-15: `close` with `finalized:false` still left a
+   *  permanent, if unconfirmed, entry sitting in the UI — the user explicitly
+   *  wants it gone, not just marked unreliable). A confirmed detection is never
+   *  erased by it: the confirmation moves onto whatever the decoder now
+   *  shows over its range (detectionState.ts). */
+  | { type: 'retract'; id: string };
+
+export interface Analysis {
+  id: string;
+  name: string;
+  /** ISO timestamp of the session's t=0. Live recordings set it to the
+   *  recording start; file imports start on a guess from the file's
+   *  modification time minus its duration, or null when there is nothing to
+   *  guess from (see fileStartDate — file mtime is unreliable, hence a guess).
+   *  Editable and erasable in the summary screen — review logging requires it. */
+  date: string | null;
+  duration: number;    // seconds
+  mimeType: string;
+  /** 'live' = mic recording; 'import' = user-provided audio file (stored as-is). */
+  /** How the audio was obtained. 'live' and 'device' are both live recordings —
+   *  a microphone and a captured browser tab / system output respectively — and
+   *  they are told apart here only so a session can be NAMED for what it is
+   *  (see sessionNaming.ts); nothing in the recognition path reads this.
+   *  Sessions saved before 'device' existed read as 'live', which is what they
+   *  were. */
+  source: 'live' | 'device' | 'import';
+  /** 'recording' = draft written while a live recording is still in progress
+   *  (crash/refresh recovery); absent once the session is finalized. */
+  status?: 'recording' | 'done';
+  /** ⚠️ NAME FROZEN. The 2026-09-09 vocabulary pass renamed the TYPE
+   *  (SessionAnnotation → Detection) but deliberately NOT this field, because
+   *  it is serialized: it sits in every user's IndexedDB and in the Drive blob
+   *  their other devices read. Renaming it needs a migration AND would break
+   *  across versions in the meantime — a device still on the old bundle keeps
+   *  writing `annotations` into the shared Drive copy, which is exactly the
+   *  shape of the 2026-08-31 data loss. Same reasoning as
+   *  TuneAnalyserModuleData.sessions below. Not worth it for a name — the full
+   *  argument, including why an IndexedDB migration is a different and easier
+   *  question than this one, is in session/db.ts's header. */
+  annotations: Detection[];
+  /** A live recording's DRAFT only: the user's confirmations, which a crash
+   *  recovery applies again to the detections it replays (recovery.ts). Never
+   *  on a saved analysis — its detections already carry them. */
+  confirmations?: DetectionConfirmation[];
+  /** A live recording's DRAFT only: started with "Keep the recordings" off
+   *  (keepRecordings.ts), so a crash recovery drops its chunks instead of
+   *  saving them — the choice made when it started, not the setting at the
+   *  next visit. Never on a saved analysis. */
+  discardAudio?: true;
+  /** Where a live recording was paused and resumed, in seconds of the
+   *  recording, in order (2026-11-01). A pause leaves no gap in the file:
+   *  what came before and after are joined end to end, and the music on
+   *  either side belongs to two moments. Putting bounds on the tune's passes
+   *  (boundSuggest.ts) treats each as an edge of the recording, and the bound
+   *  editor offers them as marks. Absent when there was none, and on every
+   *  analysis recorded before this existed. */
+  pauses?: number[];
+  /** The user's free notes on the analysis, markdown (2026-10-15). Absent = no
+   *  note; a cleared note is deleted rather than stored empty. Everything that
+   *  builds an Analysis from scratch over an existing one must carry it — a
+   *  re-analysis does (startReanalyze → ImportSession.notes). */
+  notes?: string;
+  /** The sets heard in this analysis — chains of detections played without a
+   *  silence between them (timelineModel.ts's withChains), 2026-10-19.
+   *
+   *  NOT a second source of truth for what a set is: which detections belong
+   *  together is always recomputed from the detections themselves, and this
+   *  table is reconciled against it (tunesets.ts's reconcileTunesets). What it
+   *  holds is what a chain cannot derive — an IDENTITY that survives a bound
+   *  being moved, which the set's heart and its review hang on. Absent on every
+   *  analysis saved before it existed; built the first time one is shown. */
+  tunesets?: TunesetRecord[];
+  /** The ABC of the card versions its detections name (setting ids `card:…`,
+   *  recognition/cardIndex.ts), by setting id — written on the copy that is
+   *  shared or exported (sessionShareService.ts, 2026-11-16), so that whoever
+   *  receives it sees the very version recognised without having the card.
+   *  Read only where the card itself cannot answer (cardIndexSource.ts).
+   *  Absent on every analysis that was never shared out with one. */
+  cardVersions?: Record<string, string>;
+  // The audio Blob (+ in-progress crash-recovery scratch data) lives in a
+  // local-only, non-Drive-synced IndexedDB under the session id — see
+  // session/db.ts. This record itself is small (no audio), so it's kept
+  // directly on the user's synced AppState instead (see TuneAnalyserModuleData).
+}
+
+/** One set heard in an analysis: the detections it is made of, in playing
+ *  order, and what the user said about it. See Analysis.tunesets. */
+export interface TunesetRecord {
+  /** A UUID, like a detection's: a review given from this set is filed under
+   *  it (reviewLink.ts's detectionReviewId), so it must never collide with one. */
+  id: string;
+  detectionIds: string[];
+  /** "I liked this set" — the set's own heart, apart from its tunes'. */
+  liked?: boolean;
+  /** The set's own note, apart from its tunes' (2026-11-16) — markdown, absent
+   *  = none. Kept by reconcileTunesets like the heart, and folded into the
+   *  surviving set when two are merged rather than dropped. */
+  notes?: string;
+}
+
+/** `AppState.modules['tune-analyser']` (see types.ts's User.modules) — the
+ *  tune-analyser/Sessions feature's own slice of the synced-via-Drive user
+ *  blob (2026-08-26). Deliberately holds only small, meaningful-to-sync data
+ *  (session metadata + annotations); audio and crash-recovery scratch data
+ *  (raw per-window results, MediaRecorder chunks) are local-only and never
+ *  touch this — see session/db.ts's local database. */
+export interface TuneAnalyserModuleData {
+  /** ⚠️ NAME FROZEN, same reason as Analysis.annotations above: this key is in
+   *  every user's synced blob. The UI says "analyse"/"analysis" everywhere
+   *  since 2026-09-09 and the types followed; the STORAGE keys deliberately
+   *  did not. That divergence is the price of not migrating user data for a
+   *  rename, and it is intentional — do not "finish the job" here. The reasoning
+   *  in full is in session/db.ts's header. */
+  sessions: Record<string, Analysis>;
+  /** Show the "detected in" panel on tune cards. Absent = yes: whoever records
+   *  sessions is the only one who ever sees it, and for them the cross-
+   *  reference is the point. Written only to turn it OFF, from the sessions
+   *  library — a flag on this module's own slice rather than on User, which
+   *  knows nothing about panels. */
+  detectionsOnCards?: boolean;
+  /** "Use set detection" (2026-10-19, experimental until 2026-10-23, hence the
+   *  name): tunes played without a silence between them shown as sets,
+   *  everywhere the analyser shows its results. Absent = on; only `false` is
+   *  ever written. A `true` from the experimental days reads as on too. Read it
+   *  through `setDetectionOn()`.
+   *
+   *  FROZEN name: it is in every user's synced blob, and a renamed field would
+   *  read as absent — on — for everyone who had switched sets off. */
+  experimentalSets?: boolean;
+  // `pitchShift` (the instruments' pitch in semitones, 2026-09-13) and
+  // `anyPitch` (2026-11-07) were settings here, retired the same day the engine
+  // started looking in every key and tuning by itself (ffWorker.ts). Synced
+  // blobs may still hold them: nothing reads them. Do not reuse the names.
+  /** The user's template for the name of a new live recording or capture —
+   *  see sessionNaming.ts. Absent = the usual name ("Recording of …"), and
+   *  removed rather than emptied when set back. Read it through
+   *  `nameTemplateSetting()`. */
+  nameTemplate?: string;
+  /** The template for a recording started outside any folder, when
+   *  `nameTemplate` uses {folder} — see sessionNaming.ts. Absent = that one,
+   *  {folder} as nothing. Kept, unused, when {folder} leaves `nameTemplate`, so
+   *  putting it back finds it again. */
+  nameTemplateNoFolder?: string;
+  /** The indexes a recognition searches, most preferred first, each on or off
+   *  (2026-11-16): the user's tune cards and TheSession's index today
+   *  (recognition/recognitionIndexes.ts). The order decides a tie: on equal
+   *  scores, the earlier index's tune wins. Absent = cards then TheSession,
+   *  both on. Written whole, with both values of every switch, so a deliberate
+   *  "off" survives; read it through `recognitionIndexesOf()` only. An id this
+   *  version does not know is kept as it is and not used. */
+  recognitionIndexes?: { id: string; on: boolean }[];
+  /** Copy the recording to Drive for sessions saved from now on, so they can be
+   *  played on the user's other devices — and so the device is not holding the
+   *  only copy of them.
+   *
+   *  ⚠️ Absent = YES since 2026-09-09, unlike every other optional flag here.
+   *  Read it through `SYNC_AUDIO_BY_DEFAULT` / `syncAudioByDefault()` in
+   *  session/db.ts, never as a bare truthiness check: `!!flag` reads an
+   *  untouched install as off, which is the opposite of what happens. Both
+   *  values are written now, precisely so a deliberate "no" survives. */
+  syncAudioByDefault?: boolean;
+  /** Copy a recording that is STILL RUNNING to Drive every few minutes, so a
+   *  device that loses everything mid-session keeps it (see liveBackup.ts).
+   *
+   *  ⚠️ Absent = YES, same discipline as `syncAudioByDefault` above: read it
+   *  through `AUTO_LIVE_BACKUP_BY_DEFAULT` / `autoLiveBackupEnabled()`, and
+   *  both values are written so a deliberate "no" survives. Turning it off
+   *  leaves the manual cloud on the recording screen, which is the whole
+   *  feature minus the timer. */
+  autoLiveBackup?: boolean;
+  /** Session id → the Drive file holding its recording, for the sessions where
+   *  that was chosen. A sibling map rather than a field on Analysis,
+   *  purely so this stays one obvious place to look. */
+  syncedAudio?: Record<string, SyncedAudio>;
+  /** The analyses library's folders, by id. Absent until the user makes their
+   *  first one — see sessionTree.ts, which is the only thing that reads or
+   *  writes these three fields, and which explains why the tree is an
+   *  arrangement of `sessions` rather than an index of it. */
+  folders?: Record<string, SessionFolder>;
+  /** Top-level folders, in display order. */
+  rootFolderIds?: string[];
+  /** Analyses put back at the top level (their order is not shown, as in a
+   *  folder). Deliberately NOT
+   *  the list of analyses outside a folder: one that appears here nowhere
+   *  still shows at the root (sessionTree.ts's `rootOrder`). */
+  rootSessionIds?: string[];
+}
+
+/** One folder of the analyses library. Mirrors types.ts's `Folder` (the decks'
+ *  own tree) field for field, minus `deckIds` — see sessionTree.ts's header for
+ *  why the two trees are separate. */
+export interface SessionFolder {
+  id: string;
+  name: string;
+  /** Sub-folders, in display order. */
+  folderIds: string[];
+  /** Analyses in this folder. Their order here is not shown: a level lists its
+   *  analyses in library order since 2026-10-11 (sessionTree.ts). */
+  sessionIds: string[];
+}
+
+/** A recording copied to the user's Drive as a file of its own — the one way to
+ *  hear a session on a device other than the one that recorded it.
+ *
+ *  A separate file rather than base64 inside this blob (which is what the first
+ *  implementation did, 2026-09-08). The blob is re-serialised and re-uploaded on
+ *  every push, so carrying recordings in it meant re-uploading tens of megabytes
+ *  after every unrelated edit, and needed an arbitrary cap to stay bearable. A
+ *  companion file is uploaded once, costs nothing afterwards, and is limited
+ *  only by the user's own Drive quota — see driveService.ts's companion files.
+ *
+ *  Recordings are write-once, so there is deliberately no version or checksum
+ *  here: the bytes behind `fileId` cannot change, and nothing can disagree
+ *  about them. */
+export interface SyncedAudio {
+  /** Drive file id. The local database may hold the same recording as well —
+   *  uploading never removes the local copy, and downloading caches it. */
+  fileId: string;
+  mimeType: string;
+  /** Size of the recording, so the settings screen can total what is on Drive
+   *  and a download can say how big it will be before starting. */
+  bytes: number;
+}
+
+export const TUNE_ANALYSER_MODULE_KEY = 'tune-analyser';
+
+/** Anything that carries the modules — AppState, or the plain blob a restore
+ *  or a discarded Drive copy is read as. */
+type WithModules = { modules?: Record<string, unknown> };
+
+/** The analyser's slice of `user`, as stored: undefined for someone who has
+ *  never used the analyser. The one cast of `modules['tune-analyser']` —
+ *  types.ts types the modules loosely, and promised each module its own
+ *  typed accessor; this is the analyser's. */
+export function analyserModuleOf(user: WithModules): TuneAnalyserModuleData | undefined {
+  return user.modules?.[TUNE_ANALYSER_MODULE_KEY] as TuneAnalyserModuleData | undefined;
+}
+
+/** Edits the analyser's slice of `user` — a draft inside mutate() — creating
+ *  it as `{ sessions: {} }` when absent, and attaching it back. */
+export function editAnalyserModule(user: WithModules, fn: (mod: TuneAnalyserModuleData) => void): void {
+  user.modules ??= {};
+  const mod = analyserModuleOf(user) ?? { sessions: {} };
+  fn(mod);
+  user.modules[TUNE_ANALYSER_MODULE_KEY] = mod;
+}
+
+// ── Recognition window results (worker → Viterbi detector) ─────────────────────
+
+export interface WindowCandidate {
+  tuneId: string;
+  settingId: string;
+  displayName: string;
+  dance: string;
+  meter: string;
+  score: number;
+  /** The key it was found in (2026-11-07): the window plays the setting this
+   *  many semitones above its written key, from -5 to +6 — the engine looks in
+   *  every key and knows it only modulo the octave, so the nearer way round is
+   *  kept. Absent = as written (and on every window stored before). */
+  transpose?: number;
+  /** The pitch the tune was played at (2026-11-08, playedPitch.ts), in
+   *  semitones above its MAIN setting as written, tuning included, from -6 to
+   *  +6 — comparable from one window to the next whatever setting won each.
+   *  Feeds the pitch split (pitchSplit.ts). Absent on every window stored
+   *  before, and when the engine did not estimate the tuning: such a window
+   *  never cuts a detection. */
+  pitch?: number;
+  /** The other pitches the tune was aligned at in this window, [pitch, best
+   *  score there], same scale as `pitch` — how close it came in another key
+   *  (the pitch split's "soft" cost). Absent when there were none. */
+  otherPitches?: [number, number][];
+}
+
+export interface WindowResult {
+  tWindowStart: number; // seconds since session start
+  tWindowEnd: number;
+  empty: boolean;       // no notes detected, or nothing above SCORE_FLOOR
+  candidates: WindowCandidate[]; // sorted desc by score, deduplicated by tuneId
+  /** EXPERIMENTAL (2026-08-18) — note/tempo/quantization features + full
+   *  (untruncated) candidate list, populated ONLY by the offline noise-study
+   *  harness (experiments/noise-study/), NEVER by the live production
+   *  ffWorker.ts path. Absent on every real session recorded through the app.
+   *  See experiments/noise-study/README.md. */
+  debug?: WindowDebugFeatures;
+}
+
+// Field names are snake_case verbatim from Rust's `serde_json` output
+// (decode::ContourDebugFeatures / TempoCandidateScore in folkfriend-src) —
+// deliberately NOT renamed, so this stays a direct passthrough of
+// FolkFriend's own computed values (per the noise-study spec: expose,
+// don't reimplement).
+export interface TempoCandidateScore {
+  bpm: number;
+  quant_score: number;
+  rhythm_score: number;
+  combined_score: number;
+}
+
+export interface NoteAndTempoFeatures {
+  note_count_raw: number;
+  note_count_filtered: number;
+  note_count_rejected: number;
+  note_duration_mean: number;
+  note_duration_median: number;
+  note_power_mean: number;
+  note_power_max: number;
+  note_power_median: number;
+  tempo_candidates: TempoCandidateScore[];
+  best_bpm: number;
+  best_quant_score: number;
+  best_rhythm_score: number;
+  best_combined_score: number;
+  contour_length: number;
+  /** The window's tuning in semitones off A = 440, -0.5 .. 0.5 (2026-11-08):
+   *  estimated and corrected by the pitch-class engine's any-pitch mode, and
+   *  read into WindowCandidate.pitch. Absent on windows stored before. */
+  tuning?: number;
+}
+
+export interface WindowDebugFeatures {
+  contour: string | null;
+  /** 12 when the previous engine (until 2026-11-07) re-queried the contour an
+   *  octave up for a low instrument; always 0 since — pitch classes have no
+   *  octave. Kept for the windows already stored. */
+  octaveShiftApplied: number;
+  /** null when FolkFriend found too few notes to build a contour at all
+   *  (the same case that makes `WindowResult.empty` true) — distinguished
+   *  from "not collected" so a noise-study export can tell them apart.
+   *
+   *  Deliberately NO separate candidate list here (2026-08-18) — an earlier
+   *  version carried an untruncated ~100-candidate `fullCandidates` array,
+   *  which roughly doubled per-window IndexedDB storage for no feature the
+   *  noise study actually needed; every candidate-based feature used there
+   *  (margin, candidatesAboveX, sum-of-top-N) only ever looks at the top 10,
+   *  i.e. exactly `WindowResult.candidates` already. Read that instead. */
+  features: NoteAndTempoFeatures | null;
+}
+
+// ── Choosing an identity for a detection ───────────────────────────────────
+// Both engines and the finished-session summary write the user's choice, and
+// all three wrote the same five assignments by hand before this — which is how
+// one of them ends up disagreeing with the others about what confirming means.
+
+/** `viterbiPick` (2026-08-25) is absent on every session recorded before this
+ *  feature shipped — no migration, same "no UI path/no migration" convention
+ *  already established for `finalized`. A live/import detection is always
+ *  freshly built by the segmenter, which has populated this field from day one
+ *  of its own existence, so this fallback only ever matters for a
+ *  Analysis loaded from IndexedDB (SessionSummary.tsx) — for that case,
+ *  the current identity IS effectively what the algorithm originally picked
+ *  (there was no override mechanism yet when it was recorded). */
+export function viterbiPickOf(ann: Detection): DetectionAlternate {
+  return ann.viterbiPick ?? {
+    tuneId: ann.tuneId, settingId: ann.settingId, displayName: ann.displayName,
+    dance: ann.dance, meter: ann.meter, meanScore: ann.meanScore,
+  };
+}
+
+/** Whether the detection's setting is one the recogniser actually matched —
+ *  the only case where it names the VERSION that was played. A tune named by
+ *  hand (an added detection, a manual alternate) carries TheSession's first
+ *  setting for want of one, which says nothing about what was heard: anything
+ *  read off the setting, its key above all, must not be shown for it
+ *  (2026-10-15, the user's rule).
+ *
+ *  Matched on tune AND setting: a tune named by hand before the recogniser
+ *  came to score it keeps the hand-picked setting, not the scored one. */
+export function hasRecognisedSetting(ann: Detection): boolean {
+  if (ann.manual) return false;
+  return [viterbiPickOf(ann), ...(ann.alternates ?? [])]
+    .some(o => o.tuneId === ann.tuneId && o.settingId === ann.settingId);
+}
+
+/** How many semitones above its setting as written the detection's tune was
+ *  played (DetectionAlternate.transpose) — 0 as written, and `null` when
+ *  nothing heard that setting (a tune named by hand, see hasRecognisedSetting):
+ *  no key can be said for it. */
+export function keyOffsetOf(ann: Detection): number | null {
+  if (ann.manual) return null;
+  const heard = [viterbiPickOf(ann), ...(ann.alternates ?? [])]
+    .find(o => o.tuneId === ann.tuneId && o.settingId === ann.settingId);
+  return heard ? heard.transpose ?? 0 : null;
+}
+
+/** The engine's transposition (0-11, the recording plays the setting that many
+ *  semitones above its written key, modulo the octave) as the nearer signed
+ *  offset, -5 to +6. */
+export function signedKeyOffset(r: number): number {
+  const k = ((Math.round(r) % 12) + 12) % 12;
+  return k > 6 ? k - 12 : k;
+}
+
+/** What choosing an identity writes onto a detection.
+ *
+ *  A tune — ANY of them, the algorithm's own current pick included — means the
+ *  user has looked at this detection and vouched for it: the identity freezes
+ *  and the detection can no longer be retracted. Confirming what the
+ *  algorithm already said is the common case, not a no-op: it is the whole
+ *  point of being able to confirm a result.
+ *
+ *  `null` is the way back: the detection returns to displaying whatever the
+ *  decoder currently picks, and to being the decoder's to revise.
+ *
+ *  It never touches `manualAlternates`: a tune named by hand is added to the
+ *  list first (withManualAlternate) and picked from it like any other, so it is
+ *  still there whatever is picked next. */
+export function alternatePickFields(
+  ann: Detection,
+  pick: DetectionAlternate | null,
+): Pick<Detection, 'tuneId' | 'settingId' | 'displayName' | 'dance' | 'meter' | 'userConfirmed'> {
+  const chosen = pick ?? viterbiPickOf(ann);
+  return {
+    tuneId: chosen.tuneId,
+    settingId: chosen.settingId,
+    displayName: chosen.displayName,
+    dance: chosen.dance,
+    meter: chosen.meter,
+    userConfirmed: pick !== null,
+  };
+}
+
+/** A detection's hand-named variants with `tune` among them — and nothing
+ *  chosen: adding a tune to the list is not a verdict on the detection (user
+ *  request, 2026-09-13: "Add", then tick it like the others). A tune the list
+ *  already holds, scored or named before, is not added a second time. */
+export function withManualAlternate(ann: Detection, tune: DetectionAlternate): DetectionAlternate[] | undefined {
+  const listed = [viterbiPickOf(ann), ...(ann.alternates ?? []), ...(ann.manualAlternates ?? [])];
+  return listed.some(o => o.tuneId === tune.tuneId)
+    ? ann.manualAlternates
+    : [...(ann.manualAlternates ?? []), tune];
+}
+
+// ── Adding a detection by hand ───────────────────────────────────────────────
+
+/** A tune the recogniser missed entirely, entered by hand over a stretch of a
+ *  finished analysis (2026-09-21, user request: "dans un trou sans détection,
+ *  il est possible qu'un morceau ait été joué mais pas détecté").
+ *
+ *  Born confirmed and finalized, because both are already true the moment it
+ *  exists: a person named it, and nothing will ever revise it — the decoder is
+ *  long done with this recording. That also makes it behave like any other
+ *  detection everywhere downstream with no special cases: review logging, the
+ *  attached clip, bound editing, deletion and the card's "detected in" panel
+ *  all read the same fields they always did.
+ *
+ *  `settingId` is TheSession's most popular setting for the tune and is not a
+ *  choice (user request) — see ManualTunePick, which resolves it. */
+export function manualDetection(
+  tune: DetectionAlternate,
+  start: number,
+  end: number,
+): Detection {
+  return {
+    id: crypto.randomUUID(),
+    tuneId: tune.tuneId,
+    settingId: tune.settingId,
+    displayName: tune.displayName,
+    dance: tune.dance,
+    meter: tune.meter,
+    start,
+    end,
+    // See Detection.manual for why these two are 1/'high' while meanScore is 0.
+    confidence: 1,
+    bucket: 'high',
+    meanScore: 0,
+    // Nothing observed it: no windows, no rivals, and no decoder answer to
+    // fall back on — `manual` is what tells the views to say so.
+    evidence: [],
+    alternates: [],
+    viterbiPick: { ...tune },
+    manual: true,
+    userConfirmed: true,
+    liked: false,
+    finalized: true,
+  };
+}
+
+/** Where `detection` goes in a list kept sorted by start time — the order every
+ *  engine hands its detections over in, and the one the summary's list, its
+ *  timeline and `withGaps` all assume. Ties go AFTER the detections that
+ *  already start at that instant, so a tune added flush against a neighbour
+ *  does not jump in front of it. */
+export function insertionIndex(anns: Detection[], start: number): number {
+  const at = anns.findIndex(a => a.start > start);
+  return at === -1 ? anns.length : at;
+}
+
+/** What removing a hand-named variant writes onto a detection (user request,
+ *  2026-09-13: a grey trash on the row, no confirmation — it is only a line in
+ *  a list, and "Another tune…" brings it back).
+ *
+ *  If it is the tune currently ticked, the detection goes back to the decoder
+ *  as well: a confirmation cannot outlive the variant it chose, or the list
+ *  would keep showing a tune the user just removed from it. */
+export function manualAlternateRemovalFields(
+  ann: Detection,
+  tuneId: string,
+): Partial<Pick<Detection, 'tuneId' | 'settingId' | 'displayName' | 'dance' | 'meter' | 'userConfirmed' | 'manualAlternates'>> {
+  const left = (ann.manualAlternates ?? []).filter(o => o.tuneId !== tuneId);
+  return {
+    manualAlternates: left.length > 0 ? left : undefined,
+    ...(ann.userConfirmed && ann.tuneId === tuneId ? alternatePickFields(ann, null) : {}),
+  };
+}
+

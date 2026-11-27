@@ -13,9 +13,9 @@
 
 ## 3. Analysis sidecar
 
-- [ ] 3.1 `sidecar/identification/`: Node wrapper (`POST /identify`, `GET /health`), engine copied from Cadence at a pinned commit with `LICENSE` and `NOTICE`, ffmpeg decoding, index cached on a volume
-- [ ] 3.2 Dockerfile, `docker-compose.yml` service and volume, CI builds the image
-- [ ] 3.3 Smoke test on `Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3`: "The Mossy Banks" detected at about 7.5 s; golden test on a small fixture. Commit `feat(identification): add analysis sidecar`
+- [x] 3.1 `sidecar/identification/`: Node wrapper (`POST /identify`, `GET /health`), engine copied from Cadence at a pinned commit with `LICENSE` and `NOTICE`, ffmpeg decoding, index cached on a volume
+- [x] 3.2 Dockerfile, `docker-compose.yml` service and volume, CI builds the image
+- [x] 3.3 Smoke test on `Stephen_Doherty_Patrick_Doocey-Mossy_banks_Ravens_rock.mp3`: "The Mossy Banks" detected at about 7.5 s; golden test on a small fixture. Commit `feat(identification): add analysis sidecar`
 
 ## 4. Identification module
 

@@ -1,0 +1,19 @@
+Tune Lad identification sidecar
+
+This directory contains code from other projects, kept under their own licences:
+
+- engine/ (except engine/vendor/): the recognition engine of Cadence, https://github.com/Batpapa/Cadence,
+  commit 90149e9df40a180dd2c7bd832707bc4e405102ae, copyright its authors, licensed under the GNU Affero General
+  Public License version 3 or later (engine/LICENSE). Only the files the engine imports were copied, unchanged.
+- engine/vendor/folkfriend/: FolkFriend by Tom Wyllie, https://github.com/TomWyllie/folkfriend, as built in Cadence's
+  fork (https://github.com/Batpapa/folkfriend), licensed under the GNU General Public License version 3 only
+  (engine/vendor/folkfriend/LICENSE).
+- engine/vendor/cadence-transcriptor/: the note decoder's analysis of Cadence compiled to WebAssembly (from the
+  `transcriptor/rust` sources of the Cadence repository), AGPL-3.0-or-later.
+
+src/ is Tune Lad's own wrapper and shares the licence of this repository (GPL-3.0). The sidecar runs as its own
+container and talks to the application over HTTP only. The corresponding source of everything in it is this directory;
+users of the running service can get it from the repository (AGPL section 13).
+
+The tune index the sidecar downloads at start comes from https://github.com/TomWyllie/folkfriend-app-data, which is
+built from thesession.org data.

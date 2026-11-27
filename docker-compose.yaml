@@ -14,6 +14,16 @@ services:
     ports:
       - '5432:5432'
 
+  # Hears which tunes are played in a recording, for Identification (sidecar/identification, see its README).
+  # The first start downloads the tune index (about 33 MB) into the volume.
+  identification:
+    container_name: identification
+    build: ./sidecar/identification
+    volumes:
+      - identification-data:/data
+    ports:
+      - '8090:8090'
+
   # Web UI for PostgreSQL: server postgres, user/password/database tunelad
   adminer:
     container_name: adminer
@@ -99,3 +109,6 @@ services:
       - ./docker/observability/grafana/provisioning/:/etc/grafana/provisioning/:ro
     ports:
       - '3000:3000'
+
+volumes:
+  identification-data:

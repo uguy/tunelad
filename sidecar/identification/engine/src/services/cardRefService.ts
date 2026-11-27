@@ -1,0 +1,139 @@
+import type { Card, CardRef } from '../types';
+import { isTuneset } from './cardTypeService';
+
+/** Resolution order matters, and `findBacklinks` below depends on it: a
+ *  reference whose `id` lands on one card while its `guid` matches another
+ *  belongs to the FIRST — anything else would make the backlink list disagree
+ *  with where clicking the reference actually goes.
+ *
+ *  Takes a bare `CardRef`, so it serves both roles a reference plays: an
+ *  attachment and a tuneset's tune list. */
+export function resolveCardRef(ref: CardRef, cards: Record<string, Card>): Card | null {
+  const byId = cards[ref.id];
+  if (byId) return byId;
+
+  const byGuid = Object.values(cards).find(c => c.guid === ref.guid);
+  if (byGuid) return byGuid;
+
+  if (ref.externalId) {
+    const byExtId = Object.values(cards).find(c => c.externalId === ref.externalId);
+    if (byExtId) return byExtId;
+  }
+
+  return null;
+}
+
+/** Every card holding a reference that resolves to `cardId` — the inverse of
+ *  resolveCardRef, derived on demand rather than stored.
+ *
+ *  Nothing is persisted on purpose: a stored backlink is a second copy of a
+ *  fact, and would have to be maintained on every add, remove, delete, import
+ *  and merge. Here the list is a pure function of the cards, so it cannot go
+ *  stale — a view reading it re-derives after every state change.
+ *
+ *  Membership is decided by RUNNING the resolver, never by comparing the
+ *  reference's three fields against the target. Those fields are tried in
+ *  order, so "any of the three matches" would list a card whose reference in
+ *  fact opens a different one — a backlink you could click and not arrive at.
+ *
+ *  Cost is one pass over the library's attachments. `resolveCardRef` is O(1)
+ *  through its id fast path, which is what a reference carries unless an
+ *  import or a merge changed the ids under it; the O(n) guid/externalId
+ *  fallbacks only run for those.
+ *
+ *  A card referencing itself is left out (noise, and it is already right
+ *  there), and a card referencing the target several times appears once. */
+export function findBacklinks(cardId: string, cards: Record<string, Card>): Card[] {
+  return collect(cards, cardId, source =>
+    (source.content?.attachments ?? []).filter(a => a.type === 'card'));
+}
+
+/** Every tuneset whose tune list resolves to `cardId` — the set membership of
+ *  a tune, derived exactly like `findBacklinks` and for the same reasons.
+ *
+ *  A deliberate twin rather than a parameter on findBacklinks: the two lists
+ *  are disjoint by construction (a set's tunes live in `card.tunes`, mentions
+ *  live in `content.attachments`), the card view shows them as two separate
+ *  sections, and keeping them apart leaves findBacklinks' own contract — and
+ *  its tests — untouched.
+ *
+ *  Only cards actually typed as a set are considered: `type` decides, a
+ *  leftover `tunes` list on a card of another type is ignored (see the field's
+ *  doc in types.ts). */
+export function findSetsContaining(cardId: string, cards: Record<string, Card>): Card[] {
+  return collect(cards, cardId, source => (isTuneset(source) ? source.tunes ?? [] : []));
+}
+
+/** Every card that plays in at least one set — the bulk twin of
+ *  `findSetsContaining`, which answers for ONE card by scanning the library and
+ *  would be quadratic asked once per card of a selection. One pass over the
+ *  sets answers for all of them at once.
+ *
+ *  Same doctrine as its twin: derived on demand, never stored, and membership
+ *  decided by RUNNING the resolver rather than by comparing a reference's three
+ *  fields — so this agrees with where clicking that reference actually goes.
+ *
+ *  Only the ids are returned, because the one question it exists for is "may
+ *  this card still change type" (see isTypeLocked). Whoever needs to NAME the
+ *  sets is asking about a single card and should use the twin. */
+export function cardsPlayingInSets(cards: Record<string, Card>): Set<string> {
+  const out = new Set<string>();
+  for (const source of Object.values(cards)) {
+    if (!isTuneset(source)) continue;
+    for (const ref of source.tunes ?? []) {
+      const target = resolveCardRef(ref, cards);
+      // A set cannot contain itself (canBeTuneOf), but an imported or
+      // hand-edited list can say otherwise, and a card locked by its own
+      // membership would be locked by nothing real.
+      if (target && target.id !== source.id) out.add(target.id);
+    }
+  }
+  return out;
+}
+
+/** Shared body of the two lookups above: every card, other than the target,
+ *  from which `refsOf` yields a reference resolving to the target. Sorted by
+ *  name so the list is stable, and each card appears once however many of its
+ *  references point here. */
+function collect(
+  cards: Record<string, Card>, cardId: string, refsOf: (source: Card) => CardRef[],
+): Card[] {
+  const out: Card[] = [];
+  for (const source of Object.values(cards)) {
+    if (source.id === cardId) continue;
+    if (refsOf(source).some(ref => resolveCardRef(ref, cards)?.id === cardId)) out.push(source);
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Whether the library's tag filter also lets a set be found by its tunes'
+ *  tags, when the user has said nothing. Absence means YES, so — the
+ *  `syncAudioByDefault` lesson — the setting writes both values explicitly and
+ *  every read comes through `setsMatchTuneTags`. */
+export const SETS_MATCH_TUNE_TAGS_BY_DEFAULT = true;
+
+export function setsMatchTuneTags(user: { setsMatchTuneTags?: boolean }): boolean {
+  return user.setsMatchTuneTags ?? SETS_MATCH_TUNE_TAGS_BY_DEFAULT;
+}
+
+/** The tags the library's filter matches a card on: its own, and for a set,
+ *  those of every tune it plays as well — "a set holding a reel" is asked by
+ *  ticking `reel` (asked by the group, 2026-10-20).
+ *
+ *  Derived at each read and NEVER written to the set: a copy would go stale the
+ *  first time a tune is retagged or swapped, would bury the set's own tags under
+ *  `TheSession`/`Dmajor`/…, and a copy kept fresh by the normalisation would put
+ *  back a tag someone removed on purpose. The set's `tags` stay its own.
+ *
+ *  Membership through the resolver, as in the lookups above; a tune that no
+ *  longer resolves contributes nothing. */
+export function tagsWithTunes(card: Card, cards: Record<string, Card>): string[] {
+  const own = card.tags ?? [];
+  if (!isTuneset(card)) return own;
+  const out = new Set(own);
+  for (const ref of card.tunes ?? []) {
+    const tune = resolveCardRef(ref, cards);
+    if (tune && tune.id !== card.id) for (const tag of tune.tags ?? []) out.add(tag);
+  }
+  return [...out];
+}

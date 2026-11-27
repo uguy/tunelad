@@ -1,0 +1,559 @@
+import type { Detection, DetectionAlternate, DetectionEvent, TunesetRecord } from './model';
+import { reconcileTunesets } from './tunesets';
+import { chainsOf } from './ui/timelineModel';
+import { withManualAlternate } from './model';
+import { alignKey, alignedBounds } from './boundSuggest';
+
+// ── The detection list both engines keep ─────────────────────────────────────
+// LiveSession and ImportSession held byte-identical copies of this until
+// 2026-09-20. They are the same thing — a live recording and a file import run
+// through the very same recogniser, one faster than real time — and the rules
+// below are the delicate part: which of the user's decisions survive an update
+// from the decoder, and which of the decoder's updates the user's decisions
+// override.
+//
+// Pure, and in its own file, for the reason timelineModel.ts gives: it deserves
+// tests, and importing either engine to get at it would drag in the worklet,
+// the worker and the database.
+//
+// ── Confirmations live apart from the decoder (2026-10-10) ───────────────────
+// A detection can be confirmed — or rated, which confirms it — while it is
+// still playing (group feedback: "quitte à se tromper c'est notre problème").
+// The decoder knows nothing of it and keeps revising as before: it may hand
+// the same stretch to another tune (retracting the detection and opening a new
+// one under a new id), merge it with a neighbour, or drop it to silence.
+//
+// So a confirmation is not a flag on one of the decoder's detections but a
+// record of its own: "THIS RANGE is tune X" (user's wording). The range is the
+// one on screen when it was given, and it stays fixed — the user vouched for a
+// stretch, not for whatever the decoder later calls that stretch. After every
+// batch of decoder events the list is rebuilt: each confirmation takes the
+// decoder's detection that overlaps its range the most, and that detection is
+// shown under the CONFIRMATION's id with the user's tune. Timing, confidence and
+// finalization stay the decoder's — it is still the decoder's job to say where
+// the playing starts and ends.
+//
+// What follows from that, all decided by the user on 2026-10-10:
+//  • nothing confirmed is ever retracted — a retraction moves the confirmation
+//    onto whatever now covers its range, and a merge carries it, the merged
+//    detection becoming confirmed;
+//  • two confirmations landing on one detection: the LATEST is the truth, the
+//    other is not shown (and settled at the end — see `dominated`);
+//  • a range nothing covers any more still shows, as last seen: someone said a
+//    tune was played there.
+//
+// The id staying the confirmation's is what keeps a rating attached: a rating
+// is filed under its detection's id (reviewLink.ts), and the decoder's id for a
+// stretch can change under it at any time.
+
+/** The user's verdict on a stretch of the recording. Persisted with a live
+ *  recording's draft, so a crash recovery can apply it again to the replayed
+ *  detections (recovery.ts). */
+export interface DetectionConfirmation {
+  /** The detection it was given on — and the id the confirmed detection keeps,
+   *  whichever of the decoder's detections it currently stands on. */
+  id: string;
+  /** The range it vouches for, in seconds since the start: what was on screen
+   *  when it was given. Fixed. */
+  start: number;
+  end: number;
+  /** Order given — on one detection, the latest wins. */
+  seq: number;
+  /** The tune. */
+  pick: DetectionAlternate;
+  /** The user's own marks, which belong to the confirmed detection rather than
+   *  to whichever decoder detection it rests on. */
+  liked: boolean;
+  manualAlternates?: DetectionAlternate[];
+  /** Optional: absent on drafts written before notes existed, read as none. */
+  notes?: string;
+  /** The detection as last shown — what stays on screen should the decoder
+   *  abandon the whole range. */
+  last: Detection;
+}
+
+/** Where a detection ends as far as is known: its end once closed, else the end
+ *  of the last window that heard it. An open detection has no end yet, and a
+ *  rating or a confirmation given on it still needs one. */
+export function provisionalEnd(d: Detection): number {
+  if (d.end !== null) return d.end;
+  const last = d.evidence[d.evidence.length - 1];
+  return Math.max(d.start, last ? (last.tEnd ?? last.t) : d.start);
+}
+
+/** Overlap in seconds. A confirmation given the instant a detection opened
+ *  can have a range of nearly nothing; it still names a moment, so its range is
+ *  widened to a sliver rather than overlapping nothing at all. */
+function overlap(c: { start: number; end: number }, d: Detection): number {
+  const cEnd = Math.max(c.end, c.start + 1e-3);
+  return Math.max(0, Math.min(cEnd, provisionalEnd(d)) - Math.max(c.start, d.start));
+}
+
+function confirmedView(base: Detection, c: DetectionConfirmation): Detection {
+  const view: Detection = {
+    ...base,
+    id: c.id,
+    tuneId: c.pick.tuneId,
+    settingId: c.pick.settingId,
+    displayName: c.pick.displayName,
+    dance: c.pick.dance,
+    meter: c.pick.meter,
+    userConfirmed: true,
+    liked: c.liked,
+    manualAlternates: c.manualAlternates,
+  };
+  // The confirmation's note, never the base's: the decoder detection it stands
+  // on may still hold the note it had when it was confirmed, since cleared.
+  if (c.notes) view.notes = c.notes; else delete view.notes;
+  return view;
+}
+
+/** The identity a detection currently shows, as a pick — what rating it
+ *  confirms. Scored like the decoder's pick when it is that one. */
+export function currentPick(d: Detection): DetectionAlternate {
+  const vp = d.viterbiPick;
+  return {
+    tuneId: d.tuneId, settingId: d.settingId, displayName: d.displayName,
+    dance: d.dance, meter: d.meter,
+    meanScore: vp && vp.tuneId === d.tuneId ? vp.meanScore : d.meanScore,
+  };
+}
+
+export interface Resolution {
+  /** What is shown, sorted by start. */
+  detections: Detection[];
+  /** Confirmation id → the decoder detection it stands on. */
+  claims: Map<string, string>;
+  /** Shown id → the decoder detection behind it (absent for a confirmation
+   *  standing on nothing). */
+  rawIdOf: Map<string, string>;
+  /** Confirmation id → the one that took its detection from it. */
+  dominatedBy: Map<string, string>;
+}
+
+/** The list to show: the decoder's detections with the user's confirmations
+ *  laid over them. See this file's header for the rules.
+ *
+ *  `final` once no more windows will arrive: a confirmation standing on
+ *  nothing is then as settled as it will ever be. */
+export function resolveDetections(
+  raw: readonly Detection[],
+  confirmations: readonly DetectionConfirmation[],
+  final: boolean,
+): Resolution {
+  const sortedRaw = [...raw].sort((a, b) => a.start - b.start);
+
+  // Each confirmation's best detection: the largest overlap with its range,
+  // and on a tie the one it was given on.
+  const best = new Map<string, Detection>();
+  for (const c of confirmations) {
+    let pick: Detection | undefined;
+    let pickOverlap = 0;
+    for (const d of sortedRaw) {
+      // Sorted by start: past the range's end, nothing can overlap it.
+      if (d.start >= Math.max(c.end, c.start + 1e-3)) break;
+      const o = overlap(c, d);
+      if (o > pickOverlap || (o > 0 && o === pickOverlap && d.id === c.id)) {
+        pick = d;
+        pickOverlap = o;
+      }
+    }
+    if (pick) best.set(c.id, pick);
+  }
+
+  // One confirmation per detection: the latest.
+  const winnerOf = new Map<string, DetectionConfirmation>();
+  for (const c of confirmations) {
+    const d = best.get(c.id);
+    if (!d) continue;
+    const held = winnerOf.get(d.id);
+    if (!held || c.seq > held.seq) winnerOf.set(d.id, c);
+  }
+  const claims = new Map<string, string>();
+  for (const [rawId, c] of winnerOf) claims.set(c.id, rawId);
+  const dominatedBy = new Map<string, string>();
+  for (const c of confirmations) {
+    const d = best.get(c.id);
+    if (d && claims.get(c.id) !== d.id) dominatedBy.set(c.id, winnerOf.get(d.id)!.id);
+  }
+
+  // A decoder detection nobody claims keeps its own id — unless a confirmation
+  // already shows under it (the decoder's id for that stretch outlived the
+  // confirmation's move to another): then it takes a derived one, stable from
+  // one rebuild to the next, so two cards never share an id.
+  const reserved = new Set(confirmations.map(c => c.id));
+  const rawIdOf = new Map<string, string>();
+  const detections: Detection[] = [];
+  for (const d of sortedRaw) {
+    const c = winnerOf.get(d.id);
+    if (c) {
+      detections.push(confirmedView(d, c));
+      rawIdOf.set(c.id, d.id);
+      continue;
+    }
+    let id = d.id;
+    while (reserved.has(id)) id += '+';
+    detections.push(id === d.id ? d : { ...d, id });
+    rawIdOf.set(id, d.id);
+  }
+  for (const c of confirmations) {
+    if (best.has(c.id)) continue;
+    detections.push({
+      ...confirmedView(c.last, c),
+      end: provisionalEnd(c.last),
+      finalized: final || c.last.finalized,
+    });
+  }
+  detections.sort((a, b) => a.start - b.start);
+  return { detections, claims, rawIdOf, dominatedBy };
+}
+
+/** The decoder's detections, the user's confirmations, and the list they make
+ *  together — one per engine. */
+export class DetectionTracker {
+  private readonly raw = new Map<string, Detection>();
+  private readonly confirmations = new Map<string, DetectionConfirmation>();
+  private seq = 0;
+  private final = false;
+  private resolution: Resolution = { detections: [], claims: new Map(), rawIdOf: new Map(), dominatedBy: new Map() };
+  /** The end each shown detection had when last reported settled. */
+  private readonly settledEnds = new Map<string, number>();
+
+  /** Folds a batch of decoder events in. The decoder's own detections carry
+   *  the like marker, the note and hand-named variants of an unconfirmed
+   *  detection forward — the aggregator has never heard of any of them. */
+  apply(events: readonly DetectionEvent[]): void {
+    // Most windows change nothing — and a 5-hour import feeds thousands of them.
+    if (events.length === 0 && !this.final) return;
+    for (const ev of events) {
+      if (ev.type === 'retract') { this.raw.delete(ev.id); continue; }
+      const existing = this.raw.get(ev.detection.id);
+      this.raw.set(ev.detection.id, {
+        ...ev.detection,
+        liked: existing?.liked ?? false,
+        manualAlternates: existing?.manualAlternates,
+        ...(existing?.notes ? { notes: existing.notes } : {}),
+      });
+    }
+    this.refresh();
+  }
+
+  /** The decoder's last events: nothing will move after these. */
+  finish(events: readonly DetectionEvent[]): void {
+    this.final = true;
+    this.apply(events);
+  }
+
+  list(): Detection[] {
+    return [...this.resolution.detections];
+  }
+
+  get(id: string): Detection | undefined {
+    return this.resolution.detections.find(d => d.id === id);
+  }
+
+  /** Records the user's verdict on a shown detection: any tune confirms it —
+   *  the decoder's own pick included — and `null` hands it back to the decoder.
+   *  A new verdict on a confirmed detection is the latest word, and keeps the
+   *  range first vouched for. */
+  confirm(id: string, pick: DetectionAlternate | null): void {
+    const shown = this.get(id);
+    if (!shown) return;
+    const c = this.confirmations.get(id);
+    if (pick === null) {
+      if (!c) return;
+      this.confirmations.delete(id);
+      // The marks go back to the detection it stood on, which shows again
+      // under its own id.
+      const rawId = this.resolution.claims.get(id);
+      const r = rawId ? this.raw.get(rawId) : undefined;
+      if (r) {
+        const back: Detection = { ...r, liked: c.liked, manualAlternates: c.manualAlternates };
+        if (c.notes) back.notes = c.notes; else delete back.notes;
+        this.raw.set(r.id, back);
+      }
+    } else if (c) {
+      c.pick = { ...pick };
+      c.seq = ++this.seq;
+    } else {
+      this.confirmations.set(id, {
+        id,
+        start: shown.start,
+        end: provisionalEnd(shown),
+        seq: ++this.seq,
+        pick: { ...pick },
+        liked: shown.liked,
+        manualAlternates: shown.manualAlternates,
+        ...(shown.notes ? { notes: shown.notes } : {}),
+        last: shown,
+      });
+    }
+    this.refresh();
+  }
+
+  toggleLike(id: string): void {
+    this.mark(id, d => ({ liked: !d.liked }));
+  }
+
+  /** The whole text of a shown detection's note; blank clears it. */
+  setNotes(id: string, notes: string): void {
+    this.mark(id, () => ({ notes: notes.trim() ? notes : undefined }));
+  }
+
+  // ── The sets heard so far (2026-10-19) ──
+  // Kept here, beside the tunes' hearts, so that a recording or an import can
+  // give a set its heart and its review before the analysis exists — the table
+  // is handed to the analysis when it is saved (finalSets), under the same ids,
+  // and a review given now still finds its set in the summary. Only ever asked
+  // for with set detection on: never asked, nothing is saved.
+  private sets: TunesetRecord[] = [];
+  private setsAsked = false;
+
+  /** The table, brought in line with the detections as they stand. A set
+   *  still being decoded has an entry too (see reconcileTunesets). */
+  setTable(newId: () => string): TunesetRecord[] {
+    this.setsAsked = true;
+    const dets = this.list();
+    const duration = dets.reduce((m, d) => Math.max(m, d.end ?? d.start), 0);
+    this.sets = reconcileTunesets(this.sets, chainsOf(dets, duration), newId, { includeUnsettled: true });
+    return this.sets;
+  }
+
+  toggleSetLike(id: string): void {
+    const rec = this.sets.find(r => r.id === id);
+    if (!rec) return;
+    if (rec.liked) delete rec.liked; else rec.liked = true;
+  }
+
+  /** The set's note, whole text — blank clears it. */
+  setSetNotes(id: string, notes: string): void {
+    const rec = this.sets.find(r => r.id === id);
+    if (!rec) return;
+    if (notes.trim()) rec.notes = notes; else delete rec.notes;
+  }
+
+  /** What the saved analysis carries: the settled sets, ids and hearts kept —
+   *  or nothing at all when the table was never asked for. */
+  finalSets(newId: () => string): TunesetRecord[] | undefined {
+    if (!this.setsAsked) return undefined;
+    const dets = this.list();
+    const duration = dets.reduce((m, d) => Math.max(m, d.end ?? d.start), 0);
+    return reconcileTunesets(this.sets, chainsOf(dets, duration), newId);
+  }
+
+  // ── Where sets open, in the user's word (2026-10-20) ──
+  // A cut or a link (model.ts's opensSet) can be given while the recording
+  // runs, on a tune still being decoded. It is not kept on the decoder's
+  // detection the way a heart is: the decoder re-ids a stretch whenever it
+  // revises it, and a mark lost that way would undo a set the user just
+  // fixed. So it is anchored on WHEN that detection started, and lands after
+  // every update on the detection starting nearest that instant — following it
+  // as its start moves.
+  private readonly setMarks: Array<{ at: number; opens: boolean }> = [];
+  /** Shown id → the mark it carries. */
+  private markOf = new Map<string, { at: number; opens: boolean }>();
+
+  /** Marks a shown detection as opening a set (`true`), carrying the set
+   *  before it on (`false`), or hands it back to the rule (`undefined`). */
+  setOpensSet(id: string, opens: boolean | undefined): void {
+    const shown = this.get(id);
+    if (!shown) return;
+    const held = this.markOf.get(id);
+    if (held) this.setMarks.splice(this.setMarks.indexOf(held), 1);
+    if (opens !== undefined) this.setMarks.push({ at: shown.start, opens });
+    this.refresh();
+  }
+
+  /** See model.ts's withManualAlternate. */
+  addManualAlternate(id: string, tune: DetectionAlternate): void {
+    this.mark(id, d => ({ manualAlternates: withManualAlternate(d, tune) }));
+  }
+
+  /** See model.ts's manualAlternateRemovalFields: removing the very tune the
+   *  detection is confirmed as also hands it back to the decoder. */
+  removeManualAlternate(id: string, tuneId: string): void {
+    const shown = this.get(id);
+    if (!shown) return;
+    const left = (shown.manualAlternates ?? []).filter(o => o.tuneId !== tuneId);
+    this.mark(id, () => ({ manualAlternates: left.length > 0 ? left : undefined }));
+    if (shown.userConfirmed && shown.tuneId === tuneId) this.confirm(id, null);
+  }
+
+  /** The confirmations, for a draft. */
+  snapshot(): DetectionConfirmation[] {
+    return [...this.confirmations.values()].map(c => ({ ...c }));
+  }
+
+  /** The decoder's own detections, under the confirmations — what, with
+   *  snapshot(), puts the list back together: restore() them, then finish()
+   *  these. The widget keeps them through a crash, having no windows to
+   *  replay (thesessionEmbed/runStore.ts). */
+  decoderDetections(): Detection[] {
+    return [...this.raw.values()].map(d => ({ ...d }));
+  }
+
+  /** Puts a draft's confirmations back, before replaying its windows. */
+  restore(confirmations: readonly DetectionConfirmation[]): void {
+    for (const c of confirmations) {
+      this.confirmations.set(c.id, { ...c });
+      this.seq = Math.max(this.seq, c.seq);
+    }
+    this.refresh();
+  }
+
+  /** Confirmations another, later one has taken the detection from, each with
+   *  the detection that took it — not shown, and what the end of a recording
+   *  settles (the rating of one, if any). */
+  dominated(): Array<{ loser: Detection; winner: Detection }> {
+    const out: Array<{ loser: Detection; winner: Detection }> = [];
+    for (const [loserId, winnerId] of this.resolution.dominatedBy) {
+      const c = this.confirmations.get(loserId);
+      const winner = this.get(winnerId);
+      if (!c || !winner) continue;
+      out.push({ loser: { ...confirmedView(c.last, c), end: provisionalEnd(c.last) }, winner });
+    }
+    return out;
+  }
+
+  /** Shown detections finalized since the last call, or finalized ones whose
+   *  end has moved since — where a rating given while it played gets its
+   *  definitive instant. */
+  takeSettled(): Detection[] {
+    const out: Detection[] = [];
+    for (const d of this.resolution.detections) {
+      if (!d.finalized || d.end === null || this.settledEnds.get(d.id) === d.end) continue;
+      this.settledEnds.set(d.id, d.end);
+      out.push(d);
+    }
+    return out;
+  }
+
+  private mark(id: string, change: (shown: Detection) => Partial<Pick<Detection, 'liked' | 'manualAlternates' | 'notes'>>): void {
+    const shown = this.get(id);
+    if (!shown) return;
+    const patch = change(shown);
+    const c = this.confirmations.get(id);
+    if (c) {
+      Object.assign(c, patch);
+    } else {
+      const rawId = this.resolution.rawIdOf.get(id);
+      const r = rawId ? this.raw.get(rawId) : undefined;
+      if (!r) return;
+      const next: Detection = { ...r, ...patch };
+      // A cleared note is no key at all, as on a saved analysis.
+      if (!next.notes) delete next.notes;
+      this.raw.set(r.id, next);
+    }
+    this.refresh();
+  }
+
+  // ── Bounds on the tune's passes (2026-11-01) ──
+  // The decoder's bounds are kept as they are, and the bounds the passes
+  // suggest (boundSuggest.ts, worked out outside, in a worker) are laid over
+  // them on every rebuild, as the confirmations are: a detection the decoder
+  // revises, or retunes, is a new question (alignKey), and shows its own
+  // bounds until it is answered. What moved carries the decoder's bounds in
+  // `detected`.
+  private readonly suggestions = new Map<string, { start: number | null; end: number | null } | null>();
+
+  /** The detections whose suggestion is still to be worked out: finalized —
+   *  the decoder will not move them any more — with a tune, and not already
+   *  answered. */
+  toAlign(): Array<{ key: string; start: number; end: number; settingId: string; meter: string }> {
+    return this.unaligned
+      .filter(d => d.finalized && d.end !== null && d.settingId && !d.detected && !this.suggestions.has(alignKey(d)))
+      .map(d => ({ key: alignKey(d), start: d.start, end: d.end!, settingId: d.settingId, meter: d.meter }));
+  }
+
+  /** The answer for one detection, by its alignKey: null when nothing could
+   *  be aligned. */
+  setSuggestion(key: string, suggestion: { start: number | null; end: number | null } | null): void {
+    this.suggestions.set(key, suggestion);
+    this.refresh();
+  }
+
+  /** Which bounds of a shown detection are yet to be put on the passes — what
+   *  the feeds mark with a ~ (2026-11-01, the user). Its start, until it is
+   *  answered; its end, until the tune after it is too, which may move it
+   *  again (the join) — or, for the last one, until nothing more can follow.
+   *  A detection answered with nothing, or with no tune to align, is
+   *  settled as it is. */
+  unrefined(id: string): { start: boolean; end: boolean } | null {
+    const dets = this.unaligned;
+    const k = dets.findIndex(d => d.id === id);
+    if (k < 0) return null;
+    const answered = (d: Detection) => d.finalized && d.end !== null
+      && (!d.settingId || !!d.detected || this.suggestions.has(alignKey(d)));
+    const self = answered(dets[k]!);
+    const next = dets[k + 1];
+    return { start: !self, end: !self || (next ? !answered(next) : !this.final) };
+  }
+
+  /** The detections as resolved, before the suggestions are laid over them. */
+  private unaligned: Detection[] = [];
+
+  private withSuggestions(dets: Detection[]): Detection[] {
+    this.unaligned = dets;
+    if (this.suggestions.size === 0) return dets;
+    const targets = dets.map(d => ({
+      id: d.id, start: d.start, end: provisionalEnd(d),
+      // One already carrying `detected` is a confirmation standing on
+      // nothing, as last shown: moved already.
+      suggestion: d.finalized && d.end !== null && !d.detected ? this.suggestions.get(alignKey(d)) : undefined,
+    }));
+    const changes = alignedBounds(targets, this.final);
+    const answered = new Set(targets.filter(x => x.suggestion).map(x => x.id));
+    if (changes.size === 0 && answered.size === 0) return dets;
+    // Answered, moved or not, it carries the decoder's bounds: what tells an
+    // aligned join from one that is not (timelineModel's gapMinBetween).
+    return dets.map((d) => {
+      const n = changes.get(d.id);
+      if (n) return { ...d, start: n.start, end: n.end, detected: { start: d.start, end: d.end! } };
+      return answered.has(d.id) ? { ...d, detected: { start: d.start, end: d.end! } } : d;
+    }).sort((a, b) => a.start - b.start);
+  }
+
+  private refresh(): void {
+    this.resolution = resolveDetections([...this.raw.values()], [...this.confirmations.values()], this.final);
+    this.resolution = { ...this.resolution, detections: this.withSuggestions(this.resolution.detections) };
+    // Each confirmation remembers how it last looked on screen — what stays
+    // should the decoder abandon its range.
+    for (const d of this.resolution.detections) {
+      const c = this.confirmations.get(d.id);
+      if (c && this.resolution.claims.has(c.id)) c.last = d;
+    }
+    this.placeSetMarks();
+  }
+
+  /** Lays the set marks on the detections they now stand on — the nearest
+   *  start within MARK_REACH_S; on one detection, the latest mark wins. A mark
+   *  that finds nothing waits: the decoder may yet bring its tune back. */
+  private placeSetMarks(): void {
+    this.markOf = new Map();
+    if (this.setMarks.length === 0) return;
+    const dets = this.resolution.detections;
+    const at = new Map<number, { at: number; opens: boolean }>();
+    for (const m of this.setMarks) {
+      let best = -1;
+      let dist = MARK_REACH_S;
+      dets.forEach((d, j) => {
+        const x = Math.abs(d.start - m.at);
+        if (x <= dist) { best = j; dist = x; }
+      });
+      if (best >= 0) at.set(best, m);
+    }
+    const detections = dets.map((d, j) => {
+      const m = at.get(j);
+      if (!m) return d;
+      m.at = d.start;
+      this.markOf.set(d.id, m);
+      return { ...d, opensSet: m.opens };
+    });
+    this.resolution = { ...this.resolution, detections };
+  }
+}
+
+/** How far a set mark reaches for its detection: a start revised by the
+ *  decoder moves by a window hop or two (5 s each); two tunes never start
+ *  this close. */
+const MARK_REACH_S = 10;

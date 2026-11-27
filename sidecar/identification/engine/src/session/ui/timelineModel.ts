@@ -1,0 +1,212 @@
+import type { Detection } from '../model';
+
+// ── What the summary's timeline and list agree on ────────────────────────────
+// Pure, and deliberately in its own file: the two rules below are the subtle
+// half of that screen and deserve tests, which importing the component itself
+// cannot give (it drags in the store, and with it the whole app).
+
+/** Below this, a hole between two detections is bound slop, not silence: the
+ *  detector's bounds come from 10 s windows on a 5 s hop, so two tunes running
+ *  straight into each other still leave one hop between them. Measured on real
+ *  sessions (2026-09-05): every genuine pause was 15 s or more, every artefact
+ *  was exactly one or two hops.
+ *
+ *  With set detection on (2026-10-19) it is also, by construction, the
+ *  ONE rule that makes a set — the user's decision: detections with no hole of
+ *  this size between them were played without stopping, and form one chain
+ *  (see withChains). A silence row in the list and a break between two sets
+ *  are the same thing by default. What the threshold gets wrong, the user
+ *  corrects by hand: a cut where nothing stopped, a link across a silence
+ *  (model.ts's opensSet, 2026-10-20). */
+export const GAP_MIN_S = 15;
+
+/** The same between two detections whose bounds the analysis has put on
+ *  their tunes' passes (Detection.detected — boundSuggest.ts): the artefact
+ *  of the windows is gone from such a join, and a real pause of 8 to 15 s,
+ *  which the old threshold took for a set, shows at its true size
+ *  (2026-11-01, the user). Measured end to end on the seven annotated
+ *  sessions: of 189 joins within a set and 90 pairs of tunes apart, 163 and
+ *  7 taken for a set at 8 s, where the detected bounds at 15 s gave 154 and
+ *  9 — 169 and 17 aligned at 15 s. Both the user's recordings and YouTube's
+ *  gained. Join by join: one not yet aligned keeps its artefact, and the
+ *  old threshold. */
+export const GAP_REFINED_S = 8;
+
+/** The threshold between `a` and the detection `b` after it. */
+export function gapMinBetween(a: Detection | undefined, b: Detection): number {
+  return a?.detected && b.detected ? GAP_REFINED_S : GAP_MIN_S;
+}
+
+/** EVERY detection covering `t` — none, one, or several.
+ *
+ *  Detections OVERLAP as a rule, not as an edge case: 22 of 37 boundaries on a
+ *  real 48 min session, by 5 to 10 s, because two tunes of a set run together
+ *  and window bounds bite.
+ *
+ *  An earlier version answered with a single detection — the last to start —
+ *  and, in a silence, kept showing whichever it had answered last. Both were
+ *  inventions dressed as readings. What the play head can honestly report is
+ *  which detections cover the instant it sits on: genuinely empty in a gap,
+ *  genuinely plural across a join. Two cards lit at a transition say more than
+ *  a coin toss between them, and an empty list says more in a silence than a
+ *  stale leftover that looks exactly like a live answer.
+ *
+ *  Orientation during a silence is not lost by this: it is the play head
+ *  standing in an empty stretch of the strip, and the gap rows in the list,
+ *  that carry it — instruments that can say "nothing here" without lying.
+ *
+ *  Returned in the annotations' own order, so the result depends only on `t`. */
+export function detectionsAt(anns: Detection[], t: number, duration: number): string[] {
+  return anns.filter(a => a.start <= t && t < (a.end ?? duration)).map(a => a.id);
+}
+
+/** Detections and the silences between them, in playing order — what the
+ *  timeline shows positionally, rendered as a sequence so the list can say it
+ *  too. A list of cards butted together reads as one continuous concert.
+ *
+ *  A silence names what borders it (see ListGap): the detection whose end it
+ *  starts from — the one reaching furthest, which is not always the last to
+ *  start — and the one that ends it. */
+export function withGaps(anns: Detection[], duration: number): Array<
+  { kind: 'ann'; ann: Detection; i: number } | Omit<ListGap, 'nextId'>
+> {
+  const out: ReturnType<typeof withGaps> = [];
+  let cursor = 0;
+  let reachedBy: Detection | undefined;
+  const gap = (from: number, len: number, followingId: string | undefined): Omit<ListGap, 'nextId'> => ({
+    kind: 'gap', from, len,
+    ...(reachedBy ? { prevId: reachedBy.id } : {}),
+    ...(followingId ? { followingId } : {}),
+  });
+  anns.forEach((ann, i) => {
+    const hole = ann.start - cursor;
+    if (hole >= gapMinBetween(reachedBy, ann)) out.push(gap(cursor, hole, ann.id));
+    out.push({ kind: 'ann', ann, i });
+    // Overlaps mean the next tune can start before this one ends; the cursor
+    // only ever moves forward, so a negative hole simply never shows.
+    const end = ann.end ?? duration;
+    if (end > cursor) { cursor = end; reachedBy = ann; }
+  });
+  if (duration - cursor >= GAP_MIN_S) out.push(gap(cursor, duration - cursor, undefined));
+  return out;
+}
+
+/** A hole too short for a silence row (gapMinBetween), or an overlap, by
+ *  the detection after it: from the end of the one reaching furthest before
+ *  it — the neighbour withGaps names — to its start. `len` negative for an
+ *  overlap. */
+export type ShortGap = { prevId: string; nextId: string; from: number; len: number };
+
+/** Every such hole and overlap — the editor view shows them all
+ *  (2026-10-31, the user; overlaps too, 2026-11-01), above the tune after it,
+ *  inside a set: they break nothing. Two tunes touching exactly leave none:
+ *  that join is made. */
+export function shortGapsOf(anns: Detection[], duration: number): Map<string, ShortGap> {
+  const out = new Map<string, ShortGap>();
+  let cursor = 0;
+  let reachedBy: Detection | undefined;
+  for (const ann of anns) {
+    const hole = ann.start - cursor;
+    if (reachedBy && Math.abs(hole) > 0.01 && hole < gapMinBetween(reachedBy, ann)) out.set(ann.id, { prevId: reachedBy.id, nextId: ann.id, from: cursor, len: hole });
+    const end = ann.end ?? duration;
+    if (end > cursor) { cursor = end; reachedBy = ann; }
+  }
+  return out;
+}
+
+/** A silence row. `nextId`: the detection right after it when a set could be
+ *  carried on across it — the one a "link" marks (absent before the first
+ *  detection and after the last).
+ *
+ *  `prevId` / `followingId`: what borders it, absent at the head and the tail
+ *  of the recording — the two detections a silence can be handed to
+ *  (2026-10-27, user request). */
+export type ListGap = { kind: 'gap'; from: number; len: number; nextId?: string; prevId?: string; followingId?: string };
+/** `cut`: it opens a set only because the user said so — nothing stopped
+ *  before it — so the join it sits on carries the mark. */
+export type ListAnn = { kind: 'ann'; ann: Detection; i: number; cut: boolean };
+export type ListChain = {
+  kind: 'chain';
+  members: Array<{ ann: Detection; i: number }>;
+  /** Its detections in order, with the silences it was linked across between
+   *  them — only those: the list shows them inside the set. */
+  rows: Array<ListAnn | ListGap>;
+  cut: boolean;
+};
+
+/** Whether `ann` opens a set: the first always does; then the user's mark
+ *  (model.ts's opensSet) if there is one; else the rule — a silence before it. */
+function opensSet(ann: Detection, first: boolean, silence: boolean): boolean {
+  if (first) return true;
+  return ann.opensSet ?? silence;
+}
+
+/** What the list shows, in playing order: the silences, the tunes played
+ *  alone, and the CHAINS — two or more detections with no silence between
+ *  them, which is what a set is here (see GAP_MIN_S). Built on withGaps rather
+ *  than beside it, so by default a chain ends exactly where a silence row
+ *  begins and nowhere else.
+ *
+ *  The user's marks override that both ways (2026-10-20): a cut opens a set
+ *  where nothing stopped, a link carries one on across a silence — which then
+ *  shows INSIDE it (`rows`), its span and its clip covering the pause.
+ *
+ *  `i` is each detection's index in `anns`, which the summary's merge and
+ *  delete controls address it by. */
+export function withChains(anns: Detection[], duration: number): Array<ListGap | ListAnn | ListChain> {
+  const out: ReturnType<typeof withChains> = [];
+  let run: Array<ListAnn | ListGap> = [];
+  let runCut = false;
+  const flush = () => {
+    const members = run.filter((r): r is ListAnn => r.kind === 'ann');
+    if (members.length === 1) out.push({ ...members[0]!, cut: runCut });
+    else if (members.length > 1) out.push({ kind: 'chain', members: members.map(m => ({ ann: m.ann, i: m.i })), rows: run, cut: runCut });
+    run = [];
+  };
+  let gap: ListGap | null = null;
+  let seen = false;
+  for (const item of withGaps(anns, duration)) {
+    if (item.kind === 'gap') { gap = item; continue; }
+    const first = !seen;
+    seen = true;
+    const row: ListAnn = { kind: 'ann', ann: item.ann, i: item.i, cut: false };
+    if (opensSet(item.ann, first, !!gap)) {
+      flush();
+      if (gap) out.push(first ? gap : { ...gap, nextId: item.ann.id });
+      runCut = !first && !gap;
+    } else if (gap) {
+      run.push({ ...gap, nextId: item.ann.id });
+    }
+    run.push(row);
+    gap = null;
+  }
+  flush();
+  if (gap) out.push(gap);
+  return out;
+}
+
+/** Just the chains, as lists of detections — what the set table and the
+ *  searches across analyses are built from. */
+export function chainsOf(anns: Detection[], duration: number): Detection[][] {
+  return withChains(anns, duration)
+    .filter((x): x is Extract<typeof x, { kind: 'chain' }> => x.kind === 'chain')
+    .map(x => x.members.map(m => m.ann));
+}
+
+/** Where the play head stands, as the list and the strip both need to show
+ *  it: the detections covering that instant, or — when none do — the silence
+ *  it is standing in.
+ *
+ *  One reading rather than two, so the two views cannot disagree, and so a
+ *  caller can tell "the answer changed" from a single comparable key.
+ *
+ *  `gapFrom` is null both when a detection covers `t` and when the hole is
+ *  too short to be shown at all: the list has no row there to light up. */
+export function headPosition(anns: Detection[], t: number, duration: number): { ids: string[]; gapFrom: number | null } {
+  const ids = detectionsAt(anns, t, duration);
+  if (ids.length > 0) return { ids, gapFrom: null };
+  for (const item of withGaps(anns, duration)) {
+    if (item.kind === 'gap' && t >= item.from && t < item.from + item.len) return { ids, gapFrom: item.from };
+  }
+  return { ids, gapFrom: null };
+}
