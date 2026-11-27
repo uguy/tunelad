@@ -248,6 +248,37 @@ class TrackPerformancesTest extends AbstractApiTest {
         assertThat(get(track.id()).performances().get(0).key()).isNull();
     }
 
+    // --- Performances of a Tune ------------------------------------------------------------------
+
+    private List<TunePerformanceDTO> performancesOf(String tuneId) {
+        return client.get().uri("/api/tunes/{id}/performances", tuneId).exchange().expectStatus().isOk()
+                .expectBodyList(TunePerformanceDTO.class).returnResult().getResponseBody();
+    }
+
+    @Test
+    void performances_across_tracks() {
+        twoTuneSet();
+        uploadOk("[{}, {\"key\": \"G\", \"abc\": \"X:1\"}]");
+        var parts = parts(null);
+        parts.put("title", "Another go");
+        upload(parts, KNEES_UP_MP3).expectStatus().isCreated();
+
+        var performances = performancesOf(kesh);
+
+        assertThat(performances).extracting(TunePerformanceDTO::trackTitle).containsExactly("Another go", "Knees Up");
+        assertThat(performances).extracting(TunePerformanceDTO::position).containsOnly(2);
+        assertThat(performances.get(1).key()).isEqualTo("G");
+        assertThat(performances.get(1).abc()).isEqualTo("X:1");
+        assertThat(performancesOf(cooleys)).hasSize(2);
+    }
+
+    @Test
+    void tune_never_recorded() {
+        twoTuneSet();
+
+        assertThat(performancesOf(kesh)).isEmpty();
+    }
+
     // --- Deleting a track deletes its Performances -----------------------------------------------
 
     @Test

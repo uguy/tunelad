@@ -4,6 +4,7 @@ import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
 import org.tunelad.set.SetCatalog;
 import org.tunelad.set.SetDTO;
+import org.tunelad.track.TunePerformanceDTO;
 import org.tunelad.track.internal.Artist;
 import org.tunelad.track.internal.Artists;
 import org.tunelad.track.internal.Performance;
@@ -47,6 +48,24 @@ class DbTracks implements Tracks {
     @Override
     public Flux<Track> findAllById(java.util.Collection<String> ids) {
         return ids.isEmpty() ? Flux.empty() : hydrate(trackRepository.findAllById(ids));
+    }
+
+    @Override
+    public Flux<TunePerformanceDTO> findPerformancesByTune(String tuneId) {
+        return client.sql("""
+                        SELECT t.id AS track_id, t.title, a.name AS artist, p.position, p.start_offset_seconds,
+                               p.key, p.notes, p.abc
+                        FROM track_performances p
+                                 JOIN track_tracks t ON t.id = p.track_id
+                                 LEFT JOIN track_artists a ON a.id = t.artist_id
+                        WHERE p.tune_id = :tune
+                        ORDER BY lower(t.title), t.id, p.position""")
+                .bind("tune", tuneId)
+                .map(row -> new TunePerformanceDTO(row.get("track_id", String.class), row.get("title", String.class),
+                        row.get("artist", String.class), row.get("position", Integer.class),
+                        row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class)))
+                .all();
     }
 
     @Override

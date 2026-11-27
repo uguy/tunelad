@@ -10,6 +10,9 @@ public interface Tracks {
 
 	Mono<Track> findById(String id);
 
+	/** Every Performance of the Tune across Tracks, ordered by Track title. */
+	Flux<org.tunelad.track.TunePerformanceDTO> findPerformancesByTune(String tuneId);
+
 	/** The tracks with these ids; ids that match no track are ignored, and the order is unspecified. */
 	Flux<Track> findAllById(java.util.Collection<String> ids);
 

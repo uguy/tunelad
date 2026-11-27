@@ -180,6 +180,12 @@ class DefaultTrackService implements TrackService {
 
     @ReactiveTransactional(readOnly = true)
     @Override
+    public Flux<org.tunelad.track.TunePerformanceDTO> findPerformancesByTune(String tuneId) {
+        return tracks.findPerformancesByTune(tuneId);
+    }
+
+    @ReactiveTransactional(readOnly = true)
+    @Override
     public Mono<TrackDTO> findById(String id) {
         return tracks.findById(id)
 //				.switchIfEmpty(Mono.error(new NotFoundException("Not tracks found for id: " + id)))

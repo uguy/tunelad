@@ -5,7 +5,7 @@
 
 ## 2. Performances of a Tune
 
-- [ ] 2.1 Add `TrackService.findPerformancesByTune`, `TunePerformanceDTO` and `GET /api/tunes/{id}/performances` in `track`; keep `ModularApplicationTests` green; test across Tracks, empty and anonymous access with Testcontainers; check the OpenAPI output lists the new path and `abc`. Commit `feat(track): list the performances of a tune`.
+- [x] 2.1 Add `TrackService.findPerformancesByTune`, `TunePerformanceDTO` and `GET /api/tunes/{id}/performances` in `track`; keep `ModularApplicationTests` green; test across Tracks, empty and anonymous access with Testcontainers; check the OpenAPI output lists the new path and `abc`. Commit `feat(track): list the performances of a tune`.
 
 ## 3. UI
 
