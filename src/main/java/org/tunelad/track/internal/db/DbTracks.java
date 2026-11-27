@@ -116,10 +116,11 @@ class DbTracks implements Tracks {
         return client.sql("DELETE FROM track_performances WHERE track_id = :track").bind("track", trackId).then()
                 .thenMany(Flux.fromIterable(performances).concatMap(p -> {
                     var spec = client.sql("""
-                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes, abc)
-                                    VALUES (:track, :position, :tune, :offset, :key, :notes, :abc)""")
+                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes, abc, identification)
+                                    VALUES (:track, :position, :tune, :offset, :key, :notes, :abc, :identification)""")
                             .bind("track", trackId).bind("position", p.position()).bind("tune", p.tuneId())
-                            .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()));
+                            .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()))
+                            .bind("identification", p.identification().column());
                     spec = p.key() == null ? spec.bindNull("key", String.class) : spec.bind("key", p.key());
                     spec = p.notes() == null ? spec.bindNull("notes", String.class) : spec.bind("notes", p.notes());
                     spec = p.abc() == null ? spec.bindNull("abc", String.class) : spec.bind("abc", p.abc());
@@ -158,13 +159,14 @@ class DbTracks implements Tracks {
             return Mono.just(Map.of());
         }
         return client.sql("""
-                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes, abc
+                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes, abc, identification
                         FROM track_performances WHERE track_id IN (:ids) ORDER BY track_id, position""")
                 .bind("ids", trackIds)
                 .map(row -> Map.entry(row.get("track_id", String.class), new Performance(
                         row.get("position", Integer.class), row.get("tune_id", String.class),
                         row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
-                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class))))
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class),
+                        org.tunelad.track.IdentificationState.fromColumn(row.get("identification", String.class)))))
                 .all()
                 .collect(HashMap::new, (map, entry) ->
                         map.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(entry.getValue()));

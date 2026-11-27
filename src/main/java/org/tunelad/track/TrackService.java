@@ -2,6 +2,7 @@ package org.tunelad.track;
 
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteTrackCommand;
+import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,6 +19,13 @@ public interface TrackService {
 
     /** Deletes the track and its audio. Fails like {@link #execute(UpdateTrackCommand)}. */
     Mono<Void> execute(DeleteTrackCommand command);
+
+    /**
+     * Applies Identification's proposals to the Track's Performances that no Account corrected, marking them
+     * identified, and returns the track. Proposals for unknown positions are ignored. Completes empty when the
+     * track no longer exists (it may have been deleted while the analysis ran).
+     */
+    Mono<TrackDTO> execute(ProposePerformances command);
 
     Flux<TrackDTO> findAll();
 

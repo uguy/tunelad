@@ -19,6 +19,7 @@ import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.PerformanceInput;
+import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
@@ -82,7 +83,8 @@ class DefaultTrackService implements TrackService {
         track.setTuneSet(set);
         track.setPerformances(new java.util.ArrayList<>(java.util.stream.IntStream.range(0, inputs.size())
                 .mapToObj(i -> new Performance(i + 1, set.tunes().get(i).id(), inputs.get(i).offset(),
-                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc()))
+                        inputs.get(i).cleanKey(), inputs.get(i).cleanNotes(), inputs.get(i).cleanAbc(),
+                        org.tunelad.track.IdentificationState.PENDING))
                 .toList()));
         // Known up front, so the audio can be stored under the track's id before the track exists
         track.setId(java.util.UUID.randomUUID().toString());
@@ -134,6 +136,26 @@ class DefaultTrackService implements TrackService {
                             track.setAlbum(command.album());
                             return tracks.save(track);
                         }))
+                .map(trackMapper::toDto)
+                .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
+    }
+
+    @ReactiveTransactional
+    @Override
+    public Mono<TrackDTO> execute(ProposePerformances command) {
+        var proposals = command.proposals().stream()
+                .collect(java.util.stream.Collectors.toMap(ProposePerformances.Proposal::position, ProposePerformances.Proposal::startOffsetSeconds, (first, second) -> second));
+        return tracks.findById(command.trackId())
+                .flatMap(track -> {
+                    var proposed = track.getPerformances().stream()
+                            .map(p -> proposals.containsKey(p.position()) ? p.proposed(proposals.get(p.position())) : p)
+                            .toList();
+                    if (proposed.equals(track.getPerformances())) {
+                        return Mono.empty();
+                    }
+                    track.setPerformances(new java.util.ArrayList<>(proposed));
+                    return tracks.save(track);
+                })
                 .map(trackMapper::toDto)
                 .flatMap(updated -> events.publish(new TrackUpdated(updated)).thenReturn(updated));
     }

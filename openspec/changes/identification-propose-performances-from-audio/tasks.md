@@ -6,10 +6,10 @@
 
 ## 2. Performance state in track
 
-- [ ] 2.1 Liquibase changeset: `identification` column on `track_performances` (existing rows `corrected`)
-- [ ] 2.2 `Performance`, `PerformanceDTO` (`identification`, OpenAPI enum) and mapping; new Performances start `pending`
-- [ ] 2.3 `UpdateTrackCommand` marks changed Performances `corrected`; add `ProposePerformances` command in `track::command` that skips `corrected` ones
-- [ ] 2.4 Tests (Testcontainers): upload state, edit marks corrected, unchanged save keeps state, proposal never overwrites corrected. Commit `feat(track): record identification state of performances`
+- [x] 2.1 Liquibase changeset: `identification` column on `track_performances` (existing rows `corrected`)
+- [x] 2.2 `Performance`, `PerformanceDTO` (`identification`, OpenAPI enum) and mapping; new Performances start `pending`
+- [x] 2.3 `UpdateTrackCommand` marks changed Performances `corrected`; add `ProposePerformances` command in `track::command` that skips `corrected` ones
+- [x] 2.4 Tests (Testcontainers): upload state, edit marks corrected, unchanged save keeps state, proposal never overwrites corrected. Commit `feat(track): record identification state of performances`
 
 ## 3. Analysis sidecar
 

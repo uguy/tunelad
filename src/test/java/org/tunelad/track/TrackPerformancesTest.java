@@ -66,8 +66,8 @@ class TrackPerformancesTest extends AbstractApiTest {
         var track = uploadOk(null);
 
         assertThat(track.performances()).containsExactly(
-                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, null, null, null),
-                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 0, null, null, null));
+                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, null, null, null, IdentificationState.PENDING),
+                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 0, null, null, null, IdentificationState.PENDING));
     }
 
     @Test
@@ -79,8 +79,8 @@ class TrackPerformancesTest extends AbstractApiTest {
                  {"startOffsetSeconds": 95.5, "key": "G", "notes": "plays the B part twice"}]""");
 
         assertThat(get(track.id()).performances()).containsExactly(
-                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, "Em", null, null),
-                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 95.5, "G", "plays the B part twice", null));
+                new PerformanceDTO(1, cooleys, "Cooley's", DanceType.REEL, 0, "Em", null, null, IdentificationState.PENDING),
+                new PerformanceDTO(2, kesh, "The Kesh", DanceType.JIG, 95.5, "G", "plays the B part twice", null, IdentificationState.PENDING));
     }
 
     @Test
