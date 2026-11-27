@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Attachment } from 'svelte/attachments';
 	import Icon from '#lib/Icon.svelte';
+	import FavouriteButton from '#lib/FavouriteButton.svelte';
 	import EmptyState from '#lib/ui/EmptyState.svelte';
 	import Waveform from '#lib/Waveform.svelte';
 	import { artworkGradient } from '#lib/artwork.js';
@@ -195,6 +196,8 @@
 								{track.title}
 							</h2>
 						</div>
+
+						<FavouriteButton trackId={track.id} title={track.title} />
 
 						{#if canChange(session.account, track)}
 							<div class="flex shrink-0 gap-2">

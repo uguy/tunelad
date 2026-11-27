@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
+	import FavouriteButton from './FavouriteButton.svelte';
 	import { artworkGradient, formatTime } from './artwork.js';
 	import { player, type MediaSource } from './player.svelte.js';
 
@@ -154,7 +155,10 @@
 			</div>
 		</div>
 
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-1">
+			{#if player.source}
+				<FavouriteButton trackId={player.source.trackId} {title} />
+			{/if}
 			<button
 				id="copy-link-at-current-time-btn"
 				type="button"

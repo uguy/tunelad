@@ -31,9 +31,9 @@
 
 ## 5. Favourites UI
 
-- [ ] 5.1 Add `favourites.svelte.ts` (id set loaded once a user is known, optimistic toggle with rollback and toast) and the favourite toggle in `TrackList` and `PlayerBar`; verify with vitest for the store (toggle, rollback on error, anonymous) and component tests
-- [ ] 5.2 Build the `/tracks/favourites` page (list, empty state, anonymous prompt) replacing the placeholder; verify with Playwright (API mocked): listed and playable, empty state links to `/tracks`, anonymous login prompt, toggle sends `PUT` then `DELETE`
-- [ ] 5.3 Commit: `feat(ui): add favourites page and favourite toggle`
+- [x] 5.1 Add `favourites.svelte.ts` (id set loaded once a user is known, optimistic toggle with rollback and toast) and the favourite toggle in `TrackList` and `PlayerBar`; verify with vitest for the store (toggle, rollback on error, anonymous) and component tests
+- [x] 5.2 Build the `/tracks/favourites` page (list, empty state, anonymous prompt) replacing the placeholder; verify with Playwright (API mocked): listed and playable, empty state links to `/tracks`, anonymous login prompt, toggle sends `PUT` then `DELETE`
+- [x] 5.3 Commit: `feat(ui): add favourites page and favourite toggle`
 
 ## 6. Playlists backend
 
