@@ -41,6 +41,6 @@
 
 ## 6. Verify and ship
 
-- [ ] 6.1 `./mvnw clean verify` passes
+- [x] 6.1 `./mvnw clean verify` passes
 - [ ] 6.2 Archive the change on the branch (`/openspec-archive-change file-only-upload`), syncing specs
 - [ ] 6.3 Push and open the PR titled `feat(track): upload a track from its audio file alone`, body ending `Closes #839`
