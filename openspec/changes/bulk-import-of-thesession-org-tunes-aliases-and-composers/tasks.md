@@ -17,9 +17,9 @@
 
 ## 4. UI (commit: `feat(ui): thesession.org credit and import trigger`)
 
-- [ ] 4.1 Footer credit "Data from thesession.org" with theme tokens
-- [ ] 4.2 Administrator trigger and progress display, accessible
-- [ ] 4.3 Playwright e2e tests (mocked API) and a palette check for the credit
+- [x] 4.1 Footer credit "Data from thesession.org" with theme tokens
+- [x] 4.2 Administrator trigger and progress display, accessible
+- [x] 4.3 Playwright e2e tests (mocked API) and a palette check for the credit
 
 ## 5. Wrap up
 

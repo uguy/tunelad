@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { session } from '#lib/session.svelte.js';
+	import DumpImport from './DumpImport.svelte';
 	import TuneService, { type Tune } from './Tunes.js';
 
 	const service = new TuneService();
@@ -41,6 +42,10 @@
 			<a href={resolve('/tunes/new')} class="btn-accent">Add a tune</a>
 		{/if}
 	</div>
+
+	{#if session.account?.admin}
+		<DumpImport ondone={refresh} />
+	{/if}
 
 	<form
 		class="grid gap-4 sm:grid-cols-2"
