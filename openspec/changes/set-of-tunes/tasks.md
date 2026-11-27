@@ -1,17 +1,17 @@
 ## 1. Branch and module skeleton
 
 - [x] 1.1 Create branch `feat/set-of-tunes` from an up-to-date `main`
-- [ ] 1.2 Add `TuneCatalog` to `org.tunelad.tune` (implemented by `TuneService`), `org.tunelad.set` with `package-info.java` (allowing `infrastructure`, `account`, `tune`), `set.sql` included in the master changelog, `set_*` tables added to the truncate in `AbstractApiTest`; `ModularApplicationTests` and `ModuleTablesTest` pass. Commit `feat(set): add set module and schema`
+- [x] 1.2 Add `TuneCatalog` to `org.tunelad.tune` (implemented by `TuneService`), `org.tunelad.set` with `package-info.java` (allowing `infrastructure`, `account`, `tune`), `set.sql` included in the master changelog, `set_*` tables added to the truncate in `AbstractApiTest`; `ModularApplicationTests` and `ModuleTablesTest` pass. Commit `feat(set): add set module and schema`
 
 ## 2. Sets API
 
-- [ ] 2.1 `POST /api/sets` get-or-create (201/200, validation, 401), `GET /api/sets` (with `tuneId`), `GET /api/sets/{id}`, OpenAPI annotations, security rule
-- [ ] 2.2 Testcontainers tests per spec scenario, including two concurrent identical creates ending with one Set. Commit `feat(set): create and browse sets`
+- [x] 2.1 `POST /api/sets` get-or-create (201/200, validation, 401), `GET /api/sets` (with `tuneId`), `GET /api/sets/{id}`, OpenAPI annotations, security rule
+- [x] 2.2 Testcontainers tests per spec scenario, including two concurrent identical creates ending with one Set. Commit `feat(set): create and browse sets`
 
 ## 3. UI
 
-- [ ] 3.1 Routes `sets`, `sets/[id]`, `sets/new` (builder with search, add, up/down, remove, live region), header link, theme tokens, accessibility
-- [ ] 3.2 vitest tests for list-editing helpers and Playwright e2e (API mocked with `page.route`) for build, reorder, existing Set and browse. `bun run format`. Commit `feat(ui): add sets pages`
+- [x] 3.1 Routes `sets`, `sets/[id]`, `sets/new` (builder with search, add, up/down, remove, live region), header link, theme tokens, accessibility
+- [x] 3.2 vitest tests for list-editing helpers and Playwright e2e (API mocked with `page.route`) for build, reorder, existing Set and browse. `bun run format`. Commit `feat(ui): add sets pages`
 
 ## 4. Docs, verification, PR
 

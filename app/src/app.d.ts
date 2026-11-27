@@ -11,6 +11,8 @@ declare global {
 		interface PageState {
 			/** The track just uploaded, shown on the tracks page before search finds it. */
 			uploaded?: import('./routes/tracks/Tracks').Track;
+			/** Set on a Set's page right after creating it asked for a list that had a Set already. */
+			existed?: boolean;
 		}
 		// interface Platform {}
 	}
