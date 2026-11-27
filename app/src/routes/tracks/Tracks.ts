@@ -27,6 +27,7 @@ export interface Performance {
 	startOffsetSeconds: number;
 	key?: string | null;
 	notes?: string | null;
+	abc?: string | null;
 }
 
 /** The waveform of a track's audio: its peaks, from 0 to 1, once `READY`; none while `PENDING` or when `FAILED`. */

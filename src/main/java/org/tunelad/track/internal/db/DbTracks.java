@@ -4,6 +4,7 @@ import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
 import org.tunelad.set.SetCatalog;
 import org.tunelad.set.SetDTO;
+import org.tunelad.track.TunePerformanceDTO;
 import org.tunelad.track.internal.Artist;
 import org.tunelad.track.internal.Artists;
 import org.tunelad.track.internal.Performance;
@@ -47,6 +48,24 @@ class DbTracks implements Tracks {
     @Override
     public Flux<Track> findAllById(java.util.Collection<String> ids) {
         return ids.isEmpty() ? Flux.empty() : hydrate(trackRepository.findAllById(ids));
+    }
+
+    @Override
+    public Flux<TunePerformanceDTO> findPerformancesByTune(String tuneId) {
+        return client.sql("""
+                        SELECT t.id AS track_id, t.title, a.name AS artist, p.position, p.start_offset_seconds,
+                               p.key, p.notes, p.abc
+                        FROM track_performances p
+                                 JOIN track_tracks t ON t.id = p.track_id
+                                 LEFT JOIN track_artists a ON a.id = t.artist_id
+                        WHERE p.tune_id = :tune
+                        ORDER BY lower(t.title), t.id, p.position""")
+                .bind("tune", tuneId)
+                .map(row -> new TunePerformanceDTO(row.get("track_id", String.class), row.get("title", String.class),
+                        row.get("artist", String.class), row.get("position", Integer.class),
+                        row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class)))
+                .all();
     }
 
     @Override
@@ -97,12 +116,13 @@ class DbTracks implements Tracks {
         return client.sql("DELETE FROM track_performances WHERE track_id = :track").bind("track", trackId).then()
                 .thenMany(Flux.fromIterable(performances).concatMap(p -> {
                     var spec = client.sql("""
-                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes)
-                                    VALUES (:track, :position, :tune, :offset, :key, :notes)""")
+                                    INSERT INTO track_performances (track_id, position, tune_id, start_offset_seconds, key, notes, abc)
+                                    VALUES (:track, :position, :tune, :offset, :key, :notes, :abc)""")
                             .bind("track", trackId).bind("position", p.position()).bind("tune", p.tuneId())
                             .bind("offset", BigDecimal.valueOf(p.startOffsetSeconds()));
                     spec = p.key() == null ? spec.bindNull("key", String.class) : spec.bind("key", p.key());
                     spec = p.notes() == null ? spec.bindNull("notes", String.class) : spec.bind("notes", p.notes());
+                    spec = p.abc() == null ? spec.bindNull("abc", String.class) : spec.bind("abc", p.abc());
                     return spec.then();
                 }))
                 .then();
@@ -138,13 +158,13 @@ class DbTracks implements Tracks {
             return Mono.just(Map.of());
         }
         return client.sql("""
-                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes
+                        SELECT track_id, position, tune_id, start_offset_seconds, key, notes, abc
                         FROM track_performances WHERE track_id IN (:ids) ORDER BY track_id, position""")
                 .bind("ids", trackIds)
                 .map(row -> Map.entry(row.get("track_id", String.class), new Performance(
                         row.get("position", Integer.class), row.get("tune_id", String.class),
                         row.get("start_offset_seconds", BigDecimal.class).doubleValue(),
-                        row.get("key", String.class), row.get("notes", String.class))))
+                        row.get("key", String.class), row.get("notes", String.class), row.get("abc", String.class))))
                 .all()
                 .collect(HashMap::new, (map, entry) ->
                         map.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(entry.getValue()));

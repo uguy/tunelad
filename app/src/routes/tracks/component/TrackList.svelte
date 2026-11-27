@@ -127,7 +127,8 @@
 		return (track.performances ?? []).map((performance) => ({
 			start: performance.startOffsetSeconds > 0 ? formatOffset(performance.startOffsetSeconds) : '',
 			key: performance.key ?? '',
-			notes: performance.notes ?? ''
+			notes: performance.notes ?? '',
+			abc: performance.abc ?? ''
 		}));
 	}
 

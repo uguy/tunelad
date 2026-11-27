@@ -106,6 +106,25 @@ test('edit the performances of a track', async ({ page, context }) => {
 	]);
 });
 
+test('write a performance transcription', async ({ page, context }) => {
+	await openTracks(page, context);
+	const puts = [];
+	page.on('request', (request) => {
+		if (request.method() === 'PUT') puts.push(request.postDataJSON());
+	});
+
+	await page.getByRole('button', { name: 'edit track Knees Up' }).click();
+	await page
+		.getByRole('group', { name: /The Kesh/ })
+		.getByLabel(/Transcription/)
+		.fill('X:1\nK:G\nGABc|');
+	await page.getByRole('button', { name: 'Save' }).click();
+
+	await expect(page.getByRole('form', { name: 'edit track Knees Up' })).toHaveCount(0);
+	expect(puts[0].performances[1].abc).toBe('X:1\nK:G\nGABc|');
+	expect(puts[0].performances[0]).not.toHaveProperty('abc');
+});
+
 test('an invalid start is refused before sending', async ({ page, context }) => {
 	await openTracks(page, context);
 	const puts = [];

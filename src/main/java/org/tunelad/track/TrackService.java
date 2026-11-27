@@ -21,6 +21,9 @@ public interface TrackService {
 
     Flux<TrackDTO> findAll();
 
+    /** Every Performance of the Tune across Tracks, ordered by Track title; empty when it was never recorded. */
+    Flux<TunePerformanceDTO> findPerformancesByTune(String tuneId);
+
     Mono<TrackDTO> findById(String id);
 
     /** The tracks with these ids, in no particular order; ids that match no track are ignored. */

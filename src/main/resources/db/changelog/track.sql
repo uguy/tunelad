@@ -66,3 +66,9 @@ CREATE TABLE track_performances
 CREATE INDEX track_performances_tune_idx ON track_performances (tune_id);
 --rollback DROP TABLE track_performances;
 --rollback ALTER TABLE track_tracks DROP COLUMN set_id;
+
+--changeset tunelad:track-performance-transcription
+-- The Transcription of a Performance: ABC notation, null until an Account writes one.
+ALTER TABLE track_performances
+    ADD COLUMN abc TEXT;
+--rollback ALTER TABLE track_performances DROP COLUMN abc;

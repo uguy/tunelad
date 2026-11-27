@@ -16,6 +16,8 @@ public record PerformanceDTO(
 		@Schema(description = "The key the tune is played in", example = "Em", nullable = true)
 		String key,
 		@Schema(description = "Notes on melodic variation", nullable = true)
-		String notes
+		String notes,
+		@Schema(description = "The transcription, in ABC notation", nullable = true)
+		String abc
 ) {
 }

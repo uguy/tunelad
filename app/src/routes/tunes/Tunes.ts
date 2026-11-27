@@ -12,6 +12,18 @@ export interface Tune {
 	abc?: string | null;
 }
 
+/** One recording of a tune, as the API lists it on the tune. */
+export interface TunePerformance {
+	trackId: string;
+	trackTitle: string;
+	artist?: string | null;
+	position: number;
+	startOffsetSeconds: number;
+	key?: string | null;
+	notes?: string | null;
+	abc?: string | null;
+}
+
 /** A new tune as the form sends it: an empty optional field is left out. */
 export interface TuneInput {
 	name: string;
@@ -84,6 +96,12 @@ export default class TuneService {
 		if (res.status === 404) return null;
 		if (!res.ok) throw new TuneError(res.status);
 		return res.json();
+	}
+
+	/** Every Performance of the tune across tracks; empty when the list cannot be had. */
+	async performances(id: string): Promise<TunePerformance[]> {
+		const res = await request(this.fetch, 'GET', `tunes/${encodeURIComponent(id)}/performances`);
+		return res.ok ? res.json() : [];
 	}
 
 	async create(input: TuneInput): Promise<Tune> {

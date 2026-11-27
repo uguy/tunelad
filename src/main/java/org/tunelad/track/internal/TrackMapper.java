@@ -24,7 +24,7 @@ public class TrackMapper {
         return track.getPerformances().stream().map(performance -> {
             var tune = set.tunes().get(performance.position() - 1);
             return new PerformanceDTO(performance.position(), performance.tuneId(), tune.name(), tune.danceType(),
-                    performance.startOffsetSeconds(), performance.key(), performance.notes());
+                    performance.startOffsetSeconds(), performance.key(), performance.notes(), performance.abc());
         }).toList();
     }
 }
