@@ -15,10 +15,19 @@ public record SearchTrack(
         String artist,
         String album,
         TrackFormat format,
-        TrackOwner owner) {
+        TrackOwner owner,
+        boolean catalogue,
+        String albumId,
+        Integer albumPosition) {
+
+    /** An ordinary track, with audio and on no album. */
+    SearchTrack(String id, String title, String description, String artist, String album, TrackFormat format,
+                TrackOwner owner) {
+        this(id, title, description, artist, album, format, owner, false, null, null);
+    }
 
     static SearchTrack of(TrackDTO track) {
         return new SearchTrack(track.id(), track.title(), track.description(), track.artist(), track.album(),
-                track.format(), track.owner());
+                track.format(), track.owner(), Boolean.TRUE.equals(track.catalogue()), track.albumId(), track.albumPosition());
     }
 }

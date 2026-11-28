@@ -1,5 +1,7 @@
 package org.tunelad.track;
 
+import org.tunelad.track.command.AddCatalogueTrack;
+import org.tunelad.track.command.AttachAudio;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.ApplyTags;
 import org.tunelad.track.command.AttachSet;
@@ -41,6 +43,30 @@ public interface TrackService {
      * the track. Completes empty, changing nothing, when the track no longer exists or already has a Set.
      */
     Mono<TrackDTO> execute(AttachSet command);
+
+    /**
+     * Puts a Catalogue Track, a Track with no audio yet, at a position of an Album, with one Performance per listed
+     * tune. It gets a Set only when one to twenty tunes are listed and all of them resolve. Fails with
+     * {@code NotFoundException} when the Album does not exist, {@code BadRequestException} for a blank title, a
+     * position under 1 or a listed tune with a blank name, and 409 Conflict when the position is taken. Announces
+     * the change with an {@code AlbumChanged} event.
+     */
+    Mono<TrackDTO> execute(AddCatalogueTrack command);
+
+    /**
+     * Stores the audio of a Catalogue Track like an upload does (nothing is left behind when it fails), makes the
+     * owner its Owner and turns it into an ordinary Track keeping its Album, position, title, Performances and Set.
+     * Fails with {@code NotFoundException} for an unknown track and 409 Conflict when the track is not a Catalogue
+     * Track or already has audio. Announces the track like a new upload, so its audio is prepared, tagged and indexed.
+     */
+    Mono<TrackDTO> execute(AttachAudio command);
+
+    /**
+     * The Catalogue Tracks of the Track's Artist whose title matches its own ignoring case, punctuation and
+     * surrounding whitespace (or the tune names listed for them, joined). Empty when the Track has no Artist or is a
+     * Catalogue Track itself; fails with {@code NotFoundException} for an unknown track.
+     */
+    Flux<TrackDTO> catalogueSuggestions(String trackId);
 
     Flux<TrackDTO> findAll();
 

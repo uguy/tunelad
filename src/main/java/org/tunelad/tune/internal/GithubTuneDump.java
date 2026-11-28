@@ -1,10 +1,8 @@
 package org.tunelad.tune.internal;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.tunelad.infrastructure.CsvDump;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
@@ -13,32 +11,19 @@ import java.util.Map;
 @Component
 class GithubTuneDump implements TuneDump {
 
-	private final WebClient client;
+	private final CsvDump dump;
 
-	GithubTuneDump(@Value("${tunelad.tune.dump-url:https://raw.githubusercontent.com/adactio/TheSession-data/main/csv}") String url) {
-		this.client = WebClient.builder().baseUrl(url).build();
+	GithubTuneDump(@Value("${tunelad.tune.dump-url:" + CsvDump.DEFAULT_URL + "}") String url) {
+		this.dump = new CsvDump(url);
 	}
 
 	@Override
 	public Flux<Map<String, String>> tunes() {
-		return rows("tunes.csv");
+		return dump.rows("tunes.csv");
 	}
 
 	@Override
 	public Flux<Map<String, String>> aliases() {
-		return rows("aliases.csv");
-	}
-
-	private Flux<Map<String, String>> rows(String file) {
-		var bytes = client.get().uri("/{file}", file).retrieve().bodyToFlux(DataBuffer.class).map(buffer -> {
-			try {
-				var chunk = new byte[buffer.readableByteCount()];
-				buffer.read(chunk);
-				return chunk;
-			} finally {
-				DataBufferUtils.release(buffer);
-			}
-		});
-		return CsvParser.withHeader(bytes);
+		return dump.rows("aliases.csv");
 	}
 }

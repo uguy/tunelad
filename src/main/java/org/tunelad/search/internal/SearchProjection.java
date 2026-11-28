@@ -7,6 +7,8 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 import org.tunelad.search.event.TrackIndexed;
 import org.tunelad.search.event.TrackUnindexed;
+import org.tunelad.track.event.AlbumChanged;
+import org.tunelad.track.event.CatalogueTrackAdded;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
 import org.tunelad.track.event.TrackUpdated;
@@ -27,6 +29,7 @@ import org.tunelad.track.event.TrackUpdated;
 class SearchProjection {
 
     private final SearchTracks searchTracks;
+    private final SearchAlbums searchAlbums;
     private final ApplicationEventPublisher events;
 
     @ApplicationModuleListener
@@ -35,6 +38,20 @@ class SearchProjection {
         searchTracks.save(SearchTrack.of(event.track())).block();
         events.publishEvent(new TrackIndexed(event.track().id()));
         log.debug("Track {} is searchable", event.track().id());
+    }
+
+    @ApplicationModuleListener
+    void on(CatalogueTrackAdded event) {
+        searchTracks.save(SearchTrack.of(event.track())).block();
+        events.publishEvent(new TrackIndexed(event.track().id()));
+        log.debug("Catalogue track {} is searchable", event.track().id());
+    }
+
+    /** Replaces the Album's copy; the registry delivers at least once. */
+    @ApplicationModuleListener
+    void on(AlbumChanged event) {
+        searchAlbums.save(event.album()).block();
+        log.debug("Album {} is searchable", event.albumId());
     }
 
     @ApplicationModuleListener

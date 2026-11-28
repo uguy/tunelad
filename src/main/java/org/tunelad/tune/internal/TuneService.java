@@ -88,6 +88,11 @@ public class TuneService implements TuneCatalog {
 		return tunes.findAllById(ids);
 	}
 
+	@Override
+	public Mono<java.util.Map<Integer, TuneDTO>> findBySourceIds(Collection<Integer> sourceIds) {
+		return tunes.findAllBySourceId(sourceIds).collectMap(TuneDTO::sourceId);
+	}
+
 	public Mono<TuneDTO> findById(String id) {
 		return tunes.findById(id).switchIfEmpty(Mono.error(() -> new NotFoundException("No tune found for id: " + id)));
 	}

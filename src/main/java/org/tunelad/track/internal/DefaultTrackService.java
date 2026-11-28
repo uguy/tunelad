@@ -16,13 +16,17 @@ import org.tunelad.set.SetCatalog;
 import org.tunelad.set.SetDTO;
 import org.tunelad.track.TrackDTO;
 import org.tunelad.track.TrackService;
+import org.tunelad.track.command.AddCatalogueTrack;
 import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.AttachAudio;
 import org.tunelad.track.command.ApplyTags;
 import org.tunelad.track.command.AttachSet;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
+import org.tunelad.track.event.AlbumChanged;
+import org.tunelad.track.event.CatalogueTrackAdded;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
 import org.tunelad.track.event.TrackUpdated;
@@ -43,6 +47,10 @@ class DefaultTrackService implements TrackService {
 
     private final Artists artists;
 
+    private final Albums albums;
+
+    private final AlbumMapper albumMapper;
+
     private final MediaStore mediaStore;
 
     private final SetCatalog sets;
@@ -52,11 +60,13 @@ class DefaultTrackService implements TrackService {
     /** For uploads, whose transaction covers only part of the work; the other methods use the annotation. */
     private final TransactionalOperator transactionalOperator;
 
-    DefaultTrackService(TrackMapper trackMapper, Tracks tracks, Artists artists, MediaStore mediaStore,
+    DefaultTrackService(TrackMapper trackMapper, Tracks tracks, Artists artists, Albums albums, AlbumMapper albumMapper, MediaStore mediaStore,
                         SetCatalog sets, TransactionalEvents events, @Qualifier(ReactiveTransactional.MANAGER) ReactiveTransactionManager transactionManager) {
         this.trackMapper = trackMapper;
         this.tracks = tracks;
         this.artists = artists;
+        this.albums = albums;
+        this.albumMapper = albumMapper;
         this.mediaStore = mediaStore;
         this.sets = sets;
         this.events = events;
@@ -118,6 +128,62 @@ class DefaultTrackService implements TrackService {
                 .onErrorResume(error -> deleteAudio(id).then(Mono.error(error)))
                 // Nobody waits for the result of a cancelled upload: the deletion runs on its own
                 .doOnCancel(() -> deleteAudio(id).subscribe());
+    }
+
+    /**
+     * The Track is stored with its Performances, and the Set when every listed tune resolved (one to twenty of them,
+     * the most a Set holds). The Set is created first, so the Track is never stored half-way.
+     */
+    @ReactiveTransactional
+    @Override
+    public Mono<TrackDTO> execute(AddCatalogueTrack command) {
+        if (blankToNull(command.title()) == null) {
+            return Mono.error(new BadRequestException("A track needs a title."));
+        }
+        if (command.position() < 1) {
+            return Mono.error(new BadRequestException("A position starts at 1."));
+        }
+        var listed = command.tunes() == null ? List.<AddCatalogueTrack.Listed>of() : command.tunes();
+        if (listed.stream().anyMatch(tune -> blankToNull(tune.name()) == null)) {
+            return Mono.error(new BadRequestException("A listed tune needs a name."));
+        }
+        return albums.findById(command.albumId())
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("No album found for id: " + command.albumId())))
+                .flatMap(album -> resolvedSet(command, listed).map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
+                        .flatMap(set -> {
+                            var track = new Track();
+                            track.setId(java.util.UUID.randomUUID().toString());
+                            track.setTitle(command.title().strip());
+                            track.setCatalogue(true);
+                            track.setAlbumId(album.getId());
+                            track.setAlbumPosition(command.position());
+                            track.setArtist(album.getArtist());
+                            track.setProvidedTextFields(new java.util.ArrayList<>());
+                            track.setPerformances(new java.util.ArrayList<>(java.util.stream.IntStream.range(0, listed.size())
+                                    .mapToObj(i -> new Performance(i + 1, listed.get(i).tuneId(), 0, null, null, null,
+                                            org.tunelad.track.IdentificationState.PENDING, listed.get(i).name().strip()))
+                                    .toList()));
+                            set.ifPresent(found -> {
+                                track.setSetId(found.id());
+                                track.setTuneSet(found);
+                            });
+                            return tracks.save(track)
+                                    .onErrorMap(org.springframework.dao.DuplicateKeyException.class, error ->
+                                            new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                                                    "Position " + command.position() + " of the album is taken."));
+                        })
+                        .map(trackMapper::toDto)
+                        .flatMap(dto -> events.publish(new CatalogueTrackAdded(dto))
+                                .then(events.publish(new AlbumChanged(albumMapper.toDto(album, List.of()))))
+                                .thenReturn(dto)));
+    }
+
+    /** The Set of the listed tunes; empty (so no Set) unless one to twenty are listed and every one resolves. */
+    private Mono<SetDTO> resolvedSet(AddCatalogueTrack command, List<AddCatalogueTrack.Listed> listed) {
+        if (listed.isEmpty() || listed.size() > 20 || listed.stream().anyMatch(tune -> tune.tuneId() == null)) {
+            return Mono.empty();
+        }
+        return sets.findOrCreate(command.by(), listed.stream().map(AddCatalogueTrack.Listed::tuneId).toList());
     }
 
     private static List<Performance> performancesOf(SetDTO set, List<PerformanceInput> inputs) {
@@ -220,7 +286,7 @@ class DefaultTrackService implements TrackService {
     @Override
     public Mono<TrackDTO> execute(AttachSet command) {
         return tracks.findByIdForUpdate(command.trackId())
-                .filter(track -> track.getSetId() == null)
+                .filter(track -> track.getSetId() == null && track.getPerformances().isEmpty())
                 .flatMap(track -> sets.find(command.setId())
                         .switchIfEmpty(Mono.error(() -> new IllegalStateException("No set found for id: " + command.setId())))
                         .flatMap(set -> {
@@ -289,6 +355,82 @@ class DefaultTrackService implements TrackService {
                 // The audio goes now, not on an event: playback only looks at the stored audio
                 .flatMap(track -> tracks.delete(track).then(mediaStore.delete(track.getId())))
                 .then(events.publish(new TrackDeleted(command.id())));
+    }
+
+    /**
+     * Like {@link #store}: the audio is written first, outside any transaction, under the Track's id; the Track is
+     * then changed and announced in one transaction. The checks that refuse the attachment run before the audio is
+     * written, so a refused attachment never touches the audio of a Track that has some.
+     */
+    @Override
+    public Mono<TrackDTO> execute(AttachAudio command) {
+        var id = command.trackId();
+        return tracks.findById(id)
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("No track found for id: " + id)))
+                .doOnNext(DefaultTrackService::requireCatalogue)
+                .then(Mono.defer(() -> mediaStore.store(id, command.data(), command.format().mimeType())))
+                .then(Mono.defer(() -> attach(command)))
+                .onErrorResume(error -> (isConflict(error) ? Mono.<Void>empty() : deleteAudio(id)).then(Mono.error(error)))
+                .doOnCancel(() -> deleteAudio(id).subscribe());
+    }
+
+    private Mono<TrackDTO> attach(AttachAudio command) {
+        return tracks.findByIdForUpdate(command.trackId())
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("No track found for id: " + command.trackId())))
+                .doOnNext(DefaultTrackService::requireCatalogue)
+                .flatMap(track -> {
+                    track.setCatalogue(false);
+                    track.setFormat(command.format());
+                    track.setOwner(command.owner());
+                    // Tags read from the audio must not replace what the Catalogue Track already says
+                    var provided = new java.util.ArrayList<>(track.getProvidedTextFields());
+                    provided.add("title");
+                    if (track.getArtist() != null) provided.add("artist");
+                    track.setProvidedTextFields(provided.stream().distinct().collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
+                    return tracks.save(track);
+                })
+                .map(trackMapper::toDto)
+                // NewTrackSaved so the audio is tagged, identified and indexed like an upload's (Identification
+                // leaves Performances and an existing Set alone), then the Album's listing refreshes
+                .flatMap(dto -> events.publish(new NewTrackSaved(dto))
+                        .then(dto.albumId() == null ? Mono.<Void>empty() : albums.findById(dto.albumId())
+                                .flatMap(album -> events.publish(new AlbumChanged(albumMapper.toDto(album, List.of())))))
+                        .thenReturn(dto))
+                .as(transactionalOperator::transactional);
+    }
+
+    private static void requireCatalogue(Track track) {
+        if (!track.isCatalogue() || track.getFormat() != null) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "Track " + track.getId() + " has audio already.");
+        }
+    }
+
+    private static boolean isConflict(Throwable error) {
+        return error instanceof org.springframework.web.server.ResponseStatusException status
+                && status.getStatusCode().value() == 409;
+    }
+
+    @Override
+    public Flux<TrackDTO> catalogueSuggestions(String trackId) {
+        return tracks.findById(trackId)
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("No track found for id: " + trackId)))
+                .flatMapMany(track -> {
+                    var wanted = normalised(track.getTitle());
+                    if (track.isCatalogue() || track.getArtist() == null || wanted.isEmpty()) {
+                        return Flux.<Track>empty();
+                    }
+                    return tracks.findCatalogueByArtistId(track.getArtist().id())
+                            .filter(candidate -> wanted.equals(normalised(candidate.getTitle()))
+                                    || wanted.equals(normalised(candidate.getPerformances().stream()
+                                    .map(p -> p.listedName() == null ? "" : p.listedName()).collect(java.util.stream.Collectors.joining()))));
+                })
+                .map(trackMapper::toDto);
+    }
+
+    /** Lower case, with everything but letters and digits removed: ignores case, punctuation and whitespace. */
+    private static String normalised(String text) {
+        return text == null ? "" : text.toLowerCase(java.util.Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]", "");
     }
 
     /** Replaces the values of the track's Performances; null leaves them. Fails with 400 before anything changes. */

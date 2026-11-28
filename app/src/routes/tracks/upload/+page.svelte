@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount, untrack } from 'svelte';
+	import { AlbumService, catalogueTracksOf, isBy, type Album } from '#lib/albums.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import type { Tune } from '../../tunes/Tunes.js';
 	import SetBuilder from '../../sets/SetBuilder.svelte';
@@ -16,12 +17,14 @@
 	import TrackService, {
 		ACCEPTED_FILES,
 		checkFile,
+		type Track,
 		TrackUploadError,
 		uploadErrorMessage
 	} from '../Tracks.js';
 
 	const trackService = new TrackService();
 	const setService = new SetService();
+	const albumService = new AlbumService();
 
 	/** The value of the set field that stands for building a new set. */
 	const NEW_SET = 'new';
@@ -71,7 +74,52 @@
 		performances = emptyPerformances(tuneNames.length);
 	}
 
+	/** The Albums of the typed Artist, to choose the Catalogue Track the audio belongs to. */
+	let artistAlbums = $state.raw<Album[]>([]);
+	let albumChoice = $state('');
+	let catalogueTracks = $state.raw<Track[]>([]);
+	/** The Catalogue Track to give the audio to: empty to upload it as a track of its own. */
+	let catalogueChoice = $state('');
+	let albumLookups = 0;
+
+	/** Looks for the Albums of the Artist once the field is left, so the choice only appears when there are some. */
+	async function findAlbums() {
+		const mine = ++albumLookups;
+		albumChoice = '';
+		catalogueChoice = '';
+		catalogueTracks = [];
+		const name = artist.trim();
+		if (!name) {
+			artistAlbums = [];
+			return;
+		}
+		try {
+			const found = (await albumService.search(name)).filter((a) => isBy(a, name));
+			if (mine === albumLookups) artistAlbums = found;
+		} catch {
+			if (mine === albumLookups) artistAlbums = [];
+		}
+	}
+
+	async function chooseAlbum() {
+		catalogueChoice = '';
+		catalogueTracks = [];
+		if (!albumChoice) return;
+		const mine = albumChoice;
+		try {
+			const album = await albumService.get(mine);
+			if (album && mine === albumChoice) catalogueTracks = catalogueTracksOf(album);
+		} catch {
+			catalogueTracks = [];
+		}
+	}
+
 	let status = $state<'editing' | 'uploading' | 'cancelled' | 'failed'>('editing');
+	/** The track just uploaded while the user answers the suggestion of Catalogue Tracks it may belong to. */
+	let uploaded = $state.raw<Track | null>(null);
+	let suggestions = $state.raw<Track[]>([]);
+	let attaching = $state(false);
+	let suggestionError = $state('');
 	/** The share of the file sent so far, from 0 to 1. */
 	let progress = $state(0);
 	let message = $state('');
@@ -121,10 +169,21 @@
 					album,
 					setId,
 					performances: setId ? performances.map(toInput) : undefined,
+					catalogueTrackId: catalogueChoice || null,
 					file
 				},
 				{ onProgress: (fraction) => (progress = fraction), signal: controller.signal }
 			);
+			// An ordinary upload by a known Artist may be a recording the catalogue lists: ask before leaving
+			if (!catalogueChoice && artist.trim()) {
+				const found = await trackService.catalogueSuggestions(track.id);
+				if (found.length > 0) {
+					uploaded = track;
+					suggestions = found;
+					status = 'editing';
+					return;
+				}
+			}
 			// The tracks page shows it at once: search only finds a new track a few seconds later
 			await goto(resolve('/tracks'), { state: { uploaded: track } });
 		} catch (e) {
@@ -140,6 +199,40 @@
 			}
 		} finally {
 			controller = null;
+		}
+	}
+
+	/** Keeps the upload as a track of its own. */
+	async function ignoreSuggestions() {
+		if (uploaded) await goto(resolve('/tracks'), { state: { uploaded } });
+	}
+
+	/**
+	 * Gives the uploaded audio to the Catalogue Track and removes the separate track. The server has no call that moves
+	 * audio, so the file is sent again: attach first, so that a failure loses nothing.
+	 */
+	async function accept(catalogueTrack: Track) {
+		const file = files?.[0];
+		if (!uploaded || !file) return;
+		attaching = true;
+		suggestionError = '';
+		try {
+			const attached = await trackService.attachAudio(catalogueTrack.id, file);
+			try {
+				await trackService.delete(uploaded.id);
+			} catch {
+				// The audio is attached: the leftover copy can be deleted from the tracks page
+			}
+			await goto(resolve('/tracks'), { state: { uploaded: attached } });
+		} catch (e) {
+			suggestionError =
+				e instanceof TrackUploadError && e.status === 409
+					? 'That track has audio already. Keep your upload as it is, or ignore the suggestion.'
+					: e instanceof TrackUploadError
+						? e.message
+						: uploadErrorMessage(0);
+		} finally {
+			attaching = false;
 		}
 	}
 
@@ -170,7 +263,50 @@
 		<h1 class="mt-2 text-3xl font-bold tracking-tight">Upload a track</h1>
 	</div>
 
-	{#if session.account}
+	<!-- Always present, so that a screen reader announces what appears in it -->
+	<div id="suggestion-region" aria-live="polite">
+		{#if uploaded}
+			<section class="card space-y-3 p-6" aria-labelledby="suggestion-heading">
+				<h2 id="suggestion-heading" class="text-lg font-semibold">
+					Is this a recording from the catalogue?
+				</h2>
+				<p class="text-sm text-ink-muted">
+					"{uploaded.title}" was uploaded. Accepting gives its audio to the catalogue track and
+					removes the separate upload.
+				</p>
+				<ul class="space-y-2">
+					{#each suggestions as suggestion (suggestion.id)}
+						<li class="flex flex-wrap items-center justify-between gap-2">
+							<span>
+								{suggestion.title}
+								{#if suggestion.album}<span class="text-ink-muted">on {suggestion.album}</span>{/if}
+								<span class="text-ink-muted">· No audio yet</span>
+							</span>
+							<button
+								type="button"
+								class="btn-accent"
+								disabled={attaching}
+								aria-label="accept {suggestion.title}"
+								onclick={() => accept(suggestion)}
+							>
+								Accept
+							</button>
+						</li>
+					{/each}
+				</ul>
+				{#if suggestionError}
+					<p role="alert" class="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+						{suggestionError}
+					</p>
+				{/if}
+				<button type="button" class="btn-quiet" disabled={attaching} onclick={ignoreSuggestions}>
+					Ignore
+				</button>
+			</section>
+		{/if}
+	</div>
+
+	{#if session.account && !uploaded}
 		<form class="card space-y-4 p-6" aria-label="upload a track" onsubmit={submit}>
 			<label class={labelClass}>
 				Audio file (required: mp3, m4a, ogg, flac, wav or wma, up to 100 MB)
@@ -221,12 +357,42 @@
 			{/if}
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class={labelClass}>
-					Artist (optional) <input class={inputClass} name="artist" bind:value={artist} />
+					Artist (optional)
+					<input class={inputClass} name="artist" bind:value={artist} onchange={findAlbums} />
 				</label>
 				<label class={labelClass}>
 					Album (optional) <input class={inputClass} name="album" bind:value={album} />
 				</label>
 			</div>
+			{#if artistAlbums.length > 0}
+				<div class="grid gap-4 sm:grid-cols-2">
+					<label class={labelClass}>
+						Album of {artist.trim()} (optional)
+						<select
+							class={inputClass}
+							name="catalogueAlbum"
+							bind:value={albumChoice}
+							onchange={chooseAlbum}
+						>
+							<option value="">None</option>
+							{#each artistAlbums as album (album.id)}
+								<option value={album.id}>{album.title}</option>
+							{/each}
+						</select>
+					</label>
+					{#if albumChoice}
+						<label class={labelClass}>
+							Track on the album without audio (optional)
+							<select class={inputClass} name="catalogueTrackId" bind:value={catalogueChoice}>
+								<option value="">None: upload as a track of its own</option>
+								{#each catalogueTracks as track (track.id)}
+									<option value={track.id}>{track.albumPosition}. {track.title}</option>
+								{/each}
+							</select>
+						</label>
+					{/if}
+				</div>
+			{/if}
 
 			{#if status === 'uploading'}
 				<div class="flex items-center gap-3">
@@ -258,7 +424,7 @@
 				{/if}
 			</div>
 		</form>
-	{:else}
+	{:else if !session.account}
 		<p class="card p-6">
 			<!-- Served by the server, not the SPA router: it lists the login providers -->
 			<a href="/login" rel="external" class="font-semibold text-accent-ink hover:underline">

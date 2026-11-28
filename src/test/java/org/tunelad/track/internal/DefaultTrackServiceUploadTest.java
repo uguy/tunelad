@@ -35,7 +35,7 @@ class DefaultTrackServiceUploadTest {
     private final Artists artists = mock(Artists.class);
     private final MediaStore mediaStore = mock(MediaStore.class);
     private final org.tunelad.set.SetCatalog sets = mock(org.tunelad.set.SetCatalog.class);
-    private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, artists, mediaStore,
+    private final DefaultTrackService service = new DefaultTrackService(mock(TrackMapper.class), tracks, artists, mock(Albums.class), new AlbumMapper(), mediaStore,
             sets, mock(TransactionalEvents.class), mock(ReactiveTransactionManager.class));
 
     private final AddTrackCommand command = new AddTrackCommand("Knees Up", "knees-up.flac", null, null, "A reel and a song",

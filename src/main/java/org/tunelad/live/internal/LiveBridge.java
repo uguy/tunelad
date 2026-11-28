@@ -11,6 +11,7 @@ import org.tunelad.media.event.WaveformComputed;
 import org.tunelad.playlist.event.PlaylistChanged;
 import org.tunelad.search.event.TrackIndexed;
 import org.tunelad.set.event.SetChanged;
+import org.tunelad.track.event.AlbumChanged;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
 import org.tunelad.track.event.TrackUpdated;
@@ -109,6 +110,12 @@ class LiveBridge {
     @ApplicationModuleListener
     void on(TrackDeleted event) {
         publishToEveryone("performance.changed", event.trackId());
+    }
+
+    /** The Album's id: the browser refetches the Albums, which are public. */
+    @ApplicationModuleListener
+    void on(AlbumChanged event) {
+        publishToEveryone("album.changed", event.albumId());
     }
 
     private void publishToEveryone(String type, String id) {

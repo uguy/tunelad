@@ -63,7 +63,9 @@ public class IdentificationService {
      */
     public Mono<Void> identify(String trackId) {
         return tracks.findById(trackId)
-                .flatMap(track -> track.set() == null ? deriveSet(track)
+                .flatMap(track -> track.set() == null
+                        // Performances without a Set are a Catalogue Track's listed tunes: never replaced
+                        ? track.performances().isEmpty() ? deriveSet(track) : Mono.<Void>empty()
                         : track.performances().isEmpty() ? Mono.<Void>empty() : propose(track));
     }
 
