@@ -1,4 +1,4 @@
-package org.tunelad.tune.internal;
+package org.tunelad.infrastructure;
 
 import reactor.core.publisher.Flux;
 
@@ -16,7 +16,7 @@ import java.util.Map;
  * An incremental RFC 4180 reader: quoted fields may hold commas, doubled quotes and line breaks. Fed with chunks
  * of text of any size, it returns the records completed so far.
  */
-final class CsvParser {
+public final class CsvParser {
 
 	private final List<String> record = new ArrayList<>();
 	private final StringBuilder field = new StringBuilder();
@@ -25,7 +25,7 @@ final class CsvParser {
 	private boolean skipLineFeed;
 
 	/** Reads a stream of bytes (UTF-8) into records, without holding the whole file. */
-	static Flux<List<String>> records(Flux<byte[]> bytes) {
+	public static Flux<List<String>> records(Flux<byte[]> bytes) {
 		return Flux.defer(() -> {
 			var parser = new CsvParser();
 			var decoder = StandardCharsets.UTF_8.newDecoder()
@@ -37,7 +37,7 @@ final class CsvParser {
 	}
 
 	/** The records of a stream with a header line, as maps from the column names. */
-	static Flux<Map<String, String>> withHeader(Flux<byte[]> bytes) {
+	public static Flux<Map<String, String>> withHeader(Flux<byte[]> bytes) {
 		return Flux.defer(() -> {
 			var header = new List[] {null};
 			return records(bytes).<Map<String, String>>handle((row, sink) -> {
@@ -62,7 +62,7 @@ final class CsvParser {
 		return output.flip().toString();
 	}
 
-	List<List<String>> feed(String text) {
+	public List<List<String>> feed(String text) {
 		var done = new ArrayList<List<String>>();
 		for (var i = 0; i < text.length(); i++) {
 			var c = text.charAt(i);
@@ -101,7 +101,7 @@ final class CsvParser {
 	}
 
 	/** The last record when the text does not end with a line break. */
-	List<List<String>> end() {
+	public List<List<String>> end() {
 		if (field.isEmpty() && record.isEmpty() && !quoteSeen) {
 			return List.of();
 		}

@@ -40,3 +40,9 @@ id, artist, recording (album title), track (number), number (position in track),
 ## Open Questions
 
 - Does `TuneCatalog` need a bulk lookup by thesession ids for speed (preload a map once per run)? Assumed yes.
+
+## Implementation notes
+
+- A Catalogue Track publishes `CatalogueTrackAdded` (not `NewTrackSaved`, whose listeners assume audio) and `AlbumChanged`; search indexes Catalogue Tracks from the former. The import therefore emits events per Track; batching them is a possible follow-up.
+- The bulk Tune lookup is `TuneCatalog.findBySourceIds`; `CsvParser` and the dump downloader (`CsvDump`) moved to `infrastructure`.
+- Albums are searchable through `GET /api/albums/search?q=` (`search_albums`); `search_tracks` carries `catalogue`, `album_id`, `album_position`.

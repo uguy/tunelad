@@ -13,10 +13,16 @@ public record TrackSearchResult(
         String album,
         String description,
         TrackFormat format,
-        TrackOwner owner) {
+        TrackOwner owner,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "True for a catalogue track: a place on an album with no audio yet")
+        boolean catalogue,
+        @Schema(description = "The album this track is on; absent when it is on none", nullable = true)
+        String albumId,
+        @Schema(description = "The track's place on its album, from 1; absent when it is on no album", nullable = true)
+        Integer albumPosition) {
 
     static TrackSearchResult of(SearchTrack track) {
         return new TrackSearchResult(track.id(), track.title(), track.artist(), track.album(), track.description(),
-                track.format(), track.owner());
+                track.format(), track.owner(), track.catalogue(), track.albumId(), track.albumPosition());
     }
 }

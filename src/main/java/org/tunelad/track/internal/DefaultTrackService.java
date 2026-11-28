@@ -25,6 +25,7 @@ import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.ProposePerformances;
 import org.tunelad.track.command.UpdateTrackCommand;
 import org.tunelad.track.event.AlbumChanged;
+import org.tunelad.track.event.CatalogueTrackAdded;
 import org.tunelad.track.event.NewTrackSaved;
 import org.tunelad.track.event.TrackDeleted;
 import org.tunelad.track.event.TrackUpdated;
@@ -171,7 +172,9 @@ class DefaultTrackService implements TrackService {
                                                     "Position " + command.position() + " of the album is taken."));
                         })
                         .map(trackMapper::toDto)
-                        .flatMap(dto -> events.publish(new AlbumChanged(albumMapper.toDto(album, List.of()))).thenReturn(dto)));
+                        .flatMap(dto -> events.publish(new CatalogueTrackAdded(dto))
+                                .then(events.publish(new AlbumChanged(albumMapper.toDto(album, List.of()))))
+                                .thenReturn(dto)));
     }
 
     /** The Set of the listed tunes; empty (so no Set) unless one to twenty are listed and every one resolves. */

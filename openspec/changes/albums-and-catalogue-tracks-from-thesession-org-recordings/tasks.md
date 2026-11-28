@@ -12,10 +12,10 @@
 
 ## 3. Recordings import (commit: `feat(track): import albums from thesession.org recordings`)
 
-- [ ] 3.1 Move `CsvParser` and the dump downloader to `infrastructure`; add `TuneCatalog.findBySourceId` (bulk map per run)
-- [ ] 3.2 `AlbumDumpImport` with state/counters, `POST/GET /api/albums/import-dump` (Administrator, 202/401/403/409), idempotent, unclassified Artists, per-Album transactions
-- [ ] 3.3 Tests with a fake dump: all known, unknown Tune leaves no Set, rerun, non-Administrator 403, download failure `failed`
-- [ ] 3.4 `live` forwards `AlbumChanged`; `search` indexes Albums; update `package-info.java` allowed dependencies; `ModularApplicationTests` passes
+- [x] 3.1 Move `CsvParser` and the dump downloader to `infrastructure`; add `TuneCatalog.findBySourceId` (bulk map per run)
+- [x] 3.2 `AlbumDumpImport` with state/counters, `POST/GET /api/albums/import-dump` (Administrator, 202/401/403/409), idempotent, unclassified Artists, per-Album transactions
+- [x] 3.3 Tests with a fake dump: all known, unknown Tune leaves no Set, rerun, non-Administrator 403, download failure `failed`
+- [x] 3.4 `live` forwards `AlbumChanged`; `search` indexes Albums; update `package-info.java` allowed dependencies; `ModularApplicationTests` passes
 
 ## 4. Attach audio (commit: `feat(track): attach uploaded audio to a catalogue track`)
 

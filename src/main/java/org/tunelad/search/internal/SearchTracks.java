@@ -13,7 +13,7 @@ import java.util.List;
 @Component
 class SearchTracks {
 
-    private static final String COLUMNS = "id, title, description, artist, album, format, owner_id, owner_display_name";
+    private static final String COLUMNS = "id, title, description, artist, album, format, owner_id, owner_display_name, catalogue, album_id, album_position";
 
     private final DatabaseClient client;
 
@@ -25,12 +25,15 @@ class SearchTracks {
     Mono<Void> save(SearchTrack track) {
         var owner = track.owner();
         var spec = client.sql("""
-                INSERT INTO search_tracks (id, title, description, artist, album, format, owner_id, owner_display_name)
-                VALUES (:id, :title, :description, :artist, :album, :format, :ownerId, :ownerDisplayName)
+                INSERT INTO search_tracks (id, title, description, artist, album, format, owner_id, owner_display_name,
+                    catalogue, album_id, album_position)
+                VALUES (:id, :title, :description, :artist, :album, :format, :ownerId, :ownerDisplayName,
+                    :catalogue, :albumId, :albumPosition)
                 ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description,
                     artist = EXCLUDED.artist, album = EXCLUDED.album, format = EXCLUDED.format,
-                    owner_id = EXCLUDED.owner_id, owner_display_name = EXCLUDED.owner_display_name""")
-                .bind("id", track.id());
+                    owner_id = EXCLUDED.owner_id, owner_display_name = EXCLUDED.owner_display_name, catalogue = EXCLUDED.catalogue,
+                    album_id = EXCLUDED.album_id, album_position = EXCLUDED.album_position""")
+                .bind("id", track.id()).bind("catalogue", track.catalogue());
         spec = bind(spec, "title", track.title());
         spec = bind(spec, "description", track.description());
         spec = bind(spec, "artist", track.artist());
@@ -38,6 +41,9 @@ class SearchTracks {
         spec = bind(spec, "format", track.format() == null ? null : track.format().name());
         spec = bind(spec, "ownerId", owner == null ? null : owner.id());
         spec = bind(spec, "ownerDisplayName", owner == null ? null : owner.displayName());
+        spec = bind(spec, "albumId", track.albumId());
+        spec = track.albumPosition() == null ? spec.bindNull("albumPosition", Integer.class)
+                : spec.bind("albumPosition", track.albumPosition());
         return spec.then();
     }
 
@@ -95,6 +101,8 @@ class SearchTracks {
         return new SearchTrack(row.get("id", String.class), row.get("title", String.class),
                 row.get("description", String.class), row.get("artist", String.class),
                 row.get("album", String.class), format == null ? null : TrackFormat.valueOf(format),
-                ownerId == null && ownerName == null ? null : new TrackOwner(ownerId, ownerName));
+                ownerId == null && ownerName == null ? null : new TrackOwner(ownerId, ownerName),
+                Boolean.TRUE.equals(row.get("catalogue", Boolean.class)), row.get("album_id", String.class),
+                row.get("album_position", Integer.class));
     }
 }

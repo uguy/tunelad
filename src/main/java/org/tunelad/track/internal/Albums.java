@@ -10,6 +10,9 @@ public interface Albums {
 
 	Mono<Album> findById(String id);
 
+	/** The album of this Artist with this title, ignoring case; empty when there is none. */
+	Mono<Album> findByArtistAndTitle(String artistId, String title);
+
 	/** Every album, ordered by title. */
 	Flux<Album> findAll();
 }

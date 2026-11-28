@@ -40,6 +40,11 @@ class DbAlbums implements Albums {
     }
 
     @Override
+    public Mono<Album> findByArtistAndTitle(String artistId, String title) {
+        return hydrate(repository.findAllByArtistIdAndTitleIgnoreCaseOrderById(artistId, title)).next();
+    }
+
+    @Override
     public Flux<Album> findAll() {
         return hydrate(repository.findAllByOrderByTitleAsc());
     }
