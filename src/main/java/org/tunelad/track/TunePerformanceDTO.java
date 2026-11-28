@@ -9,6 +9,10 @@ public record TunePerformanceDTO(
 		String trackTitle,
 		@Schema(description = "The track's artist", nullable = true)
 		String artist,
+		@Schema(description = "The track's artist id", nullable = true)
+		String artistId,
+		@Schema(description = "The track's artist kind, absent when it is not classified", nullable = true)
+		ArtistKind artistKind,
 		@Schema(description = "Order of the tune in the track, from 1", example = "1")
 		int position,
 		@Schema(description = "Where the tune starts in the audio, in seconds", example = "95.5")

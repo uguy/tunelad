@@ -60,6 +60,7 @@ class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/tracks/*/comments", "/api/tunes/*/comments", "/api/sets/*/comments").authenticated()
                         .pathMatchers(HttpMethod.PATCH, "/api/comments/*").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/comments/*").authenticated()
+                        .pathMatchers(HttpMethod.PUT, "/api/artists/*", "/api/artists/*/members").authenticated()
                         .pathMatchers(HttpMethod.PUT, "/api/tracks/*").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/tracks/*").authenticated()
                         .anyExchange().permitAll())
