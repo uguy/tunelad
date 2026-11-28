@@ -1,6 +1,7 @@
 ---
 name: openspec-verify-change
 description: Verify implementation matches OpenSpec change artifacts. Use when the user wants to validate that implementation is complete, correct, and coherent before archiving. Also use when the user says "openspec verify" or "opsx verify".
+model: sonnet
 allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
