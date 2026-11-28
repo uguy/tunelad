@@ -2,7 +2,7 @@
 
 ## 1. Branch
 
-- [ ] 1.1 Create or confirm feature branch `feat/band-and-musician` from an up-to-date `main`
+- [x] 1.1 Create or confirm feature branch `feat/band-and-musician` from an up-to-date `main`
 
 ## 2. Classification and membership in the track module (commit: `feat(track): classify artists as musicians and bands`)
 
@@ -24,4 +24,4 @@
 - [x] 4.1 Update `GLOSSARY.md` if a term's wording changed (Artist, Band, Musician)
 - [x] 4.2 Update `README.adoc` features and retake screenshots if the UI changed visibly
 - [x] 4.3 Run `./mvnw clean verify` and fix failures
-- [ ] 4.4 Open the PR titled `feat(track): classify artists as musicians and bands`, body ending with `Closes #845`
+- [x] 4.4 Open the PR titled `feat(track): classify artists as musicians and bands`, body ending with `Closes #845`
