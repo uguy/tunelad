@@ -19,7 +19,7 @@ An ordered sequence of Tunes played one after another, such as a set of reels, w
 _Avoid_: Suite, medley, plan, Prepared set
 
 **Track**:
-An audio recording, by one Artist, of a Set (a single Tune counts as a Set of one) once it has one: a Track uploaded from its audio file alone has no Set yet. The audio file is its only required part; it always has a title (the file name until the file's tags give a better one). It carries a title, a description, tags and a source (where the recording comes from, as free text).
+A recording, by one Artist, of a Set (a single Tune counts as a Set of one) once it has one: a Track uploaded from its audio file alone has no Set yet. Its audio file is the only required part of an uploaded Track; it always has a title (the file name until the file's tags give a better one). A Track with no audio is a Catalogue Track. It carries a title, a description, tags and a source (where the recording comes from, as free text).
 _Avoid_: Song, media
 
 **Artist**:
@@ -35,7 +35,7 @@ An Artist who is one person, and who may be a member of Bands.
 _Avoid_: Player
 
 **Performance**:
-One Tune as played in one Track (or, when imported from a recording whose tune is not identified, only the listed tune name, unresolved): its order and start offset in the Track, its own key, notes on melodic variation, and its Transcription. This is where an interpretation is kept, since each recording of a Tune may differ.
+One Tune as played in one Track (or, when imported from a recording whose tune is not in the catalogue, only the listed tune name: it is unresolved and belongs to no Tune): its order and start offset in the Track, its own key, notes on melodic variation, and its Transcription. This is where an interpretation is kept, since each recording of a Tune may differ.
 _Avoid_: Version, rendition
 
 **Transcription**:
@@ -86,7 +86,7 @@ The Sets an Account created plus the Sets it added by reference. This is what ot
 A release by one Artist grouping Tracks, with a title and optionally a cover and a release date. Imported from thesession.org recordings or created by hand.
 
 **Catalogue Track**:
-A Track that has no audio yet, only a place on an Album. Audio uploaded later can be attached to it.
+A Track that has no audio yet, only a place on an Album. Audio uploaded later can be attached to it, by choosing it at upload or accepting a suggestion (same Artist, matching title); the uploader then becomes its Owner. It has a Set only when all its Performances are resolved.
 
 ### Behaviour
 

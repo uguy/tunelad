@@ -32,7 +32,7 @@
 
 ## 6. Docs and finish
 
-- [ ] 6.1 Update `GLOSSARY.md`: Track (audio not always present), Performance and Set wording for unresolved entries, Catalogue Track
-- [ ] 6.2 Update `README.adoc` features and retake screenshots if the UI changed
+- [x] 6.1 Update `GLOSSARY.md`: Track (audio not always present), Performance and Set wording for unresolved entries, Catalogue Track
+- [x] 6.2 Update `README.adoc` features and retake screenshots if the UI changed
 - [ ] 6.3 Run `./mvnw clean verify`
 - [ ] 6.4 Open the PR titled `feat(track): import albums and catalogue tracks from thesession.org recordings`, body says `Closes #847`
