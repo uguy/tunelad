@@ -1,6 +1,7 @@
 ---
 name: next-slice
 description: Pick the next unblocked roadmap slice from GitHub Issues and start its OpenSpec change. Use when the user says "next slice", "what's next on the roadmap", or "/next-slice [#issue]".
+model: sonnet
 allowed-tools: Bash(gh:*), Bash(openspec:*), Bash(jq:*)
 ---
 
