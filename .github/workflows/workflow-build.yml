@@ -3,11 +3,9 @@ name: workflow-build
 on:
   push:
     branches: [ main ]
-    paths:
-      - '**/*'
-      - '!**/*.adoc'
-  # No paths filter on PRs: `build` is a required check, and a skipped
-  # workflow would leave docs-only PRs waiting for it forever.
+  # No `paths` filter: `build` is a required check, and a workflow skipped by a
+  # path filter leaves it pending forever. The `changes` job skips the jobs instead,
+  # which GitHub counts as passing.
   pull_request:
     branches: [ main ]
 
@@ -20,8 +18,36 @@ permissions:
 
 jobs:
 
+  # Docs and AI configuration cannot break the build: skip the heavy jobs when only they changed
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!**/*.md'
+              - '!**/*.adoc'
+              - '!doc/**'
+              - '!docs/**'
+              - '!openspec/**'
+              - '!.claude/**'
+              - '!.mcp.json'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!LICENSE'
+
   # The identification sidecar (Node, runs Cadence's recognition engine) has its own tests and image
   sidecar:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,7 +67,9 @@ jobs:
       - name: Build the image
         run: docker build -t tunelad-identification .
 
-  build:    
+  build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
