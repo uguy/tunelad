@@ -131,6 +131,23 @@ class AlbumsTest extends AbstractApiTest {
     }
 
     @Test
+    void the_albums_of_a_tune() {
+        var album = createAlbum("At the End of the Day", "Dervish");
+        createAlbum("Elsewhere", "Dervish");
+        var cooleys = createTune("Cooley's", "reel");
+        catalogueTrack(album.id(), "One", 1, new Listed("Cooley's", cooleys));
+        catalogueTrack(album.id(), "Two", 2, new Listed("Cooley's", cooleys));
+
+        var albums = client.get().uri("/api/tunes/{id}/albums", cooleys).exchange().expectStatus().isOk()
+                .expectBodyList(AlbumDTO.class).returnResult().getResponseBody();
+
+        assertThat(albums).extracting(AlbumDTO::id).containsExactly(album.id());
+        assertThat(albums.get(0).artist()).isEqualTo("Dervish");
+        client.get().uri("/api/tunes/{id}/albums", "none").exchange().expectStatus().isOk()
+                .expectBodyList(AlbumDTO.class).hasSize(0);
+    }
+
+    @Test
     void a_set_only_when_all_performances_resolve() {
         var album = createAlbum("At the End of the Day", "Dervish");
         var cooleys = createTune("Cooley's", "reel");

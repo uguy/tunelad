@@ -16,6 +16,7 @@
 		{ path: '/', label: 'Home' },
 		{ path: '/tracks', label: 'Tracks' },
 		{ path: '/tunes', label: 'Tunes' },
+		{ path: '/albums', label: 'Albums' },
 		{ path: '/sets', label: 'Sets' }
 	] as const;
 

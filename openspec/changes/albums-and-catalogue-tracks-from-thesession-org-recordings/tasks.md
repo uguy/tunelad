@@ -25,10 +25,10 @@
 
 ## 5. UI (commit: `feat(ui): browse albums and attach audio to catalogue tracks`)
 
-- [ ] 5.1 `albums.svelte.ts` store with `refreshOnLive`; Albums page and Album view (keyboard reachable, "No audio yet" text, theme tokens only)
-- [ ] 5.2 Create-Album form; upload form choice of Catalogue Track; suggestion banner (`aria-live`) with accept
-- [ ] 5.3 Tune view lists Albums (spec `tune`)
-- [ ] 5.4 vitest and Playwright tests (mocked with `page.route`); `bun run format`, `lint`, `check`
+- [x] 5.1 `albums.svelte.ts` store with `refreshOnLive`; Albums page and Album view (keyboard reachable, "No audio yet" text, theme tokens only)
+- [x] 5.2 Create-Album form; upload form choice of Catalogue Track; suggestion banner (`aria-live`) with accept
+- [x] 5.3 Tune view lists Albums (spec `tune`)
+- [x] 5.4 vitest and Playwright tests (mocked with `page.route`); `bun run format`, `lint`, `check`
 
 ## 6. Docs and finish
 

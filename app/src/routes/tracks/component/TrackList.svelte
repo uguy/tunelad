@@ -99,6 +99,7 @@
 
 	/** Whether the track can be played now: a converted format waits for the server to say so. */
 	function playable(track: Track): boolean {
+		if (track.catalogue) return false;
 		return !CONVERTED_FORMATS.includes(track.format) || audios[track.id] === 'READY';
 	}
 
@@ -125,9 +126,10 @@
 	}
 
 	/** Fetches the track's waveform once its row comes near the viewport, so a long list does not fetch them all. */
-	function waveformWhenVisible(trackId: string): Attachment {
+	/** A Catalogue Track has no audio, so no waveform to fetch. */
+	function waveformWhenVisible(trackId: string, catalogue = false): Attachment {
 		return (element) => {
-			if (requested.has(trackId)) return;
+			if (requested.has(trackId) || catalogue) return;
 			const observer = new IntersectionObserver(
 				(entries) => {
 					if (!entries.some((entry) => entry.isIntersecting) || requested.has(trackId)) return;
@@ -272,7 +274,7 @@
 				class="card flex gap-4 border-l-4 p-4 transition-shadow hover:shadow-md {loaded
 					? 'border-accent'
 					: 'border-transparent'}"
-				{@attach waveformWhenVisible(track.id)}
+				{@attach waveformWhenVisible(track.id, track.catalogue)}
 			>
 				<div
 					class="hidden h-36 w-36 shrink-0 rounded-sm sm:block"
@@ -305,6 +307,9 @@
 							>
 								{track.title}
 							</h2>
+							{#if track.catalogue}
+								<p class="text-xs text-ink-muted" data-testid="no-audio">No audio yet</p>
+							{/if}
 							{#if audios[track.id] === 'PENDING'}
 								<p role="status" class="text-xs text-ink-muted" data-testid="audio-status">
 									Preparing audio…
@@ -341,14 +346,16 @@
 						{/if}
 					</div>
 
-					<div class="mt-3">
-						<Waveform
-							peaks={peaksOf(track.id)}
-							progress={player.progressOf(track.id)}
-							label={track.title}
-							onseek={(fraction) => play(index, fraction)}
-						/>
-					</div>
+					{#if !track.catalogue}
+						<div class="mt-3">
+							<Waveform
+								peaks={peaksOf(track.id)}
+								progress={player.progressOf(track.id)}
+								label={track.title}
+								onseek={(fraction) => play(index, fraction)}
+							/>
+						</div>
+					{/if}
 
 					<div class="mt-2 flex flex-wrap items-center gap-2">
 						{#each track.tags ?? [] as tag (tag)}
@@ -392,8 +399,8 @@
 									{#each details[track.id].performances ?? [] as performance (performance.position)}
 										<li>
 											<span class="text-ink-muted tabular-nums">{performance.position}.</span>
-											{performance.tuneName}
-											<span class="text-ink-muted capitalize">{performance.danceType}</span>
+											{performance.tuneName ?? performance.listedName}
+											<span class="text-ink-muted capitalize">{performance.danceType ?? ''}</span>
 											<span class="text-ink-muted">
 												· starts at <span class="tabular-nums">
 													{formatOffset(performance.startOffsetSeconds)}
@@ -454,7 +461,9 @@
 							</div>
 							{#if performanceForms.length}
 								<PerformanceFields
-									names={(details[track.id]?.performances ?? []).map((p) => p.tuneName)}
+									names={(details[track.id]?.performances ?? []).map(
+										(p) => p.tuneName ?? p.listedName ?? ''
+									)}
 									bind:values={performanceForms}
 								/>
 							{/if}

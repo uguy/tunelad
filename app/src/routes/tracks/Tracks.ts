@@ -13,7 +13,12 @@ export interface Track {
 	description?: string | null;
 	artist?: string | null;
 	album?: string | null;
+	/** Null for a Catalogue Track, which has no audio yet. */
 	format: string;
+	/** A Catalogue Track: a place on an Album with no audio yet, so nothing to play. */
+	catalogue?: boolean;
+	albumId?: string | null;
+	albumPosition?: number | null;
 	owner?: { id: string; displayName: string } | null;
 	tags?: string[];
 	/** The set the track records: absent from search results and from tracks stored before sets existed. */
@@ -25,9 +30,12 @@ export interface Track {
 /** One tune as played in a track. */
 export interface Performance {
 	position: number;
-	tuneId: string;
-	tuneName: string;
-	danceType: string;
+	/** Absent for an unresolved Performance, which only has the name the source listed. */
+	tuneId?: string | null;
+	tuneName?: string | null;
+	/** The tune name as the source listed it. */
+	listedName?: string | null;
+	danceType?: string | null;
 	startOffsetSeconds: number;
 	key?: string | null;
 	notes?: string | null;
@@ -84,6 +92,8 @@ export interface TrackUpload {
 	setId?: string | null;
 	/** One entry per tune of the set, in order. */
 	performances?: PerformanceInput[];
+	/** A Catalogue Track to give the audio to, instead of creating a new track: the other values are ignored. */
+	catalogueTrackId?: string | null;
 	file: File;
 }
 
@@ -267,6 +277,7 @@ export default class TrackService {
 			signal?.addEventListener('abort', () => xhr.abort(), { once: true });
 
 			const form = new FormData();
+			if (upload.catalogueTrackId) form.append('catalogueTrackId', upload.catalogueTrackId);
 			if (upload.setId) {
 				form.append('setId', upload.setId);
 				if (upload.performances?.length)
@@ -279,6 +290,39 @@ export default class TrackService {
 			form.append('file', upload.file);
 			xhr.send(form);
 		});
+	}
+
+	/** The Catalogue Tracks that may be the recording the track holds; empty when none or when they cannot be had. */
+	async catalogueSuggestions(id: string): Promise<Track[]> {
+		try {
+			const res = await api.request(
+				this.#fetchFunc,
+				'GET',
+				`tracks/${encodeURIComponent(id)}/catalogue-suggestions`
+			);
+			return res.ok ? await res.json() : [];
+		} catch {
+			return [];
+		}
+	}
+
+	/** Gives the file to a Catalogue Track and returns it as an ordinary track; throws a {@link TrackUploadError}. */
+	async attachAudio(id: string, file: File): Promise<Track> {
+		const form = new FormData();
+		form.append('file', file);
+		const token = api.csrfToken();
+		let res: Response;
+		try {
+			res = await this.#fetchFunc(`/api/tracks/${encodeURIComponent(id)}/audio`, {
+				method: 'POST',
+				headers: token ? { 'X-XSRF-TOKEN': token } : {},
+				body: form
+			});
+		} catch {
+			throw new TrackUploadError(0);
+		}
+		if (!res.ok) throw new TrackUploadError(res.status);
+		return await res.json();
 	}
 
 	/** Deletes the track; throws a {@link TrackChangeError} if refused. */

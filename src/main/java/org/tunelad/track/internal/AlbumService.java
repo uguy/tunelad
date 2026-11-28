@@ -57,6 +57,12 @@ public class AlbumService {
         return albums.findAll().map(album -> albumMapper.toDto(album, List.of()));
     }
 
+    /** The Albums the Tune appears on, by title, without their Tracks; empty when there are none. */
+    @ReactiveTransactional(readOnly = true)
+    public Flux<AlbumDTO> findByTune(String tuneId) {
+        return albums.findAllByTune(tuneId).map(album -> albumMapper.toDto(album, List.of()));
+    }
+
     /** The Album with its Tracks in order; fails with 404 when there is none. */
     @ReactiveTransactional(readOnly = true)
     public Mono<AlbumDTO> find(String id) {

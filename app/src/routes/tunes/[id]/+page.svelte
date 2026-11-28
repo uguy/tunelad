@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import AbcViewer from '#lib/AbcViewer.svelte';
 	import Comments from '#lib/Comments.svelte';
+	import { AlbumService, type Album } from '#lib/albums.svelte.js';
 	import RecordedBy from '#lib/RecordedBy.svelte';
 	import { live } from '#lib/live.svelte.js';
 	import { refreshOnLive } from '#lib/liveRefresh.js';
@@ -12,17 +13,24 @@
 	import TuneService, { type Tune, type TunePerformance } from '../Tunes.js';
 
 	const service = new TuneService();
+	const albumService = new AlbumService();
 	const id = $derived(page.params.id ?? '');
 
 	let tune = $state.raw<Tune | null>(null);
 	let performances = $state.raw<TunePerformance[]>([]);
+	/** The Albums with a Track that has this Tune, Catalogue Tracks included. */
+	let albums = $state.raw<Album[]>([]);
 	/** Only Performances with a Transcription draw a sheet. */
 	const sheets = $derived(performances.filter((p) => p.abc?.trim()));
 	let status = $state<'loading' | 'ready' | 'notfound' | 'error'>('loading');
 
 	async function load() {
 		try {
-			[tune, performances] = await Promise.all([service.findOne(id), service.performances(id)]);
+			[tune, performances, albums] = await Promise.all([
+				service.findOne(id),
+				service.performances(id),
+				albumService.ofTune(id)
+			]);
 			status = tune ? 'ready' : 'notfound';
 		} catch {
 			status = 'error';
@@ -32,7 +40,9 @@
 	onMount(load);
 
 	// Performances come from any Track, so any Track's change may concern this Tune; also what was missed offline
-	onMount(() => refreshOnLive(live, ['performance.changed', 'tune.changed'], () => void load()));
+	onMount(() =>
+		refreshOnLive(live, ['performance.changed', 'tune.changed', 'album.changed'], () => void load())
+	);
 </script>
 
 <svelte:head>
@@ -87,6 +97,21 @@
 			</dl>
 		</div>
 		<RecordedBy {performances} />
+		{#if albums.length > 0}
+			<section aria-labelledby="albums-heading">
+				<h2 id="albums-heading" class="text-lg font-semibold">On albums</h2>
+				<ul class="mt-2 flex flex-col gap-1 text-sm">
+					{#each albums as album (album.id)}
+						<li>
+							<a class="underline hover:text-ink" href={resolve('/albums/[id]', { id: album.id })}>
+								{album.title}
+							</a>
+							<span class="text-ink-muted">by {album.artist}</span>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 		{#if sheets.length > 0}
 			{#each sheets as performance (`${performance.trackId}-${performance.position}`)}
 				<section class="flex flex-col gap-2">

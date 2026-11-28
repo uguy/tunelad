@@ -13,6 +13,9 @@ public interface Albums {
 	/** The album of this Artist with this title, ignoring case; empty when there is none. */
 	Mono<Album> findByArtistAndTitle(String artistId, String title);
 
+	/** The albums with a Track that has a resolved Performance of the Tune, ordered by title. */
+	Flux<Album> findAllByTune(String tuneId);
+
 	/** Every album, ordered by title. */
 	Flux<Album> findAll();
 }

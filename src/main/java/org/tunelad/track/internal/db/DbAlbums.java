@@ -49,6 +49,11 @@ class DbAlbums implements Albums {
         return hydrate(repository.findAllByOrderByTitleAsc());
     }
 
+    @Override
+    public Flux<Album> findAllByTune(String tuneId) {
+        return hydrate(repository.findAllByTune(tuneId));
+    }
+
     /** Loads the Artists of all the albums with one query. */
     private Flux<Album> hydrate(Flux<Album> found) {
         return found.collectList().flatMapMany(list -> {

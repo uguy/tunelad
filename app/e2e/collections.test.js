@@ -20,7 +20,7 @@ test('the collections navigation has Favourites and Playlists only', async ({ pa
 		'href',
 		'/tracks/playlists'
 	);
-	await expect(page.getByRole('link', { name: 'Albums' })).toHaveCount(0);
+	await expect(nav.getByRole('link', { name: 'Albums' })).toHaveCount(0);
 });
 
 test('the albums page is gone', async ({ page }) => {
