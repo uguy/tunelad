@@ -46,3 +46,4 @@ id, artist, recording (album title), track (number), number (position in track),
 - A Catalogue Track publishes `CatalogueTrackAdded` (not `NewTrackSaved`, whose listeners assume audio) and `AlbumChanged`; search indexes Catalogue Tracks from the former. The import therefore emits events per Track; batching them is a possible follow-up.
 - The bulk Tune lookup is `TuneCatalog.findBySourceIds`; `CsvParser` and the dump downloader (`CsvDump`) moved to `infrastructure`.
 - Albums are searchable through `GET /api/albums/search?q=` (`search_albums`); `search_tracks` carries `catalogue`, `album_id`, `album_position`.
+- Attaching audio publishes `NewTrackSaved` (tags, Identification, search and live listen to it) plus `AlbumChanged`. Identification skips a Track that has Performances but no Set, so it never replaces a Catalogue Track's unresolved Performances. Upload with `catalogueTrackId` answers 201 like a normal upload and ignores the other text parts.

@@ -110,6 +110,15 @@ class DbTracks implements Tracks {
     }
 
     @Override
+    public Flux<Track> findCatalogueByArtistId(String artistId) {
+        return client.sql("SELECT id FROM track_tracks WHERE catalogue AND artist_id = :artist ORDER BY album_id, album_position")
+                .bind("artist", artistId).map(row -> row.get("id", String.class)).all().collectList()
+                .flatMapMany(ids -> ids.isEmpty() ? Flux.<Track>empty()
+                        : hydrate(trackRepository.findAllById(ids)).collectMap(Track::getId)
+                        .flatMapMany(byId -> Flux.fromIterable(ids).map(byId::get)));
+    }
+
+    @Override
     public Mono<Track> findById(String id) {
         return hydrate(trackRepository.findById(id).flux()).next();
     }

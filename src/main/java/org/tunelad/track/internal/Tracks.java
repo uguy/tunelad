@@ -13,6 +13,9 @@ public interface Tracks {
 	/** The tracks of the album, ordered by position. */
 	Flux<Track> findByAlbumId(String albumId);
 
+	/** The Catalogue Tracks of the Artist, by Album then position. */
+	Flux<Track> findCatalogueByArtistId(String artistId);
+
 	/** Like {@link #findById}, locking the track's row until the transaction ends. Needs a transaction. */
 	Mono<Track> findByIdForUpdate(String id);
 

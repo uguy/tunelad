@@ -30,6 +30,7 @@ import org.tunelad.track.TrackFormat;
 import org.tunelad.track.TrackOwner;
 import org.tunelad.track.TrackService;
 import org.tunelad.track.command.AddTrackCommand;
+import org.tunelad.track.command.AttachAudio;
 import org.tunelad.track.command.DeleteTrackCommand;
 import org.tunelad.track.command.PerformanceInput;
 import org.tunelad.track.command.UpdateTrackCommand;
@@ -68,7 +69,10 @@ public class TrackController {
                     + "`description` may now be absent. The optional `setId` makes the track record an existing set, with one "
                     + "performance per tune of that set; without it the track has no set and no performances. The optional `performances` part is a JSON array with one object per tune, in "
                     + "the set's order, each with optional `startOffsetSeconds` (0 to 86400, default 0), `key` (at most 30 "
-                    + "characters) and `notes` (at most 2000), e.g. `[{\"startOffsetSeconds\":0,\"key\":\"Em\"},{\"startOffsetSeconds\":95.5,\"key\":\"G\"}]`.",
+                    + "characters) and `notes` (at most 2000), e.g. `[{\"startOffsetSeconds\":0,\"key\":\"Em\"},{\"startOffsetSeconds\":95.5,\"key\":\"G\"}]`. "
+                    + "The optional `catalogueTrackId` attaches the file to that catalogue track instead of creating a track, exactly like "
+                    + "`POST /api/tracks/{id}/audio` (the catalogue track keeps its title, album, performances and set, so the other text parts, "
+                    + "`setId` and `performances` are ignored) and answers 201 with that track.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Track stored",
@@ -77,10 +81,14 @@ public class TrackController {
             @ApiResponse(responseCode = "400", description = "The file part is missing, the set does not exist, or the performances are given without a set or are not one valid entry per tune of the set", content = @Content),
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
             @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content),
+            @ApiResponse(responseCode = "404", description = "`catalogueTrackId` names no track", content = @Content),
+            @ApiResponse(responseCode = "409", description = "`catalogueTrackId` names a track that has audio already", content = @Content),
             @ApiResponse(responseCode = "413", description = "The audio file is larger than 100 MB", content = @Content),
             @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac, wav or wma file", content = @Content)
     })
     public Mono<ResponseEntity<TrackDTO>> create(
+            @Parameter(description = "A catalogue track to attach the file to instead of creating a track")
+            @RequestPart(name = "catalogueTrackId", required = false) String catalogueTrackId,
             @RequestPart(name = "title", required = false) String title,
             @RequestPart(name = "description", required = false) String description,
             @RequestPart(name = "setId", required = false) String setId,
@@ -101,12 +109,63 @@ public class TrackController {
             return Mono.error(new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                     "Supported audio formats are mp3, m4a, ogg, flac, wav and wma."));
         }
+        if (StringUtils.hasText(catalogueTrackId)) {
+            return authenticatedAccount()
+                    .map(account -> new AttachAudio(catalogueTrackId.trim(), filePart.content(), format.get(),
+                            new TrackOwner(account.id(), account.displayName())))
+                    .flatMap(service::execute)
+                    .map(track -> ResponseEntity.created(URI.create("/api/tracks/" + track.id())).body(track));
+        }
         return authenticatedAccount()
                 .map(account -> new AddTrackCommand(title, filePart.filename(), artist, album, description,
                         StringUtils.hasText(setId) ? setId.trim() : null, inputs, filePart.content(),
                         format.get(), new TrackOwner(account.id(), account.displayName())))
                 .flatMap(service::execute)
                 .map(track -> ResponseEntity.created(URI.create("/api/tracks/" + track.id())).body(track));
+    }
+
+    @PostMapping(value = "{id}/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Attach audio to a catalogue track",
+            description = "Stores the `file` as the audio of a catalogue track (a track on an album that has no audio yet), under the same "
+                    + "formats (mp3, m4a, ogg, flac, wav or wma) and 100 MB limit as an upload. The authenticated user becomes its owner and "
+                    + "the track becomes an ordinary track that keeps its album, album position, title, performances and set. Its tags are "
+                    + "read like an upload's, without replacing its title or artist.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Audio attached", content = @Content(schema = @Schema(implementation = TrackDTO.class))),
+            @ApiResponse(responseCode = "400", description = "The file part is missing", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Browser session request without a valid CSRF token", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content),
+            @ApiResponse(responseCode = "409", description = "The track has audio already (it is not a catalogue track)", content = @Content),
+            @ApiResponse(responseCode = "413", description = "The audio file is larger than 100 MB", content = @Content),
+            @ApiResponse(responseCode = "415", description = "The file is not an mp3, m4a, ogg, flac, wav or wma file", content = @Content)
+    })
+    public Mono<TrackDTO> attachAudio(@Parameter(description = "Catalogue track ID", required = true) @PathVariable String id,
+                                      @RequestPart("file") FilePart filePart) {
+        var format = TrackFormat.forFile(filePart.filename());
+        if (format.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Supported audio formats are mp3, m4a, ogg, flac, wav and wma."));
+        }
+        return authenticatedAccount()
+                .map(account -> new AttachAudio(id, filePart.content(), format.get(),
+                        new TrackOwner(account.id(), account.displayName())))
+                .flatMap(service::execute);
+    }
+
+    @GetMapping("{id}/catalogue-suggestions")
+    @Operation(summary = "Suggest catalogue tracks for a track",
+            description = "Lists the catalogue tracks of the track's artist whose title matches its own ignoring case, punctuation and "
+                    + "surrounding whitespace (for an imported catalogue track the listed tune names, joined, count as its title). "
+                    + "Empty when the track has no artist or is a catalogue track itself. Needs no authentication.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "The matching catalogue tracks, possibly none",
+                    content = @Content(array = @io.swagger.v3.oas.annotations.media.ArraySchema(schema = @Schema(implementation = TrackDTO.class)))),
+            @ApiResponse(responseCode = "404", description = "Track not found", content = @Content)
+    })
+    public Flux<TrackDTO> catalogueSuggestions(@Parameter(description = "Track ID", required = true) @PathVariable String id) {
+        return service.catalogueSuggestions(id);
     }
 
     @PutMapping(value = "{id}", consumes = MediaType.APPLICATION_JSON_VALUE)

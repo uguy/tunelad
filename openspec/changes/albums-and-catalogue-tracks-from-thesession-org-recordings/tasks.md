@@ -19,9 +19,9 @@
 
 ## 4. Attach audio (commit: `feat(track): attach uploaded audio to a catalogue track`)
 
-- [ ] 4.1 `POST /api/tracks/{id}/audio`, `catalogueTrackId` on upload, 409 when audio exists
-- [ ] 4.2 `GET /api/tracks/{id}/catalogue-suggestions` (same Artist, normalised title)
-- [ ] 4.3 Tests for attach, conflict, direct attach at upload and suggestions
+- [x] 4.1 `POST /api/tracks/{id}/audio`, `catalogueTrackId` on upload, 409 when audio exists
+- [x] 4.2 `GET /api/tracks/{id}/catalogue-suggestions` (same Artist, normalised title)
+- [x] 4.3 Tests for attach, conflict, direct attach at upload and suggestions
 
 ## 5. UI (commit: `feat(ui): browse albums and attach audio to catalogue tracks`)
 
