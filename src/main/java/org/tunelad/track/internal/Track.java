@@ -43,7 +43,19 @@ public class Track {
     @Transient
     private Publisher<DataBuffer> data;
 
+    /** Null for a Catalogue Track, which has no audio yet. */
     private TrackFormat format;
+
+    /** Not mapped with the other columns (Spring Data's generated accessor cannot read it): DbTracks stores it itself.
+     * True for a Catalogue Track: a place on an Album with no audio yet (the format alone cannot tell, as old audio has none). */
+    @Transient
+    private boolean catalogue;
+
+    /** The Album this track is on, if any, and its place there from 1. Not mapped with the other columns: DbTracks stores them. */
+    @Transient
+    private String albumId;
+    @Transient
+    private Integer albumPosition;
 
     /** The Set this track records, of the set module, by id; null for tracks stored before Sets existed. Not mapped
      * with the other columns (Spring Data takes a property named setId for the setter of id): DbTracks stores it itself. */

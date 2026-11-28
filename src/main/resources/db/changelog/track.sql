@@ -113,3 +113,36 @@ CREATE TABLE track_band_members
 CREATE INDEX track_band_members_musician_idx ON track_band_members (musician_id);
 --rollback DROP TABLE track_band_members;
 --rollback ALTER TABLE track_artists DROP COLUMN kind;
+
+--changeset tunelad:track-albums
+-- An Album is a release by one Artist. A Catalogue Track is a Track with no audio yet (catalogue = true, format null)
+-- that holds a place (album_position) on an Album. A Performance may be unresolved: no tune_id, only the listed name.
+CREATE TABLE track_albums
+(
+    id           TEXT NOT NULL,
+    version      INT  NOT NULL,
+    title        TEXT NOT NULL,
+    artist_id    TEXT NOT NULL REFERENCES track_artists (id),
+    cover_url    TEXT,
+    release_date DATE,
+    PRIMARY KEY (id)
+);
+CREATE INDEX track_albums_artist_idx ON track_albums (artist_id);
+
+ALTER TABLE track_tracks
+    ADD COLUMN album_id       TEXT REFERENCES track_albums (id),
+    ADD COLUMN album_position INT,
+    ADD COLUMN catalogue      BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE UNIQUE INDEX track_tracks_album_position_idx ON track_tracks (album_id, album_position)
+    WHERE album_id IS NOT NULL AND album_position IS NOT NULL;
+
+ALTER TABLE track_performances
+    ALTER COLUMN tune_id DROP NOT NULL,
+    ADD COLUMN listed_name TEXT;
+--rollback DELETE FROM track_performances WHERE tune_id IS NULL;
+--rollback ALTER TABLE track_performances DROP COLUMN listed_name;
+--rollback ALTER TABLE track_performances ALTER COLUMN tune_id SET NOT NULL;
+--rollback DROP INDEX track_tracks_album_position_idx;
+--rollback DELETE FROM track_tracks WHERE catalogue;
+--rollback ALTER TABLE track_tracks DROP COLUMN catalogue, DROP COLUMN album_position, DROP COLUMN album_id;
+--rollback DROP TABLE track_albums;

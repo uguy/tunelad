@@ -61,7 +61,7 @@ public abstract class AbstractApiTest {
         // emptying the registry under them would make them fail to mark their event completed
         await().atMost(Duration.ofSeconds(30)).until(() -> count("event_publication", "completion_date IS NULL") == 0);
         // Empties the tables of every module, whichever owns them; the schema stays, as Liquibase only creates it at startup.
-        db.sql("TRUNCATE event_publication, account_accounts, track_tracks, track_performances, track_artists, search_tracks, media_files, favourite_favourites, comment_comments, playlist_playlists, tune_tunes, set_sets CASCADE")
+        db.sql("TRUNCATE event_publication, account_accounts, track_tracks, track_performances, track_artists, track_albums, search_tracks, media_files, favourite_favourites, comment_comments, playlist_playlists, tune_tunes, set_sets CASCADE")
                 .then()
                 .block(Duration.ofSeconds(30));
     }

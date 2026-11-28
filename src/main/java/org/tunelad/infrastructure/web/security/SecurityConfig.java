@@ -56,7 +56,7 @@ class SecurityConfig {
                         .pathMatchers(HttpMethod.PUT, "/api/tracks/*/favourite").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/tracks/*/favourite").authenticated()
                         .pathMatchers("/api/playlists", "/api/playlists/**").authenticated()
-                        .pathMatchers(HttpMethod.POST, "/api/tracks", "/api/tunes", "/api/tunes/import", "/api/sets").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/tracks", "/api/albums", "/api/tunes", "/api/tunes/import", "/api/sets").authenticated()
                         .pathMatchers(HttpMethod.POST, "/api/tracks/*/comments", "/api/tunes/*/comments", "/api/sets/*/comments").authenticated()
                         .pathMatchers(HttpMethod.PATCH, "/api/comments/*").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/comments/*").authenticated()

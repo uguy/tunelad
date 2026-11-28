@@ -10,6 +10,9 @@ public interface Tracks {
 
 	Mono<Track> findById(String id);
 
+	/** The tracks of the album, ordered by position. */
+	Flux<Track> findByAlbumId(String albumId);
+
 	/** Like {@link #findById}, locking the track's row until the transaction ends. Needs a transaction. */
 	Mono<Track> findByIdForUpdate(String id);
 

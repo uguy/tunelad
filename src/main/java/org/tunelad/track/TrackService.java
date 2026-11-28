@@ -1,5 +1,6 @@
 package org.tunelad.track;
 
+import org.tunelad.track.command.AddCatalogueTrack;
 import org.tunelad.track.command.AddTrackCommand;
 import org.tunelad.track.command.ApplyTags;
 import org.tunelad.track.command.AttachSet;
@@ -41,6 +42,15 @@ public interface TrackService {
      * the track. Completes empty, changing nothing, when the track no longer exists or already has a Set.
      */
     Mono<TrackDTO> execute(AttachSet command);
+
+    /**
+     * Puts a Catalogue Track, a Track with no audio yet, at a position of an Album, with one Performance per listed
+     * tune. It gets a Set only when one to twenty tunes are listed and all of them resolve. Fails with
+     * {@code NotFoundException} when the Album does not exist, {@code BadRequestException} for a blank title, a
+     * position under 1 or a listed tune with a blank name, and 409 Conflict when the position is taken. Announces
+     * the change with an {@code AlbumChanged} event.
+     */
+    Mono<TrackDTO> execute(AddCatalogueTrack command);
 
     Flux<TrackDTO> findAll();
 
